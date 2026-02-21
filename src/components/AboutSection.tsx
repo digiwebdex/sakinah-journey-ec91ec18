@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Shield, Heart, Award, Clock } from "lucide-react";
 
@@ -9,6 +11,15 @@ const reasons = [
 ];
 
 const AboutSection = () => {
+  const navigate = useNavigate();
+  const [trackingId, setTrackingId] = useState("");
+
+  const handleTrack = () => {
+    const id = trackingId.trim();
+    if (!id) return;
+    navigate(`/track?id=${encodeURIComponent(id.toUpperCase())}`);
+  };
+
   return (
     <section id="about" className="py-24 islamic-pattern">
       <div className="container mx-auto px-4">
@@ -64,9 +75,15 @@ const AboutSection = () => {
                 <input
                   type="text"
                   placeholder="Enter Booking ID"
-                  className="flex-1 bg-secondary border border-border rounded-md px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="flex-1 bg-secondary border border-border rounded-md px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 uppercase"
+                  value={trackingId}
+                  onChange={(e) => setTrackingId(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleTrack()}
                 />
-                <button className="bg-gradient-gold text-primary-foreground font-semibold px-6 py-3 rounded-md text-sm hover:opacity-90 transition-opacity">
+                <button
+                  onClick={handleTrack}
+                  className="bg-gradient-gold text-primary-foreground font-semibold px-6 py-3 rounded-md text-sm hover:opacity-90 transition-opacity"
+                >
                   Track
                 </button>
               </div>
