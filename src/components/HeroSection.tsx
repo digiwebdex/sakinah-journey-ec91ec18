@@ -1,76 +1,139 @@
-import { motion } from "framer-motion";
-import { ArrowRight, Star } from "lucide-react";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { ArrowRight, Star, MapPin, Shield, Plane } from "lucide-react";
+import { useRef } from "react";
 import heroImage from "@/assets/hero-kaaba.jpg";
 
 const HeroSection = () => {
-  return (
-    <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Image */}
-      <div className="absolute inset-0">
-        <img src={heroImage} alt="Holy Kaaba" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
-      </div>
+  const sectionRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start start", "end start"],
+  });
+  const imgY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
+  const overlayOpacity = useTransform(scrollYProgress, [0, 0.5], [0.55, 0.9]);
 
-      {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 text-center pt-20">
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-        >
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <Star className="h-4 w-4 text-primary fill-primary" />
-            <span className="text-primary text-sm font-medium tracking-[0.3em] uppercase">
+  const stats = [
+    { value: "15+", label: "Years Experience", icon: Shield },
+    { value: "10K+", label: "Happy Pilgrims", icon: Star },
+    { value: "50+", label: "Premium Packages", icon: Plane },
+    { value: "4.9★", label: "Client Rating", icon: MapPin },
+  ];
+
+  return (
+    <section
+      ref={sectionRef}
+      id="home"
+      className="relative min-h-[100dvh] flex flex-col justify-end overflow-hidden"
+    >
+      {/* Parallax background */}
+      <motion.div className="absolute inset-0 will-change-transform" style={{ y: imgY }}>
+        <img
+          src={heroImage}
+          alt="The Holy Kaaba at night, illuminated by golden lights"
+          className="w-full h-[130%] object-cover object-center"
+        />
+      </motion.div>
+
+      {/* Gradient overlays */}
+      <motion.div
+        className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent"
+        style={{ opacity: overlayOpacity }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-r from-background/50 via-transparent to-background/50" />
+
+      {/* Decorative Islamic geometric accent */}
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-gold" />
+
+      {/* Main content — pushed to lower third */}
+      <div className="relative z-10 container mx-auto px-4 pb-8 sm:pb-14 pt-32">
+        <div className="max-w-3xl">
+          {/* Badge */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            className="inline-flex items-center gap-2 bg-primary/15 backdrop-blur-md border border-primary/25 rounded-full px-4 py-1.5 mb-6"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+            <span className="text-primary text-xs font-semibold tracking-widest uppercase">
               Trusted Since 2010
             </span>
-            <Star className="h-4 w-4 text-primary fill-primary" />
-          </div>
+          </motion.div>
 
-          <h1 className="font-heading text-4xl sm:text-5xl md:text-7xl font-bold mb-6 leading-tight">
-            Your Sacred Journey{" "}
-            <span className="text-gradient-gold">Begins Here</span>
-          </h1>
+          {/* Heading */}
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.15 }}
+            className="font-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.08] mb-5"
+          >
+            Your Sacred
+            <br />
+            Journey{" "}
+            <span className="text-gradient-gold">Begins&nbsp;Here</span>
+          </motion.h1>
 
-          <p className="text-lg md:text-xl text-foreground/70 max-w-2xl mx-auto mb-10 font-light leading-relaxed">
-            Experience the pilgrimage of a lifetime with RAHE KABA Tours & Travels.
-            Premium Hajj & Umrah packages from Chittagong, Bangladesh.
-          </p>
+          {/* Subheading */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.3 }}
+            className="text-base sm:text-lg text-foreground/65 max-w-xl mb-8 leading-relaxed"
+          >
+            Premium Hajj & Umrah experiences from Chittagong, Bangladesh.
+            Every detail crafted for your peace of mind.
+          </motion.p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          {/* CTAs */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.45 }}
+            className="flex flex-wrap gap-3"
+          >
             <a
               href="#packages"
-              className="bg-gradient-gold text-primary-foreground font-semibold px-8 py-4 rounded-md text-base hover:opacity-90 transition-opacity shadow-gold inline-flex items-center justify-center gap-2"
+              className="group bg-gradient-gold text-primary-foreground font-semibold px-7 py-3.5 rounded-lg text-sm hover:shadow-gold transition-all duration-300 inline-flex items-center gap-2"
             >
               Explore Packages
-              <ArrowRight className="h-5 w-5" />
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </a>
             <a
               href="#contact"
-              className="border border-primary/40 text-foreground font-semibold px-8 py-4 rounded-md text-base hover:bg-primary/10 transition-colors inline-flex items-center justify-center"
+              className="border border-foreground/20 text-foreground font-semibold px-7 py-3.5 rounded-lg text-sm hover:bg-foreground/5 backdrop-blur-sm transition-all duration-300 inline-flex items-center"
             >
               Contact Us
             </a>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
 
-        {/* Stats */}
+        {/* Stats bar */}
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto"
+          transition={{ duration: 0.7, delay: 0.65 }}
+          className="mt-14 sm:mt-20"
         >
-          {[
-            { value: "15+", label: "Years Experience" },
-            { value: "10K+", label: "Happy Pilgrims" },
-            { value: "50+", label: "Packages" },
-            { value: "4.9", label: "Rating" },
-          ].map((stat) => (
-            <div key={stat.label} className="text-center">
-              <p className="text-3xl md:text-4xl font-heading font-bold text-primary">{stat.value}</p>
-              <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
-            </div>
-          ))}
+          <div className="bg-card/60 backdrop-blur-xl border border-border/60 rounded-2xl p-4 sm:p-5 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 max-w-4xl">
+            {stats.map((stat, i) => (
+              <div
+                key={stat.label}
+                className={`flex items-center gap-3 ${
+                  i < stats.length - 1 ? "md:border-r md:border-border/40" : ""
+                } md:pr-4`}
+              >
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <stat.icon className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xl sm:text-2xl font-heading font-bold text-foreground leading-none">
+                    {stat.value}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{stat.label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </motion.div>
       </div>
     </section>
