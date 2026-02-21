@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { LogOut, Package, CreditCard, AlertTriangle, User, FileText, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  LogOut, Package, CreditCard, AlertTriangle, User, FileText,
+  ChevronDown, ChevronUp, Search, Save, MapPin, Phone, Mail, Settings
+} from "lucide-react";
+import { motion } from "framer-motion";
 import logo from "@/assets/logo.jpg";
 import DocumentUpload from "@/components/DocumentUpload";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
@@ -17,6 +21,7 @@ interface Booking {
   num_travelers: number;
   created_at: string;
   packages: { name: string; type: string } | null;
+  installment_plan_id: string | null;
 }
 
 interface Payment {
@@ -30,6 +35,8 @@ interface Payment {
   booking_id: string;
 }
 
+type TabKey = "bookings" | "payments" | "due" | "profile";
+
 const Dashboard = () => {
   useSessionTimeout();
   const navigate = useNavigate();
@@ -37,28 +44,30 @@ const Dashboard = () => {
   const [profile, setProfile] = useState<any>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [activeTab, setActiveTab] = useState<"bookings" | "payments" | "due">("bookings");
+  const [activeTab, setActiveTab] = useState<TabKey>("bookings");
   const [loading, setLoading] = useState(true);
   const [bookingDocs, setBookingDocs] = useState<Record<string, any[]>>({});
   const [expandedBooking, setExpandedBooking] = useState<string | null>(null);
+  const [expandedSchedule, setExpandedSchedule] = useState<string | null>(null);
+
+  // Profile editing
+  const [profileForm, setProfileForm] = useState({
+    full_name: "",
+    phone: "",
+    passport_number: "",
+    address: "",
+  });
+  const [savingProfile, setSavingProfile] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
-        navigate("/auth");
-        return;
-      }
+      if (!session) { navigate("/auth"); return; }
       setUser(session.user);
     });
-
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        navigate("/auth");
-        return;
-      }
+      if (!session) { navigate("/auth"); return; }
       setUser(session.user);
     });
-
     return () => subscription.unsubscribe();
   }, [navigate]);
 
@@ -72,9 +81,16 @@ const Dashboard = () => {
       supabase.from("booking_documents").select("*").eq("user_id", user.id),
     ]);
     setProfile(profileRes.data);
+    if (profileRes.data) {
+      setProfileForm({
+        full_name: profileRes.data.full_name || "",
+        phone: profileRes.data.phone || "",
+        passport_number: profileRes.data.passport_number || "",
+        address: profileRes.data.address || "",
+      });
+    }
     setBookings((bookingsRes.data as any) || []);
     setPayments((paymentsRes.data as any) || []);
-    // Group docs by booking
     const grouped: Record<string, any[]> = {};
     (docsRes.data || []).forEach((d: any) => {
       if (!grouped[d.booking_id]) grouped[d.booking_id] = [];
@@ -84,9 +100,7 @@ const Dashboard = () => {
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [user]);
+  useEffect(() => { fetchData(); }, [user]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -94,21 +108,60 @@ const Dashboard = () => {
     navigate("/");
   };
 
+  const handleSaveProfile = async () => {
+    if (!profileForm.full_name.trim()) { toast.error("Name is required"); return; }
+    setSavingProfile(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        full_name: profileForm.full_name.trim(),
+        phone: profileForm.phone.trim() || null,
+        passport_number: profileForm.passport_number.trim() || null,
+        address: profileForm.address.trim() || null,
+      })
+      .eq("user_id", user.id);
+    if (error) toast.error(error.message);
+    else { toast.success("Profile updated"); fetchData(); }
+    setSavingProfile(false);
+  };
+
   const totalDue = bookings.reduce((sum, b) => sum + Number(b.due_amount || 0), 0);
+  const totalPaid = bookings.reduce((sum, b) => sum + Number(b.paid_amount || 0), 0);
+  const totalAmount = bookings.reduce((sum, b) => sum + Number(b.total_amount || 0), 0);
   const overduePayments = payments.filter(
     (p) => p.status === "pending" && p.due_date && new Date(p.due_date) < new Date()
   );
+
+  const getBookingPayments = (bookingId: string) =>
+    payments.filter((p) => p.booking_id === bookingId).sort((a, b) => (a.installment_number || 0) - (b.installment_number || 0));
 
   const statusColor = (s: string) => {
     switch (s) {
       case "completed": return "text-emerald bg-emerald/10";
       case "pending": return "text-primary bg-primary/10";
       case "confirmed": return "text-primary bg-primary/10";
-      case "cancelled": return "text-destructive bg-destructive/10";
-      case "failed": return "text-destructive bg-destructive/10";
+      case "cancelled": case "failed": return "text-destructive bg-destructive/10";
       default: return "text-muted-foreground bg-muted";
     }
   };
+
+  const statusTimeline = ["pending", "visa_processing", "ticket_confirmed", "completed"];
+  const statusLabels: Record<string, string> = {
+    pending: "Pending",
+    visa_processing: "Visa Processing",
+    ticket_confirmed: "Ticket Confirmed",
+    completed: "Completed",
+    cancelled: "Cancelled",
+  };
+
+  const inputClass = "w-full bg-secondary border border-border rounded-md px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40";
+
+  const tabs: { key: TabKey; label: string; icon: any }[] = [
+    { key: "bookings", label: "My Bookings", icon: Package },
+    { key: "payments", label: "Payments", icon: CreditCard },
+    { key: "due", label: "Due Alerts", icon: AlertTriangle },
+    { key: "profile", label: "Profile", icon: Settings },
+  ];
 
   if (loading) {
     return (
@@ -128,6 +181,9 @@ const Dashboard = () => {
             <span className="font-heading text-lg font-bold text-primary hidden sm:block">RAHE KABA</span>
           </a>
           <div className="flex items-center gap-4">
+            <Link to="/track" className="text-muted-foreground hover:text-primary transition-colors" title="Track Booking">
+              <Search className="h-5 w-5" />
+            </Link>
             <span className="text-sm text-muted-foreground hidden sm:block">{profile?.full_name || user?.email}</span>
             <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground transition-colors">
               <LogOut className="h-5 w-5" />
@@ -138,41 +194,44 @@ const Dashboard = () => {
 
       <div className="container mx-auto px-4 py-8">
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           <div className="bg-card border border-border rounded-xl p-5">
             <div className="flex items-center gap-3 mb-2">
               <Package className="h-5 w-5 text-primary" />
-              <span className="text-sm text-muted-foreground">Total Bookings</span>
+              <span className="text-xs text-muted-foreground">Bookings</span>
             </div>
             <p className="text-2xl font-heading font-bold">{bookings.length}</p>
           </div>
           <div className="bg-card border border-border rounded-xl p-5">
             <div className="flex items-center gap-3 mb-2">
               <CreditCard className="h-5 w-5 text-primary" />
-              <span className="text-sm text-muted-foreground">Total Due</span>
+              <span className="text-xs text-muted-foreground">Total Amount</span>
             </div>
-            <p className="text-2xl font-heading font-bold text-primary">৳{totalDue.toLocaleString()}</p>
+            <p className="text-2xl font-heading font-bold">৳{totalAmount.toLocaleString()}</p>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-5">
+            <div className="flex items-center gap-3 mb-2">
+              <CreditCard className="h-5 w-5 text-emerald" />
+              <span className="text-xs text-muted-foreground">Paid</span>
+            </div>
+            <p className="text-2xl font-heading font-bold text-emerald">৳{totalPaid.toLocaleString()}</p>
           </div>
           <div className="bg-card border border-border rounded-xl p-5">
             <div className="flex items-center gap-3 mb-2">
               <AlertTriangle className="h-5 w-5 text-destructive" />
-              <span className="text-sm text-muted-foreground">Overdue Payments</span>
+              <span className="text-xs text-muted-foreground">Due</span>
             </div>
-            <p className="text-2xl font-heading font-bold text-destructive">{overduePayments.length}</p>
+            <p className="text-2xl font-heading font-bold text-destructive">৳{totalDue.toLocaleString()}</p>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6 border-b border-border">
-          {([
-            { key: "bookings", label: "My Bookings", icon: Package },
-            { key: "payments", label: "Payment History", icon: CreditCard },
-            { key: "due", label: "Due Alerts", icon: AlertTriangle },
-          ] as const).map((tab) => (
+        <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
+          {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab.key
                   ? "border-primary text-primary"
                   : "border-transparent text-muted-foreground hover:text-foreground"
@@ -180,74 +239,165 @@ const Dashboard = () => {
             >
               <tab.icon className="h-4 w-4" />
               {tab.label}
+              {tab.key === "due" && overduePayments.length > 0 && (
+                <span className="bg-destructive text-destructive-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {overduePayments.length}
+                </span>
+              )}
             </button>
           ))}
         </div>
 
-        {/* Bookings Tab */}
+        {/* ──── Bookings Tab ──── */}
         {activeTab === "bookings" && (
           <div className="space-y-4">
             {bookings.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No bookings yet. Browse our packages to get started!</p>
+                <p className="mb-4">No bookings yet.</p>
+                <Link to="/packages" className="text-primary hover:underline">Browse Packages →</Link>
               </div>
             ) : (
-              bookings.map((b) => (
-                <div key={b.id} className="bg-card border border-border rounded-xl p-5">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Tracking ID</p>
-                      <p className="font-mono font-bold text-primary">{b.tracking_id}</p>
-                    </div>
-                    <span className={`text-xs font-semibold px-3 py-1 rounded-full capitalize ${statusColor(b.status)}`}>
-                      {b.status}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">Package</p>
-                      <p className="font-medium">{b.packages?.name || "N/A"}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Total</p>
-                      <p className="font-medium">৳{Number(b.total_amount).toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Paid</p>
-                      <p className="font-medium text-emerald">৳{Number(b.paid_amount).toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Due</p>
-                      <p className="font-medium text-destructive">৳{Number(b.due_amount || 0).toLocaleString()}</p>
-                    </div>
-                  </div>
-                  {/* Document Upload Toggle */}
-                  <button
-                    onClick={() => setExpandedBooking(expandedBooking === b.id ? null : b.id)}
-                    className="mt-4 flex items-center gap-2 text-sm text-primary hover:underline"
+              bookings.map((b) => {
+                const bPayments = getBookingPayments(b.id);
+                const currentStepIdx = statusTimeline.indexOf(b.status);
+                return (
+                  <motion.div
+                    key={b.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-card border border-border rounded-xl p-5"
                   >
-                    <FileText className="h-4 w-4" />
-                    Documents ({(bookingDocs[b.id] || []).length}/3)
-                    {expandedBooking === b.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                  </button>
-                  {expandedBooking === b.id && (
-                    <div className="mt-3 pt-3 border-t border-border">
-                      <DocumentUpload
-                        bookingId={b.id}
-                        userId={user.id}
-                        documents={bookingDocs[b.id] || []}
-                        onUploaded={fetchData}
-                      />
+                    {/* Header */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Tracking ID</p>
+                        <Link to={`/track?id=${b.tracking_id}`} className="font-mono font-bold text-primary hover:underline">
+                          {b.tracking_id}
+                        </Link>
+                      </div>
+                      <span className={`text-xs font-semibold px-3 py-1 rounded-full capitalize ${statusColor(b.status)}`}>
+                        {statusLabels[b.status] || b.status}
+                      </span>
                     </div>
-                  )}
-                </div>
-              ))
+
+                    {/* Status Timeline */}
+                    {b.status !== "cancelled" && (
+                      <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1">
+                        {statusTimeline.map((s, i) => (
+                          <div key={s} className="flex items-center">
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                              i <= currentStepIdx ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                            }`}>
+                              {i <= currentStepIdx ? "✓" : i + 1}
+                            </div>
+                            <span className={`text-xs ml-1 mr-2 whitespace-nowrap hidden sm:inline ${
+                              i <= currentStepIdx ? "text-primary font-medium" : "text-muted-foreground"
+                            }`}>
+                              {statusLabels[s]}
+                            </span>
+                            {i < statusTimeline.length - 1 && (
+                              <div className={`w-6 h-0.5 ${i < currentStepIdx ? "bg-primary" : "bg-border"}`} />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Financial Summary */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Package</p>
+                        <p className="font-medium">{b.packages?.name || "N/A"}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Total</p>
+                        <p className="font-medium">৳{Number(b.total_amount).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Paid</p>
+                        <p className="font-medium text-emerald">৳{Number(b.paid_amount).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Due</p>
+                        <p className="font-medium text-destructive">৳{Number(b.due_amount || 0).toLocaleString()}</p>
+                      </div>
+                    </div>
+
+                    {/* Installment Schedule */}
+                    {bPayments.length > 0 && (
+                      <div className="mt-4">
+                        <button
+                          onClick={() => setExpandedSchedule(expandedSchedule === b.id ? null : b.id)}
+                          className="flex items-center gap-2 text-sm text-primary hover:underline"
+                        >
+                          <CreditCard className="h-4 w-4" />
+                          Installment Schedule ({bPayments.filter((p) => p.status === "completed").length}/{bPayments.length} paid)
+                          {expandedSchedule === b.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                        </button>
+                        {expandedSchedule === b.id && (
+                          <div className="mt-3 pt-3 border-t border-border overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="text-left text-muted-foreground border-b border-border/50">
+                                  <th className="pb-2 pr-4">#</th>
+                                  <th className="pb-2 pr-4">Amount</th>
+                                  <th className="pb-2 pr-4">Due Date</th>
+                                  <th className="pb-2 pr-4">Status</th>
+                                  <th className="pb-2">Paid At</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {bPayments.map((p) => {
+                                  const isOverdue = p.status === "pending" && p.due_date && new Date(p.due_date) < new Date();
+                                  return (
+                                    <tr key={p.id} className={`border-b border-border/30 ${isOverdue ? "bg-destructive/5" : ""}`}>
+                                      <td className="py-2 pr-4">{p.installment_number || "—"}</td>
+                                      <td className="py-2 pr-4 font-medium">৳{Number(p.amount).toLocaleString()}</td>
+                                      <td className="py-2 pr-4">{p.due_date ? new Date(p.due_date).toLocaleDateString() : "—"}</td>
+                                      <td className="py-2 pr-4">
+                                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${statusColor(p.status)}`}>
+                                          {isOverdue ? "overdue" : p.status}
+                                        </span>
+                                      </td>
+                                      <td className="py-2">{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : "—"}</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Documents */}
+                    <button
+                      onClick={() => setExpandedBooking(expandedBooking === b.id ? null : b.id)}
+                      className="mt-3 flex items-center gap-2 text-sm text-primary hover:underline"
+                    >
+                      <FileText className="h-4 w-4" />
+                      Documents ({(bookingDocs[b.id] || []).length}/3)
+                      {expandedBooking === b.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                    </button>
+                    {expandedBooking === b.id && (
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <DocumentUpload
+                          bookingId={b.id}
+                          userId={user.id}
+                          documents={bookingDocs[b.id] || []}
+                          onUploaded={fetchData}
+                        />
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })
             )}
           </div>
         )}
 
-        {/* Payments Tab */}
+        {/* ──── Payments Tab ──── */}
         {activeTab === "payments" && (
           <div className="space-y-3">
             {payments.length === 0 ? (
@@ -263,6 +413,7 @@ const Dashboard = () => {
                       <th className="pb-3 pr-4">#</th>
                       <th className="pb-3 pr-4">Amount</th>
                       <th className="pb-3 pr-4">Due Date</th>
+                      <th className="pb-3 pr-4">Paid At</th>
                       <th className="pb-3 pr-4">Status</th>
                       <th className="pb-3">Method</th>
                     </tr>
@@ -273,6 +424,7 @@ const Dashboard = () => {
                         <td className="py-3 pr-4">{p.installment_number || "—"}</td>
                         <td className="py-3 pr-4 font-medium">৳{Number(p.amount).toLocaleString()}</td>
                         <td className="py-3 pr-4">{p.due_date ? new Date(p.due_date).toLocaleDateString() : "—"}</td>
+                        <td className="py-3 pr-4">{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : "—"}</td>
                         <td className="py-3 pr-4">
                           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${statusColor(p.status)}`}>
                             {p.status}
@@ -288,7 +440,7 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Due Alerts Tab */}
+        {/* ──── Due Alerts Tab ──── */}
         {activeTab === "due" && (
           <div className="space-y-3">
             {overduePayments.length === 0 ? (
@@ -297,19 +449,90 @@ const Dashboard = () => {
                 <p>No overdue payments. You're all caught up! 🎉</p>
               </div>
             ) : (
-              overduePayments.map((p) => (
-                <div key={p.id} className="bg-destructive/5 border border-destructive/20 rounded-xl p-5 flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-destructive">Installment #{p.installment_number} Overdue</p>
-                    <p className="text-sm text-muted-foreground">
-                      Due: {p.due_date ? new Date(p.due_date).toLocaleDateString() : "N/A"}
-                    </p>
+              overduePayments.map((p) => {
+                const booking = bookings.find((b) => b.id === p.booking_id);
+                return (
+                  <div key={p.id} className="bg-destructive/5 border border-destructive/20 rounded-xl p-5 flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-destructive">Installment #{p.installment_number} Overdue</p>
+                      <p className="text-sm text-muted-foreground">
+                        {booking?.packages?.name || "Booking"} • Due: {p.due_date ? new Date(p.due_date).toLocaleDateString() : "N/A"}
+                      </p>
+                      {booking && (
+                        <Link to={`/track?id=${booking.tracking_id}`} className="text-xs text-primary hover:underline mt-1 inline-block">
+                          Track: {booking.tracking_id}
+                        </Link>
+                      )}
+                    </div>
+                    <p className="text-xl font-heading font-bold text-destructive">৳{Number(p.amount).toLocaleString()}</p>
                   </div>
-                  <p className="text-xl font-heading font-bold text-destructive">৳{Number(p.amount).toLocaleString()}</p>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
+        )}
+
+        {/* ──── Profile Settings Tab ──── */}
+        {activeTab === "profile" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl">
+            <div className="bg-card border border-border rounded-xl p-6 space-y-5">
+              <h2 className="font-heading text-lg font-bold flex items-center gap-2">
+                <User className="h-5 w-5 text-primary" /> Profile Settings
+              </h2>
+              <div className="text-sm text-muted-foreground flex items-center gap-2">
+                <Mail className="h-4 w-4" /> {user?.email}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-muted-foreground mb-1 block">Full Name <span className="text-destructive">*</span></label>
+                  <input
+                    type="text"
+                    maxLength={100}
+                    value={profileForm.full_name}
+                    onChange={(e) => setProfileForm({ ...profileForm, full_name: e.target.value })}
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground mb-1 block">Phone</label>
+                  <input
+                    type="tel"
+                    maxLength={15}
+                    value={profileForm.phone}
+                    onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground mb-1 block">Passport Number</label>
+                  <input
+                    type="text"
+                    maxLength={20}
+                    value={profileForm.passport_number}
+                    onChange={(e) => setProfileForm({ ...profileForm, passport_number: e.target.value })}
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground mb-1 block">Address</label>
+                  <input
+                    type="text"
+                    maxLength={200}
+                    value={profileForm.address}
+                    onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+              <button
+                onClick={handleSaveProfile}
+                disabled={savingProfile}
+                className="inline-flex items-center gap-2 bg-gradient-gold text-primary-foreground font-semibold px-6 py-3 rounded-md text-sm hover:opacity-90 transition-opacity shadow-gold disabled:opacity-50"
+              >
+                <Save className="h-4 w-4" /> {savingProfile ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </motion.div>
         )}
       </div>
     </div>
