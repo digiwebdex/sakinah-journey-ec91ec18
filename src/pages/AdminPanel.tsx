@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -12,6 +13,7 @@ import AdminHotelManager from "@/components/AdminHotelManager";
 import AdminCmsEditor from "@/components/AdminCmsEditor";
 
 const AdminPanel = () => {
+  useSessionTimeout();
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);

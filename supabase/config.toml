@@ -2,3 +2,6 @@ project_id = "xnatrxbdimhgyryssfff"
 
 [functions.booking-notifications]
 verify_jwt = false
+
+[functions.send-otp]
+verify_jwt = false

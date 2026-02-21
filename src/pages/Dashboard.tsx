@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { LogOut, Package, CreditCard, AlertTriangle, User, FileText, ChevronDown, ChevronUp } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import DocumentUpload from "@/components/DocumentUpload";
+import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 
 interface Booking {
   id: string;
@@ -30,6 +31,7 @@ interface Payment {
 }
 
 const Dashboard = () => {
+  useSessionTimeout();
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);

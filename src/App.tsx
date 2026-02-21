@@ -10,6 +10,7 @@ import AdminPanel from "./pages/AdminPanel";
 import Hotels from "./pages/Hotels";
 import HotelDetail from "./pages/HotelDetail";
 import TrackBooking from "./pages/TrackBooking";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/hotels" element={<Hotels />} />
           <Route path="/hotels/:id" element={<HotelDetail />} />
           <Route path="/track" element={<TrackBooking />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
