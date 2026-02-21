@@ -105,3 +105,26 @@
     background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L60 30L30 60L0 30Z' fill='none' stroke='%23C6A55C' stroke-opacity='0.06' stroke-width='1'/%3E%3C/svg%3E");
   }
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-report-content,
+  .print-report-content * {
+    visibility: visible;
+  }
+  .print-report-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: 100%;
+    padding: 20px;
+    background: white;
+    color: black;
+  }
+  .print-hide {
+    display: none !important;
+  }
+}
