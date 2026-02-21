@@ -1,79 +1,101 @@
 
 
-## Due Alert System
+## PDF Invoice and Payment Receipt Generator
 
 ### Overview
-Add a dedicated "Due Alerts" page in the admin panel that displays overdue and upcoming payments, and allows the admin to send payment reminders via SMS (using existing Bulk SMS BD integration) or WhatsApp (via `wa.me` deep link).
+Create a new utility module that generates professional PDF invoices and payment receipts using `jsPDF` + `jspdf-autotable` (already installed). The PDFs will include the company logo, customer details, package info, payment history, and due amounts. Both admin and customer dashboards will get download buttons.
 
-### Implementation
+### PDF Documents
 
-#### 1. New Admin Page: `src/pages/admin/AdminDueAlertsPage.tsx`
+**1. Invoice** -- Full booking invoice with all details
+- Company header with logo, name ("RAHE KABA"), and contact info (from CMS `contact` section)
+- Invoice number (derived from tracking ID), date
+- Customer details: name, phone, passport, address
+- Package details: name, type, duration, travelers, total amount
+- Payment schedule table: installment #, amount, due date, status, paid date
+- Summary box: Total Amount, Total Paid, Total Due
 
-**Two tabs:**
+**2. Payment Receipt** -- Receipt for a specific completed payment
+- Same company header with logo
+- Receipt number (derived from payment ID)
+- Customer details
+- Payment details: amount, date paid, method, installment #, booking tracking ID
+- Running balance: total paid so far, remaining due
 
-**A. Overdue Payments**
-- Payments where `status = 'pending'` and `due_date < today`
-- Columns: Tracking ID, Customer Name, Phone, Installment #, Amount, Due Date, Days Overdue, Actions
-- Sorted by most overdue first
-- Summary card at top: total overdue count + total overdue amount
+### New File: `src/lib/invoiceGenerator.ts`
 
-**B. Upcoming Installments**
-- Payments where `status = 'pending'` and `due_date >= today` (next 30 days)
-- Columns: Tracking ID, Customer Name, Phone, Installment #, Amount, Due Date, Days Until Due, Actions
-- Sorted by soonest due first
-- Summary card: upcoming count + total upcoming amount
+Two exported functions:
 
-**Actions per row:**
-- "Send SMS" button -- calls a new edge function to send a reminder SMS
-- "WhatsApp" button -- opens `https://wa.me/{phone}?text={encoded_message}` in a new tab with a pre-filled reminder message
-- "Mark Paid" button -- updates payment status to completed
-
-**Data fetching:**
 ```
-payments: select("*, bookings(tracking_id, user_id, packages(name))")
-  .eq("status", "pending")
-
-profiles: select("full_name, phone, user_id")
-```
-Join payments to profiles via `user_id` in application code.
-
-#### 2. New Edge Function: `supabase/functions/send-reminder/index.ts`
-
-Sends a payment reminder SMS using the existing Bulk SMS BD integration (secrets `BULKSMSBD_API_KEY` and `BULKSMSBD_SENDER_ID` already configured).
-
-**Input:** `{ phone, customer_name, tracking_id, amount, due_date, installment_number }`
-
-**Message template:**
-```
-Dear {customer_name}, your installment #{installment_number} of ৳{amount} for booking {tracking_id} is due on {due_date}. Please make your payment at the earliest. Thank you!
+generateInvoice(booking, customer, payments, companyInfo) -> triggers PDF download
+generateReceipt(payment, booking, customer, companyInfo) -> triggers PDF download
 ```
 
-**Auth:** Requires admin role -- validates JWT and checks `has_role` via service role client.
+**Logo handling**: The logo image (`src/assets/logo.jpg`) will be embedded as a base64 data URL into the PDF using `doc.addImage()`. A helper will convert the imported image to base64 via a canvas element.
 
-#### 3. Add Route + Sidebar Entry
+**Company info**: Pulled from CMS `contact` section content (company name, phone, email, address) and passed into the generator functions.
 
-**`src/App.tsx`:** Add route `<Route path="due-alerts" element={<AdminDueAlertsPage />} />` under `/admin`.
+### Integration Points
 
-**`src/components/admin/AdminSidebar.tsx`:** Add menu item `{ title: "Due Alerts", url: "/admin/due-alerts", icon: AlertTriangle }` after Payments.
+**A. Admin Bookings Page (`AdminBookingsPage.tsx`)**
+- Add "Download Invoice" button per booking card
+- Fetches related payments + profile on click, then calls `generateInvoice`
 
-#### 4. Customer Dashboard Enhancement
+**B. Admin Payments Page (`AdminPaymentsPage.tsx`)**
+- Add "Receipt" button per completed payment row
+- Calls `generateReceipt` for that payment
 
-**`src/pages/Dashboard.tsx`:** The existing "due" tab already shows overdue payments. No changes needed there.
+**C. Customer Dashboard (`Dashboard.tsx`)**
+- Add "Download Invoice" button in each expanded booking section
+- Add "Receipt" button next to each completed payment in the payment table
+
+**D. Customer Financial Report (`CustomerFinancialReport.tsx`)**
+- Add "Download Invoice" button next to each booking row
+- Add "Download Receipt" for completed payments
+
+### PDF Layout (Invoice)
+
+```text
++-----------------------------------------------+
+|  [LOGO]  RAHE KABA                             |
+|          Hajj & Umrah Services                 |
+|          Phone: xxx | Email: xxx               |
++-----------------------------------------------+
+|  INVOICE                                       |
+|  Invoice #: RK-XXXXXXXX   Date: dd MMM yyyy   |
++-----------------------------------------------+
+|  Bill To:                                      |
+|  Customer Name | Phone | Passport | Address    |
++-----------------------------------------------+
+|  Package: Umrah Premium | 14 Days | 2 travelers|
+|  Total Amount: ৳1,50,000                       |
++-----------------------------------------------+
+|  PAYMENT SCHEDULE                              |
+|  # | Amount | Due Date | Status | Paid Date   |
+|  1 | ৳50k   | 01 Jan   | Paid   | 02 Jan     |
+|  2 | ৳50k   | 01 Feb   | Pending| --          |
+|  3 | ৳50k   | 01 Mar   | Pending| --          |
++-----------------------------------------------+
+|  SUMMARY                                       |
+|  Total: ৳1,50,000  Paid: ৳50,000  Due: ৳1,00k |
++-----------------------------------------------+
+```
 
 ### Files Changed
 
 | File | Action |
 |------|--------|
-| `src/pages/admin/AdminDueAlertsPage.tsx` | New -- main due alerts page with overdue/upcoming tabs |
-| `supabase/functions/send-reminder/index.ts` | New -- SMS reminder edge function |
-| `supabase/config.toml` | Add `[functions.send-reminder]` with `verify_jwt = false` |
-| `src/App.tsx` | Add due-alerts route |
-| `src/components/admin/AdminSidebar.tsx` | Add Due Alerts menu item |
+| `src/lib/invoiceGenerator.ts` | New -- PDF invoice + receipt generation |
+| `src/pages/admin/AdminBookingsPage.tsx` | Add "Download Invoice" button |
+| `src/pages/admin/AdminPaymentsPage.tsx` | Add "Receipt" button for completed payments |
+| `src/pages/Dashboard.tsx` | Add invoice + receipt download buttons |
+| `src/components/admin/CustomerFinancialReport.tsx` | Add invoice + receipt buttons |
 
 ### Technical Notes
 
-- SMS uses existing Bulk SMS BD credentials (already in secrets)
-- WhatsApp uses the free `wa.me` deep link -- no API key needed, opens WhatsApp on admin's device with a pre-filled message
-- Phone numbers from the `profiles` table are used for both SMS and WhatsApp
-- The edge function validates that the caller is an admin before sending
-- No new database tables needed -- all data comes from existing `payments`, `bookings`, and `profiles` tables
+- Uses `jsPDF` and `jspdf-autotable` (already installed, no new dependencies)
+- Logo embedded via `doc.addImage()` with base64-encoded `logo.jpg`
+- Company contact info fetched from `site_content` CMS table (`contact` section) so it stays in sync with admin CMS edits
+- Currency formatted as BDT with `৳` symbol
+- File names follow pattern: `Invoice_RK-XXXXXXXX.pdf` and `Receipt_RK-XXXXXXXX_1.pdf`
+
