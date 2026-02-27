@@ -9,15 +9,18 @@ import Footer from "@/components/Footer";
 import BookingStepIndicator from "@/components/booking/BookingStepIndicator";
 import PersonalDetailsStep, { type PersonalInfo } from "@/components/booking/PersonalDetailsStep";
 import BookingSuccess from "@/components/booking/BookingSuccess";
-
-const STEPS = [
-  { label: "Package", icon: <Package className="h-4 w-4" /> },
-  { label: "Details", icon: <User className="h-4 w-4" /> },
-  { label: "Payment", icon: <CreditCard className="h-4 w-4" /> },
-  { label: "Confirm", icon: <Check className="h-4 w-4" /> },
-];
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const Booking = () => {
+  const { t } = useLanguage();
+
+  const STEPS = [
+    { label: t("booking.package"), icon: <Package className="h-4 w-4" /> },
+    { label: t("booking.details"), icon: <User className="h-4 w-4" /> },
+    { label: t("booking.payment"), icon: <CreditCard className="h-4 w-4" /> },
+    { label: t("booking.confirm"), icon: <Check className="h-4 w-4" /> },
+  ];
+
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const packageId = searchParams.get("package");
@@ -46,7 +49,7 @@ const Booking = () => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        toast.error("Please sign in to book");
+        toast.error(t("booking.signInToBook"));
         navigate("/auth");
         return;
       }
@@ -83,20 +86,20 @@ const Booking = () => {
 
   const validateStep = (): boolean => {
     if (step === 0 && !pkg) {
-      toast.error("Please select a package");
+      toast.error(t("booking.selectPackage"));
       return false;
     }
     if (step === 1) {
       if (!personalInfo.fullName.trim()) {
-        toast.error("Full name is required");
+        toast.error(t("booking.nameRequired"));
         return false;
       }
       if (!personalInfo.phone.trim()) {
-        toast.error("Phone number is required");
+        toast.error(t("booking.phoneRequired"));
         return false;
       }
       if (!personalInfo.passportNumber.trim()) {
-        toast.error("Passport number is required");
+        toast.error(t("booking.passportRequired"));
         return false;
       }
     }
@@ -167,7 +170,7 @@ const Booking = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="flex items-center justify-center pt-32 text-muted-foreground">Loading...</div>
+        <div className="flex items-center justify-center pt-32 text-muted-foreground">{t("common.loading")}</div>
       </div>
     );
   }
@@ -184,21 +187,21 @@ const Booking = () => {
             onClick={() => (step > 0 && !createdBooking ? prevStep() : navigate(-1))}
             className="text-sm text-muted-foreground hover:text-primary mb-6 inline-flex items-center gap-1"
           >
-            <ArrowLeft className="h-4 w-4" /> Back
+            <ArrowLeft className="h-4 w-4" /> {t("booking.back")}
           </button>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-6">
-            <span className="text-primary text-sm font-medium tracking-[0.3em] uppercase">Book Now</span>
+            <span className="text-primary text-sm font-medium tracking-[0.3em] uppercase">{t("booking.bookNow")}</span>
             <h1 className="font-heading text-3xl md:text-4xl font-bold mt-3 mb-3">
-              Complete Your <span className="text-gradient-gold">Booking</span>
+              {t("booking.completeYour")} <span className="text-gradient-gold">{t("booking.booking")}</span>
             </h1>
           </motion.div>
 
           {!pkg && !createdBooking ? (
             <div className="text-center py-12 bg-card border border-border rounded-xl">
               <Package className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
-              <p className="text-muted-foreground mb-4">No package selected</p>
-              <Link to="/packages" className="text-primary hover:underline">Browse Packages →</Link>
+              <p className="text-muted-foreground mb-4">{t("booking.noPackage")}</p>
+              <Link to="/packages" className="text-primary hover:underline">{t("booking.browsePackages")}</Link>
             </div>
           ) : createdBooking ? (
             /* Success + Document Upload */
@@ -216,26 +219,26 @@ const Booking = () => {
                 <motion.div key="step0" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
                   <div className="bg-card border border-border rounded-xl p-6">
                     <h2 className="font-heading text-lg font-bold mb-4 flex items-center gap-2">
-                      <Package className="h-5 w-5 text-primary" /> Package Details
+                      <Package className="h-5 w-5 text-primary" /> {t("booking.packageDetails")}
                     </h2>
                     <div className="flex justify-between items-start">
                       <div>
                         <p className="font-heading font-bold text-lg">{pkg.name}</p>
-                        <p className="text-sm text-muted-foreground capitalize">{pkg.type} • {pkg.duration_days} Days</p>
+                        <p className="text-sm text-muted-foreground capitalize">{pkg.type} • {pkg.duration_days} {t("common.days")}</p>
                       </div>
                       <p className="text-xl font-heading font-bold text-primary">
                         ৳{Number(pkg.price).toLocaleString()}
-                        <span className="text-xs font-body text-muted-foreground font-normal"> /person</span>
+                        <span className="text-xs font-body text-muted-foreground font-normal"> {t("common.perPerson")}</span>
                       </p>
                     </div>
                   </div>
 
                   <div className="bg-card border border-border rounded-xl p-6">
                     <h2 className="font-heading text-lg font-bold mb-4 flex items-center gap-2">
-                      <Users className="h-5 w-5 text-primary" /> Travelers
+                      <Users className="h-5 w-5 text-primary" /> {t("booking.travelers")}
                     </h2>
                     <div className="flex items-center gap-4">
-                      <label className="text-sm text-muted-foreground">Number of Travelers</label>
+                      <label className="text-sm text-muted-foreground">{t("booking.numTravelers")}</label>
                       <input
                         type="number"
                         min={1}
@@ -246,7 +249,7 @@ const Booking = () => {
                       />
                     </div>
                     <div className="mt-4 p-4 bg-secondary/50 rounded-lg flex justify-between">
-                      <span className="text-sm text-muted-foreground">Total Amount</span>
+                      <span className="text-sm text-muted-foreground">{t("booking.totalAmount")}</span>
                       <span className="text-lg font-heading font-bold text-primary">৳{totalAmount.toLocaleString()}</span>
                     </div>
                   </div>
@@ -265,7 +268,7 @@ const Booking = () => {
                 <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
                   <div className="bg-card border border-border rounded-xl p-6">
                     <h2 className="font-heading text-lg font-bold mb-4 flex items-center gap-2">
-                      <CreditCard className="h-5 w-5 text-primary" /> Payment Plan
+                      <CreditCard className="h-5 w-5 text-primary" /> {t("booking.paymentPlan")}
                     </h2>
                     <div className="space-y-3">
                       <button
@@ -277,8 +280,8 @@ const Booking = () => {
                       >
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-medium text-sm">Full Payment</p>
-                            <p className="text-xs text-muted-foreground">Pay the full amount at once</p>
+                            <p className="font-medium text-sm">{t("booking.fullPayment")}</p>
+                            <p className="text-xs text-muted-foreground">{t("booking.fullPaymentDesc")}</p>
                           </div>
                           {!selectedPlan && <Check className="h-5 w-5 text-primary" />}
                         </div>
@@ -296,7 +299,7 @@ const Booking = () => {
                             <div>
                               <p className="font-medium text-sm">{plan.name}</p>
                               <p className="text-xs text-muted-foreground">
-                                {plan.num_installments} installments • ৳{Math.round(totalAmount / plan.num_installments).toLocaleString()}/month
+                                {plan.num_installments} {t("booking.installments")} • ৳{Math.round(totalAmount / plan.num_installments).toLocaleString()}{t("booking.perMonth")}
                               </p>
                             </div>
                             {selectedPlan === plan.id && <Check className="h-5 w-5 text-primary" />}
@@ -308,7 +311,7 @@ const Booking = () => {
 
                   <div>
                     <textarea
-                      placeholder="Special requests or notes (optional)"
+                      placeholder={t("booking.specialRequests")}
                       maxLength={500}
                       rows={3}
                       value={notes}
@@ -324,41 +327,41 @@ const Booking = () => {
                 <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
                   <div className="bg-card border border-border rounded-xl p-6 space-y-4">
                     <h2 className="font-heading text-lg font-bold flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-primary" /> Booking Summary
+                      <FileText className="h-5 w-5 text-primary" /> {t("booking.bookingSummary")}
                     </h2>
                     <div className="space-y-3 text-sm">
                       <div className="flex justify-between py-2 border-b border-border/50">
-                        <span className="text-muted-foreground">Package</span>
+                        <span className="text-muted-foreground">{t("booking.package")}</span>
                         <span className="font-medium">{pkg.name}</span>
                       </div>
                       <div className="flex justify-between py-2 border-b border-border/50">
-                        <span className="text-muted-foreground">Type</span>
+                        <span className="text-muted-foreground">{t("booking.type")}</span>
                         <span className="font-medium capitalize">{pkg.type}</span>
                       </div>
                       <div className="flex justify-between py-2 border-b border-border/50">
-                        <span className="text-muted-foreground">Travelers</span>
+                        <span className="text-muted-foreground">{t("booking.travelers")}</span>
                         <span className="font-medium">{numTravelers}</span>
                       </div>
                       <div className="flex justify-between py-2 border-b border-border/50">
-                        <span className="text-muted-foreground">Name</span>
+                        <span className="text-muted-foreground">{t("booking.name")}</span>
                         <span className="font-medium">{personalInfo.fullName}</span>
                       </div>
                       <div className="flex justify-between py-2 border-b border-border/50">
-                        <span className="text-muted-foreground">Phone</span>
+                        <span className="text-muted-foreground">{t("booking.phone")}</span>
                         <span className="font-medium">{personalInfo.phone}</span>
                       </div>
                       <div className="flex justify-between py-2 border-b border-border/50">
-                        <span className="text-muted-foreground">Passport</span>
+                        <span className="text-muted-foreground">{t("booking.passport")}</span>
                         <span className="font-medium">{personalInfo.passportNumber}</span>
                       </div>
                       <div className="flex justify-between py-2 border-b border-border/50">
-                        <span className="text-muted-foreground">Payment Plan</span>
+                        <span className="text-muted-foreground">{t("booking.paymentPlan")}</span>
                         <span className="font-medium">
-                          {selectedPlan ? plans.find((p) => p.id === selectedPlan)?.name : "Full Payment"}
+                          {selectedPlan ? plans.find((p) => p.id === selectedPlan)?.name : t("booking.fullPayment")}
                         </span>
                       </div>
                       <div className="flex justify-between py-3 bg-secondary/50 rounded-lg px-3 mt-2">
-                        <span className="font-medium">Total Amount</span>
+                        <span className="font-medium">{t("booking.totalAmount")}</span>
                         <span className="text-lg font-heading font-bold text-primary">৳{totalAmount.toLocaleString()}</span>
                       </div>
                     </div>
@@ -373,7 +376,7 @@ const Booking = () => {
                     onClick={prevStep}
                     className="flex-1 py-3 rounded-md text-sm font-semibold border border-border text-foreground hover:bg-secondary transition-colors"
                   >
-                    Previous
+                    {t("booking.previous")}
                   </button>
                 )}
                 {step < STEPS.length - 1 ? (
@@ -381,7 +384,7 @@ const Booking = () => {
                     onClick={nextStep}
                     className="flex-1 py-3 rounded-md text-sm font-semibold bg-gradient-gold text-primary-foreground hover:opacity-90 transition-opacity shadow-gold inline-flex items-center justify-center gap-2"
                   >
-                    Next <ArrowRight className="h-4 w-4" />
+                    {t("booking.next")} <ArrowRight className="h-4 w-4" />
                   </button>
                 ) : (
                   <button
@@ -389,7 +392,7 @@ const Booking = () => {
                     disabled={submitting}
                     className="flex-1 py-3 rounded-md text-sm font-semibold bg-gradient-gold text-primary-foreground hover:opacity-90 transition-opacity shadow-gold disabled:opacity-50"
                   >
-                    {submitting ? "Processing..." : `Confirm Booking — ৳${totalAmount.toLocaleString()}`}
+                    {submitting ? t("booking.processing") : `${t("booking.confirmBooking")} — ৳${totalAmount.toLocaleString()}`}
                   </button>
                 )}
               </div>

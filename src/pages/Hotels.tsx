@@ -6,8 +6,10 @@ import { Star, MapPin, Ruler } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import hotelFallback from "@/assets/hotel-makkah.jpg";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const Hotels = () => {
+  const { t } = useLanguage();
   const [hotels, setHotels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [cityFilter, setCityFilter] = useState("all");
@@ -39,35 +41,25 @@ const Hotels = () => {
       <Navbar />
       <div className="pt-24 pb-16">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-12"
-          >
-            <span className="text-primary text-sm font-medium tracking-[0.3em] uppercase">Accommodation</span>
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
+            <span className="text-primary text-sm font-medium tracking-[0.3em] uppercase">{t("hotels.label")}</span>
             <h1 className="font-heading text-3xl md:text-5xl font-bold mt-3 mb-4">
-              Premium <span className="text-gradient-gold">Hotels</span>
+              {t("hotels.heading")} <span className="text-gradient-gold">{t("hotels.headingHighlight")}</span>
             </h1>
-            <p className="text-muted-foreground max-w-xl mx-auto">
-              Handpicked hotels near the Holy Haram for a comfortable and blessed stay
-            </p>
+            <p className="text-muted-foreground max-w-xl mx-auto">{t("hotels.description")}</p>
           </motion.div>
 
-          {/* City Filter */}
           {cities.length > 1 && (
             <div className="flex gap-2 justify-center mb-8 flex-wrap">
               <button
                 onClick={() => setCityFilter("all")}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${cityFilter === "all" ? "bg-gradient-gold text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}
               >
-                All Cities
+                {t("hotels.allCities")}
               </button>
               {cities.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setCityFilter(c)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${cityFilter === c ? "bg-gradient-gold text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}
-                >
+                <button key={c} onClick={() => setCityFilter(c)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${cityFilter === c ? "bg-gradient-gold text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
                   {c}
                 </button>
               ))}
@@ -75,30 +67,20 @@ const Hotels = () => {
           )}
 
           {loading ? (
-            <div className="text-center py-20 text-muted-foreground">Loading hotels...</div>
+            <div className="text-center py-20 text-muted-foreground">{t("hotels.loading")}</div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-20 text-muted-foreground">No hotels available yet. Check back soon!</div>
+            <div className="text-center py-20 text-muted-foreground">{t("hotels.empty")}</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filtered.map((hotel, i) => {
                 const minPrice = getMinPrice(hotel);
                 return (
-                  <motion.div
-                    key={hotel.id}
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                  >
-                    <Link
-                      to={`/hotels/${hotel.id}`}
-                      className="block bg-card border border-border rounded-xl overflow-hidden hover:border-primary/40 transition-all hover:shadow-gold group"
-                    >
+                  <motion.div key={hotel.id} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
+                    <Link to={`/hotels/${hotel.id}`}
+                      className="block bg-card border border-border rounded-xl overflow-hidden hover:border-primary/40 transition-all hover:shadow-gold group">
                       <div className="h-52 overflow-hidden">
-                        <img
-                          src={hotel.image_url || hotelFallback}
-                          alt={hotel.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
+                        <img src={hotel.image_url || hotelFallback} alt={hotel.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                       </div>
                       <div className="p-5">
                         <div className="flex items-start justify-between gap-2 mb-2">
@@ -121,12 +103,12 @@ const Hotels = () => {
                         <div className="flex items-center justify-between">
                           {minPrice ? (
                             <p className="text-lg font-heading font-bold text-primary">
-                              ৳{minPrice.toLocaleString()}<span className="text-xs font-body text-muted-foreground font-normal"> /night</span>
+                              ৳{minPrice.toLocaleString()}<span className="text-xs font-body text-muted-foreground font-normal"> {t("hotels.perNight")}</span>
                             </p>
                           ) : (
-                            <p className="text-sm text-muted-foreground">Contact for pricing</p>
+                            <p className="text-sm text-muted-foreground">{t("hotels.contactPricing")}</p>
                           )}
-                          <span className="text-xs text-primary font-medium">View Details →</span>
+                          <span className="text-xs text-primary font-medium">{t("hotels.viewDetails")}</span>
                         </div>
                       </div>
                     </Link>

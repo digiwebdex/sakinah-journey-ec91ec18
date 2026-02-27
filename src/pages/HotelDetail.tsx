@@ -8,6 +8,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import hotelFallback from "@/assets/hotel-makkah.jpg";
 import roomFallback from "@/assets/hotel-room.jpg";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const AMENITY_ICONS: Record<string, any> = {
   wifi: Wifi, parking: Car, restaurant: UtensilsCrossed, gym: Dumbbell,
@@ -16,12 +17,12 @@ const AMENITY_ICONS: Record<string, any> = {
 const HotelDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [hotel, setHotel] = useState<any>(null);
   const [rooms, setRooms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
 
-  // Booking form
   const [selectedRoom, setSelectedRoom] = useState<any>(null);
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
@@ -55,26 +56,19 @@ const HotelDetail = () => {
   const handleBook = async () => {
     if (!user) { navigate("/auth"); return; }
     if (!selectedRoom || !checkIn || !checkOut || nights < 1) {
-      toast.error("Please select dates and a room");
+      toast.error(t("hotelDetail.selectDatesRoom"));
       return;
     }
     setBooking(true);
     const { error } = await supabase.from("hotel_bookings").insert({
-      user_id: user.id,
-      hotel_id: hotel.id,
-      room_id: selectedRoom.id,
-      check_in: checkIn,
-      check_out: checkOut,
-      guests,
-      total_price: totalPrice,
+      user_id: user.id, hotel_id: hotel.id, room_id: selectedRoom.id,
+      check_in: checkIn, check_out: checkOut, guests, total_price: totalPrice,
     });
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("Hotel booked successfully! Check your dashboard for details.");
-      setSelectedRoom(null);
-      setCheckIn("");
-      setCheckOut("");
+      toast.success(t("hotelDetail.bookSuccess"));
+      setSelectedRoom(null); setCheckIn(""); setCheckOut("");
     }
     setBooking(false);
   };
@@ -83,7 +77,7 @@ const HotelDetail = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="pt-24 text-center text-muted-foreground py-20">Loading...</div>
+        <div className="pt-24 text-center text-muted-foreground py-20">{t("common.loading")}</div>
       </div>
     );
   }
@@ -93,8 +87,8 @@ const HotelDetail = () => {
       <div className="min-h-screen bg-background">
         <Navbar />
         <div className="pt-24 text-center py-20">
-          <p className="text-muted-foreground mb-4">Hotel not found</p>
-          <button onClick={() => navigate("/hotels")} className="text-primary hover:underline">← Back to Hotels</button>
+          <p className="text-muted-foreground mb-4">{t("hotelDetail.notFound")}</p>
+          <button onClick={() => navigate("/hotels")} className="text-primary hover:underline">← {t("hotelDetail.backToHotels")}</button>
         </div>
       </div>
     );
@@ -108,10 +102,9 @@ const HotelDetail = () => {
       <div className="pt-24 pb-16">
         <div className="container mx-auto px-4">
           <button onClick={() => navigate("/hotels")} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary mb-6 transition-colors">
-            <ArrowLeft className="h-4 w-4" /> Back to Hotels
+            <ArrowLeft className="h-4 w-4" /> {t("hotelDetail.backToHotels")}
           </button>
 
-          {/* Hotel Header */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
             <div className="rounded-xl overflow-hidden h-64 md:h-96 mb-6">
               <img src={hotel.image_url || hotelFallback} alt={hotel.name} className="w-full h-full object-cover" />
@@ -127,7 +120,7 @@ const HotelDetail = () => {
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <span className="flex items-center gap-1"><MapPin className="h-4 w-4" /> {hotel.location}, {hotel.city}</span>
                   {hotel.distance_to_haram && (
-                    <span className="flex items-center gap-1"><Ruler className="h-4 w-4" /> {hotel.distance_to_haram} from Haram</span>
+                    <span className="flex items-center gap-1"><Ruler className="h-4 w-4" /> {hotel.distance_to_haram} {t("hotelDetail.fromHaram")}</span>
                   )}
                 </div>
               </div>
@@ -149,24 +142,19 @@ const HotelDetail = () => {
             )}
           </motion.div>
 
-          {/* Rooms + Booking */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-              <h2 className="font-heading text-2xl font-bold mb-6">Available Rooms</h2>
+              <h2 className="font-heading text-2xl font-bold mb-6">{t("hotelDetail.availableRooms")}</h2>
               {rooms.length === 0 ? (
-                <p className="text-muted-foreground py-8 text-center">No rooms available at the moment.</p>
+                <p className="text-muted-foreground py-8 text-center">{t("hotelDetail.noRooms")}</p>
               ) : (
                 <div className="space-y-4">
                   {rooms.map((room) => (
-                    <motion.div
-                      key={room.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
+                    <motion.div key={room.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                       className={`bg-card border rounded-xl overflow-hidden flex flex-col sm:flex-row cursor-pointer transition-all ${
                         selectedRoom?.id === room.id ? "border-primary shadow-gold" : "border-border hover:border-primary/30"
                       }`}
-                      onClick={() => setSelectedRoom(room)}
-                    >
+                      onClick={() => setSelectedRoom(room)}>
                       <div className="sm:w-48 h-40 sm:h-auto flex-shrink-0">
                         <img src={room.image_url || roomFallback} alt={room.name} className="w-full h-full object-cover" />
                       </div>
@@ -175,15 +163,15 @@ const HotelDetail = () => {
                           <h3 className="font-heading text-lg font-semibold mb-1">{room.name}</h3>
                           {room.description && <p className="text-sm text-muted-foreground mb-2">{room.description}</p>}
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Users className="h-4 w-4" /> Up to {room.capacity} guests
+                            <Users className="h-4 w-4" /> {t("hotelDetail.upToGuests").replace("{n}", room.capacity)}
                           </div>
                         </div>
                         <div className="flex items-center justify-between mt-3">
                           <p className="text-xl font-heading font-bold text-primary">
-                            ৳{Number(room.price_per_night).toLocaleString()}<span className="text-xs font-body text-muted-foreground font-normal"> /night</span>
+                            ৳{Number(room.price_per_night).toLocaleString()}<span className="text-xs font-body text-muted-foreground font-normal"> {t("hotels.perNight")}</span>
                           </p>
                           {selectedRoom?.id === room.id && (
-                            <span className="text-xs bg-primary/10 text-primary font-semibold px-2 py-1 rounded-full">Selected</span>
+                            <span className="text-xs bg-primary/10 text-primary font-semibold px-2 py-1 rounded-full">{t("hotelDetail.selected")}</span>
                           )}
                         </div>
                       </div>
@@ -193,71 +181,52 @@ const HotelDetail = () => {
               )}
             </div>
 
-            {/* Booking Sidebar */}
             <div className="lg:col-span-1">
               <div className="bg-card border border-border rounded-xl p-6 sticky top-24">
                 <h3 className="font-heading text-xl font-bold mb-4 flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-primary" /> Book This Hotel
+                  <Calendar className="h-5 w-5 text-primary" /> {t("hotelDetail.bookHotel")}
                 </h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Check-in</label>
-                    <input
-                      type="date"
-                      className="w-full bg-secondary border border-border rounded-md px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                      value={checkIn}
-                      min={new Date().toISOString().split("T")[0]}
-                      onChange={(e) => setCheckIn(e.target.value)}
-                    />
+                    <label className="text-sm font-medium mb-1 block">{t("hotelDetail.checkIn")}</label>
+                    <input type="date" className="w-full bg-secondary border border-border rounded-md px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      value={checkIn} min={new Date().toISOString().split("T")[0]} onChange={(e) => setCheckIn(e.target.value)} />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Check-out</label>
-                    <input
-                      type="date"
-                      className="w-full bg-secondary border border-border rounded-md px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                      value={checkOut}
-                      min={checkIn || new Date().toISOString().split("T")[0]}
-                      onChange={(e) => setCheckOut(e.target.value)}
-                    />
+                    <label className="text-sm font-medium mb-1 block">{t("hotelDetail.checkOut")}</label>
+                    <input type="date" className="w-full bg-secondary border border-border rounded-md px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      value={checkOut} min={checkIn || new Date().toISOString().split("T")[0]} onChange={(e) => setCheckOut(e.target.value)} />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-1 block">Guests</label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={selectedRoom?.capacity || 10}
+                    <label className="text-sm font-medium mb-1 block">{t("hotelDetail.guests")}</label>
+                    <input type="number" min={1} max={selectedRoom?.capacity || 10}
                       className="w-full bg-secondary border border-border rounded-md px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                      value={guests}
-                      onChange={(e) => setGuests(parseInt(e.target.value) || 1)}
-                    />
+                      value={guests} onChange={(e) => setGuests(parseInt(e.target.value) || 1)} />
                   </div>
 
                   {selectedRoom && nights > 0 && (
                     <div className="border-t border-border pt-4 space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">{selectedRoom.name}</span>
-                        <span>৳{Number(selectedRoom.price_per_night).toLocaleString()}/night</span>
+                        <span>৳{Number(selectedRoom.price_per_night).toLocaleString()}{t("hotels.perNight")}</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Nights</span>
+                        <span className="text-muted-foreground">{t("hotelDetail.nights")}</span>
                         <span>{nights}</span>
                       </div>
                       <div className="flex justify-between font-heading font-bold text-lg border-t border-border pt-2 mt-2">
-                        <span>Total</span>
+                        <span>{t("hotelDetail.total")}</span>
                         <span className="text-primary">৳{totalPrice.toLocaleString()}</span>
                       </div>
                     </div>
                   )}
 
-                  <button
-                    onClick={handleBook}
-                    disabled={!selectedRoom || !checkIn || !checkOut || nights < 1 || booking}
-                    className="w-full bg-gradient-gold text-primary-foreground font-semibold py-3 rounded-md text-sm hover:opacity-90 transition-opacity shadow-gold disabled:opacity-50"
-                  >
-                    {booking ? "Booking..." : !user ? "Sign In to Book" : "Confirm Booking"}
+                  <button onClick={handleBook} disabled={!selectedRoom || !checkIn || !checkOut || nights < 1 || booking}
+                    className="w-full bg-gradient-gold text-primary-foreground font-semibold py-3 rounded-md text-sm hover:opacity-90 transition-opacity shadow-gold disabled:opacity-50">
+                    {booking ? t("hotelDetail.booking") : !user ? t("hotelDetail.signInToBook") : t("hotelDetail.confirmBooking")}
                   </button>
                   {!selectedRoom && (
-                    <p className="text-xs text-muted-foreground text-center">← Select a room to continue</p>
+                    <p className="text-xs text-muted-foreground text-center">{t("hotelDetail.selectRoom")}</p>
                   )}
                 </div>
               </div>

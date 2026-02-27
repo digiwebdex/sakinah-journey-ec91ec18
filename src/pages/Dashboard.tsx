@@ -11,6 +11,7 @@ import logo from "@/assets/logo.jpg";
 import DocumentUpload from "@/components/DocumentUpload";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 import { generateInvoice, generateReceipt, CompanyInfo, InvoicePayment } from "@/lib/invoiceGenerator";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface Booking {
   id: string;
@@ -40,6 +41,7 @@ type TabKey = "overview" | "bookings" | "payments" | "due" | "profile";
 
 const Dashboard = () => {
   useSessionTimeout();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -105,12 +107,12 @@ const Dashboard = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    toast.success("Signed out");
+    toast.success(t("dashboard.signedOut"));
     navigate("/");
   };
 
   const handleSaveProfile = async () => {
-    if (!profileForm.full_name.trim()) { toast.error("Name is required"); return; }
+    if (!profileForm.full_name.trim()) { toast.error(t("dashboard.nameRequired")); return; }
     setSavingProfile(true);
     const { error } = await supabase
       .from("profiles")
@@ -122,7 +124,7 @@ const Dashboard = () => {
       })
       .eq("user_id", user.id);
     if (error) toast.error(error.message);
-    else { toast.success("Profile updated"); fetchData(); }
+    else { toast.success(t("dashboard.profileUpdated")); fetchData(); }
     setSavingProfile(false);
   };
 
@@ -150,8 +152,8 @@ const Dashboard = () => {
       const bPayments = getBookingPayments(b.id);
       const company = await getCompanyInfo();
       await generateInvoice(b, profile || {}, bPayments as InvoicePayment[], company);
-      toast.success("Invoice downloaded");
-    } catch { toast.error("Failed to generate invoice"); }
+      toast.success(t("dashboard.invoiceDownloaded"));
+    } catch { toast.error(t("dashboard.invoiceFailed")); }
     setGeneratingPdf(null);
   };
 
@@ -161,8 +163,8 @@ const Dashboard = () => {
       const company = await getCompanyInfo();
       const allBPayments = getBookingPayments(p.booking_id);
       await generateReceipt(p as InvoicePayment, b, profile || {}, company, allBPayments as InvoicePayment[]);
-      toast.success("Receipt downloaded");
-    } catch { toast.error("Failed to generate receipt"); }
+      toast.success(t("dashboard.receiptDownloaded"));
+    } catch { toast.error(t("dashboard.receiptFailed")); }
     setGeneratingPdf(null);
   };
   const statusColor = (s: string) => {
@@ -177,27 +179,27 @@ const Dashboard = () => {
 
   const statusTimeline = ["pending", "visa_processing", "ticket_confirmed", "completed"];
   const statusLabels: Record<string, string> = {
-    pending: "Pending",
-    visa_processing: "Visa Processing",
-    ticket_confirmed: "Ticket Confirmed",
-    completed: "Completed",
-    cancelled: "Cancelled",
+    pending: t("dashboard.pending"),
+    visa_processing: t("dashboard.visaProcessing"),
+    ticket_confirmed: t("dashboard.ticketConfirmed"),
+    completed: t("dashboard.completed"),
+    cancelled: t("dashboard.cancelled"),
   };
 
   const inputClass = "w-full bg-secondary border border-border rounded-md px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40";
 
   const tabs: { key: TabKey; label: string; icon: any }[] = [
-    { key: "overview", label: "Overview", icon: FileText },
-    { key: "bookings", label: "My Bookings", icon: Package },
-    { key: "payments", label: "Payments", icon: CreditCard },
-    { key: "due", label: "Due Alerts", icon: AlertTriangle },
-    { key: "profile", label: "Profile", icon: Settings },
+    { key: "overview", label: t("dashboard.overview"), icon: FileText },
+    { key: "bookings", label: t("dashboard.myBookings"), icon: Package },
+    { key: "payments", label: t("dashboard.payments"), icon: CreditCard },
+    { key: "due", label: t("dashboard.dueAlerts"), icon: AlertTriangle },
+    { key: "profile", label: t("dashboard.profile"), icon: Settings },
   ];
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
+        <div className="text-muted-foreground">{t("dashboard.loading")}</div>
       </div>
     );
   }
@@ -229,28 +231,28 @@ const Dashboard = () => {
           <div className="bg-card border border-border rounded-xl p-5">
             <div className="flex items-center gap-3 mb-2">
               <Package className="h-5 w-5 text-primary" />
-              <span className="text-xs text-muted-foreground">Bookings</span>
+              <span className="text-xs text-muted-foreground">{t("dashboard.bookings")}</span>
             </div>
             <p className="text-2xl font-heading font-bold">{bookings.length}</p>
           </div>
           <div className="bg-card border border-border rounded-xl p-5">
             <div className="flex items-center gap-3 mb-2">
               <CreditCard className="h-5 w-5 text-primary" />
-              <span className="text-xs text-muted-foreground">Total Amount</span>
+              <span className="text-xs text-muted-foreground">{t("dashboard.totalAmount")}</span>
             </div>
             <p className="text-2xl font-heading font-bold">৳{totalAmount.toLocaleString()}</p>
           </div>
           <div className="bg-card border border-border rounded-xl p-5">
             <div className="flex items-center gap-3 mb-2">
               <CreditCard className="h-5 w-5 text-emerald" />
-              <span className="text-xs text-muted-foreground">Paid</span>
+              <span className="text-xs text-muted-foreground">{t("dashboard.paid")}</span>
             </div>
             <p className="text-2xl font-heading font-bold text-emerald">৳{totalPaid.toLocaleString()}</p>
           </div>
           <div className="bg-card border border-border rounded-xl p-5">
             <div className="flex items-center gap-3 mb-2">
               <AlertTriangle className="h-5 w-5 text-destructive" />
-              <span className="text-xs text-muted-foreground">Due</span>
+              <span className="text-xs text-muted-foreground">{t("dashboard.due")}</span>
             </div>
             <p className="text-2xl font-heading font-bold text-destructive">৳{totalDue.toLocaleString()}</p>
           </div>
@@ -286,8 +288,8 @@ const Dashboard = () => {
             {bookings.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p className="mb-4">No bookings yet.</p>
-                <Link to="/packages" className="text-primary hover:underline">Browse Packages →</Link>
+                <p className="mb-4">{t("dashboard.noBookings")}</p>
+                <Link to="/packages" className="text-primary hover:underline">{t("dashboard.browsePackages")}</Link>
               </div>
             ) : (
               bookings.map((b) => {
@@ -311,13 +313,13 @@ const Dashboard = () => {
                           <Link to={`/track?id=${b.tracking_id}`} className="font-mono font-bold text-primary hover:underline text-sm">
                             {b.tracking_id}
                           </Link>
-                          <p className="text-sm text-muted-foreground">{b.packages?.name || "N/A"} • {b.num_travelers} traveler{b.num_travelers > 1 ? "s" : ""}</p>
+                          <p className="text-sm text-muted-foreground">{b.packages?.name || "N/A"} • {b.num_travelers} {b.num_travelers > 1 ? t("dashboard.travelers") : t("dashboard.traveler")}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
                         {overdueCount > 0 && (
                           <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-destructive/10 text-destructive">
-                            {overdueCount} overdue
+                            {overdueCount} {t("dashboard.overdue")}
                           </span>
                         )}
                         <span className={`text-xs font-semibold px-3 py-1 rounded-full capitalize ${statusColor(b.status)}`}>
@@ -329,9 +331,9 @@ const Dashboard = () => {
                     {/* Financial bar */}
                     <div className="px-5 pb-3">
                       <div className="flex gap-6 text-sm mb-2">
-                        <span className="text-muted-foreground">Total: <strong className="text-foreground">৳{Number(b.total_amount).toLocaleString()}</strong></span>
-                        <span className="text-muted-foreground">Paid: <strong className="text-emerald">৳{Number(b.paid_amount).toLocaleString()}</strong></span>
-                        <span className="text-muted-foreground">Due: <strong className="text-destructive">৳{Number(b.due_amount || 0).toLocaleString()}</strong></span>
+                        <span className="text-muted-foreground">{t("dashboard.total")}: <strong className="text-foreground">৳{Number(b.total_amount).toLocaleString()}</strong></span>
+                        <span className="text-muted-foreground">{t("dashboard.paid")}: <strong className="text-emerald">৳{Number(b.paid_amount).toLocaleString()}</strong></span>
+                        <span className="text-muted-foreground">{t("dashboard.due")}: <strong className="text-destructive">৳{Number(b.due_amount || 0).toLocaleString()}</strong></span>
                       </div>
                       {Number(b.total_amount) > 0 && (
                         <div className="w-full bg-secondary rounded-full h-2">
@@ -348,7 +350,7 @@ const Dashboard = () => {
                       <div className="border-t border-border">
                         <div className="px-5 py-3 bg-muted/30">
                           <p className="text-xs font-semibold text-muted-foreground mb-2">
-                            Payment History ({paidCount}/{bPayments.length} completed)
+                            {t("dashboard.paymentHistory")} ({paidCount}/{bPayments.length} {t("dashboard.completed")})
                           </p>
                           <div className="space-y-1.5">
                             {bPayments.map((p) => {
@@ -392,14 +394,14 @@ const Dashboard = () => {
                         className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline disabled:opacity-50"
                       >
                         <Download className="h-4 w-4" />
-                        {generatingPdf === b.id ? "Generating..." : "Invoice"}
+                        {generatingPdf === b.id ? t("dashboard.generating") : t("dashboard.invoice")}
                       </button>
                       <button
                         onClick={() => setExpandedBooking(expandedBooking === b.id ? null : b.id)}
                         className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
                       >
                         <FileText className="h-4 w-4" />
-                        Docs ({(bookingDocs[b.id] || []).length}/3)
+                        {t("dashboard.docs")} ({(bookingDocs[b.id] || []).length}/3)
                       </button>
                     </div>
                     {expandedBooking === b.id && (
@@ -420,8 +422,8 @@ const Dashboard = () => {
             {bookings.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p className="mb-4">No bookings yet.</p>
-                <Link to="/packages" className="text-primary hover:underline">Browse Packages →</Link>
+                <p className="mb-4">{t("dashboard.noBookings")}</p>
+                <Link to="/packages" className="text-primary hover:underline">{t("dashboard.browsePackages")}</Link>
               </div>
             ) : (
               bookings.map((b) => {
@@ -437,7 +439,7 @@ const Dashboard = () => {
                     {/* Header */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                       <div>
-                        <p className="text-xs text-muted-foreground">Tracking ID</p>
+                        <p className="text-xs text-muted-foreground">{t("dashboard.trackingId")}</p>
                         <Link to={`/track?id=${b.tracking_id}`} className="font-mono font-bold text-primary hover:underline">
                           {b.tracking_id}
                         </Link>
@@ -473,19 +475,19 @@ const Dashboard = () => {
                     {/* Financial Summary */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                       <div>
-                        <p className="text-muted-foreground">Package</p>
+                        <p className="text-muted-foreground">{t("dashboard.package")}</p>
                         <p className="font-medium">{b.packages?.name || "N/A"}</p>
                       </div>
                       <div>
-                        <p className="text-muted-foreground">Total</p>
+                        <p className="text-muted-foreground">{t("dashboard.total")}</p>
                         <p className="font-medium">৳{Number(b.total_amount).toLocaleString()}</p>
                       </div>
                       <div>
-                        <p className="text-muted-foreground">Paid</p>
+                        <p className="text-muted-foreground">{t("dashboard.paid")}</p>
                         <p className="font-medium text-emerald">৳{Number(b.paid_amount).toLocaleString()}</p>
                       </div>
                       <div>
-                        <p className="text-muted-foreground">Due</p>
+                        <p className="text-muted-foreground">{t("dashboard.due")}</p>
                         <p className="font-medium text-destructive">৳{Number(b.due_amount || 0).toLocaleString()}</p>
                       </div>
                     </div>
@@ -498,7 +500,7 @@ const Dashboard = () => {
                           className="flex items-center gap-2 text-sm text-primary hover:underline"
                         >
                           <CreditCard className="h-4 w-4" />
-                          Installment Schedule ({bPayments.filter((p) => p.status === "completed").length}/{bPayments.length} paid)
+                          {t("dashboard.installmentSchedule")} ({bPayments.filter((p) => p.status === "completed").length}/{bPayments.length} {t("dashboard.paid").toLowerCase()})
                           {expandedSchedule === b.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                         </button>
                         {expandedSchedule === b.id && (
@@ -507,10 +509,10 @@ const Dashboard = () => {
                               <thead>
                                 <tr className="text-left text-muted-foreground border-b border-border/50">
                                   <th className="pb-2 pr-4">#</th>
-                                  <th className="pb-2 pr-4">Amount</th>
-                                  <th className="pb-2 pr-4">Due Date</th>
-                                  <th className="pb-2 pr-4">Status</th>
-                                  <th className="pb-2">Paid At</th>
+                                  <th className="pb-2 pr-4">{t("dashboard.amount")}</th>
+                                  <th className="pb-2 pr-4">{t("dashboard.dueDate")}</th>
+                                  <th className="pb-2 pr-4">{t("dashboard.status")}</th>
+                                  <th className="pb-2">{t("dashboard.paidAt")}</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -523,7 +525,7 @@ const Dashboard = () => {
                                       <td className="py-2 pr-4">{p.due_date ? new Date(p.due_date).toLocaleDateString() : "—"}</td>
                                       <td className="py-2 pr-4">
                                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${statusColor(p.status)}`}>
-                                          {isOverdue ? "overdue" : p.status}
+                                          {isOverdue ? t("dashboard.overdue") : p.status}
                                         </span>
                                       </td>
                                       <td className="py-2">{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : "—"}</td>
@@ -543,7 +545,7 @@ const Dashboard = () => {
                       className="mt-3 flex items-center gap-2 text-sm text-primary hover:underline"
                     >
                       <FileText className="h-4 w-4" />
-                      Documents ({(bookingDocs[b.id] || []).length}/3)
+                      {t("dashboard.documents")} ({(bookingDocs[b.id] || []).length}/3)
                       {expandedBooking === b.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                     </button>
                     {expandedBooking === b.id && (
@@ -564,7 +566,7 @@ const Dashboard = () => {
                       className="mt-2 inline-flex items-center gap-1.5 text-sm text-primary hover:underline disabled:opacity-50"
                     >
                       <Download className="h-4 w-4" />
-                      {generatingPdf === b.id ? "Generating..." : "Download Invoice"}
+                      {generatingPdf === b.id ? t("dashboard.generating") : t("dashboard.downloadInvoice")}
                     </button>
                   </motion.div>
                 );
@@ -579,7 +581,7 @@ const Dashboard = () => {
             {payments.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <CreditCard className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No payment records found.</p>
+                <p>{t("dashboard.noPayments")}</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -587,11 +589,11 @@ const Dashboard = () => {
                   <thead>
                     <tr className="border-b border-border text-left text-muted-foreground">
                       <th className="pb-3 pr-4">#</th>
-                      <th className="pb-3 pr-4">Amount</th>
-                      <th className="pb-3 pr-4">Due Date</th>
-                      <th className="pb-3 pr-4">Paid At</th>
-                      <th className="pb-3 pr-4">Status</th>
-                      <th className="pb-3 pr-4">Method</th>
+                      <th className="pb-3 pr-4">{t("dashboard.amount")}</th>
+                      <th className="pb-3 pr-4">{t("dashboard.dueDate")}</th>
+                      <th className="pb-3 pr-4">{t("dashboard.paidAt")}</th>
+                      <th className="pb-3 pr-4">{t("dashboard.status")}</th>
+                      <th className="pb-3 pr-4">{t("dashboard.method")}</th>
                       <th className="pb-3"></th>
                     </tr>
                   </thead>
@@ -616,7 +618,7 @@ const Dashboard = () => {
                               className="inline-flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-50"
                             >
                               <Download className="h-3 w-3" />
-                              {generatingPdf === p.id ? "..." : "Receipt"}
+                              {generatingPdf === p.id ? "..." : t("dashboard.receipt")}
                             </button>
                           )}
                         </td>
@@ -635,7 +637,7 @@ const Dashboard = () => {
             {overduePayments.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <AlertTriangle className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No overdue payments. You're all caught up! 🎉</p>
+                <p>{t("dashboard.noDue")}</p>
               </div>
             ) : (
               overduePayments.map((p) => {
@@ -643,7 +645,7 @@ const Dashboard = () => {
                 return (
                   <div key={p.id} className="bg-destructive/5 border border-destructive/20 rounded-xl p-5 flex items-center justify-between">
                     <div>
-                      <p className="font-semibold text-destructive">Installment #{p.installment_number} Overdue</p>
+                      <p className="font-semibold text-destructive">{t("dashboard.installmentOverdue").replace("{n}", String(p.installment_number))}</p>
                       <p className="text-sm text-muted-foreground">
                         {booking?.packages?.name || "Booking"} • Due: {p.due_date ? new Date(p.due_date).toLocaleDateString() : "N/A"}
                       </p>
@@ -666,14 +668,14 @@ const Dashboard = () => {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-2xl">
             <div className="bg-card border border-border rounded-xl p-6 space-y-5">
               <h2 className="font-heading text-lg font-bold flex items-center gap-2">
-                <User className="h-5 w-5 text-primary" /> Profile Settings
+                <User className="h-5 w-5 text-primary" /> {t("dashboard.profileSettings")}
               </h2>
               <div className="text-sm text-muted-foreground flex items-center gap-2">
                 <Mail className="h-4 w-4" /> {user?.email}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-muted-foreground mb-1 block">Full Name <span className="text-destructive">*</span></label>
+                  <label className="text-sm text-muted-foreground mb-1 block">{t("dashboard.fullName")} <span className="text-destructive">*</span></label>
                   <input
                     type="text"
                     maxLength={100}
@@ -683,7 +685,7 @@ const Dashboard = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-muted-foreground mb-1 block">Phone</label>
+                  <label className="text-sm text-muted-foreground mb-1 block">{t("dashboard.phone")}</label>
                   <input
                     type="tel"
                     maxLength={15}
@@ -693,7 +695,7 @@ const Dashboard = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-muted-foreground mb-1 block">Passport Number</label>
+                  <label className="text-sm text-muted-foreground mb-1 block">{t("dashboard.passportNumber")}</label>
                   <input
                     type="text"
                     maxLength={20}
@@ -703,7 +705,7 @@ const Dashboard = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-muted-foreground mb-1 block">Address</label>
+                  <label className="text-sm text-muted-foreground mb-1 block">{t("dashboard.address")}</label>
                   <input
                     type="text"
                     maxLength={200}
@@ -718,7 +720,7 @@ const Dashboard = () => {
                 disabled={savingProfile}
                 className="inline-flex items-center gap-2 bg-gradient-gold text-primary-foreground font-semibold px-6 py-3 rounded-md text-sm hover:opacity-90 transition-opacity shadow-gold disabled:opacity-50"
               >
-                <Save className="h-4 w-4" /> {savingProfile ? "Saving..." : "Save Changes"}
+                <Save className="h-4 w-4" /> {savingProfile ? t("dashboard.saving") : t("dashboard.saveChanges")}
               </button>
             </div>
           </motion.div>
