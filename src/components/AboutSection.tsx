@@ -26,7 +26,7 @@ const AboutSection = () => {
     { title: t("about.reason4.title"), desc: t("about.reason4.desc") },
   ];
 
-  const reasons = lc?.reasons || content?.reasons || defaultReasons;
+  const reasons = lc?.reasons || defaultReasons;
 
   const handleTrack = () => {
     const id = trackingId.trim();
