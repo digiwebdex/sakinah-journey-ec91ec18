@@ -12,7 +12,8 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguageState] = useState<Language>(() => {
     const saved = localStorage.getItem("rk_language");
-    return (saved === "bn" ? "bn" : "en") as Language;
+    if (saved === "en") return "en";
+    return "bn";
   });
 
   const setLanguage = useCallback((lang: Language) => {
