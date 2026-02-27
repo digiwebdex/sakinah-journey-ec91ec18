@@ -13,7 +13,7 @@ const Footer = () => {
   const description = lc?.description || content?.description || t("about.description").slice(0, 120) + "...";
   const phone = content?.phone || "+880 1601-505050";
   const email = content?.email || "rahekaba.info@gmail.com";
-  const address = lc?.address || content?.address || (language === "bn" ? "দৈলরবাগ পল্লী বিদ্যুৎ সংলগ্ন, সোনারগাঁও থানা রোড, নারায়ণগঞ্জ-ঢাকা" : "Doilorbag Palli Bidyut, Sonargaon Thana Road, Narayanganj-Dhaka");
+  const address = lc?.address || content?.address || (language === "bn" ? "দৈলরবাগ পল্লী বিদ্যুৎ সংলগ্ন\nসোনারগাঁও থানা রোড, নারায়ণগঞ্জ-ঢাকা" : "Dailorbagh Palli Bidyut Adjacent\nSonargaon Thana Road, Narayanganj-Dhaka");
   const servicesList = lc?.services_list || content?.services_list || (language === "bn" ? ["হজ প্যাকেজ", "উমরাহ প্যাকেজ", "ভিসা প্রসেসিং", "এয়ার টিকেট", "হোটেল বুকিং", "জিয়ারা ট্যুর"] : ["Hajj Packages", "Umrah Packages", "Visa Processing", "Air Tickets", "Hotel Booking", "Ziyara Tours"]);
   const devName = content?.developer_name || "DigiWebDex";
   const devUrl = content?.developer_url || "https://digiwebdex.com";
@@ -66,7 +66,7 @@ const Footer = () => {
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li className="flex items-center gap-2"><Phone className="h-4 w-4 text-primary" /> {phone}</li>
               <li className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary" /> {email}</li>
-              <li className="flex items-start gap-2"><MapPin className="h-4 w-4 text-primary mt-0.5" /> {address}</li>
+              <li className="flex items-start gap-2"><MapPin className="h-4 w-4 text-primary mt-0.5" /> <span className="whitespace-pre-line">{address}</span></li>
               <li>
                 <a href="https://www.facebook.com/people/Rahe-Kaba-Tours-And-Travels/61559942585503/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-primary transition-colors">
                   <Facebook className="h-4 w-4 text-primary" /> Facebook
