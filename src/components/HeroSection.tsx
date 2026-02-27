@@ -34,7 +34,7 @@ const HeroSection = () => {
   const defaultIcons = [Shield, Star, Plane, MapPin];
 
   return (
-    <section ref={sectionRef} id="home" className="relative min-h-[100dvh] flex flex-col justify-end overflow-hidden">
+    <section ref={sectionRef} id="home" className="relative min-h-[100dvh] flex flex-col justify-center overflow-hidden">
       <motion.div className="absolute inset-0 will-change-transform" style={{ y: imgY }}>
         <img src={heroImage} alt="The Holy Kaaba at night, illuminated by golden lights" className="w-full h-[130%] object-cover object-center" />
       </motion.div>
@@ -42,15 +42,15 @@ const HeroSection = () => {
       <div className="absolute inset-0 bg-gradient-to-r from-background/50 via-transparent to-background/50" />
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-gold" />
 
-      <div className="relative z-10 container mx-auto px-4 pb-8 sm:pb-14 pt-32">
-        <div className="max-w-3xl">
+      <div className="relative z-10 container mx-auto px-4 py-8 sm:py-14 text-center">
+        <div className="max-w-3xl mx-auto">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} className="inline-flex items-center gap-2 bg-primary/15 backdrop-blur-md border border-primary/25 rounded-full px-4 py-1.5 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
             <span className="text-primary text-xs font-semibold tracking-widest uppercase">{badge}</span>
           </motion.div>
 
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.15 }} className="max-w-2xl mb-10">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.15 }} className="max-w-2xl mx-auto mb-10">
             <p className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-snug" dir="rtl" style={{ fontFamily: "'Amiri', 'Noto Naskh Arabic', serif" }}>
               وَأَتِمُّوا الْحَجَّ وَالْعُمْرَةَ لِلَّهِ
             </p>
@@ -62,7 +62,7 @@ const HeroSection = () => {
             </p>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.45 }} className="flex flex-wrap gap-3">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.45 }} className="flex flex-wrap gap-3 justify-center">
             <a href="#packages" className="group bg-gradient-gold text-primary-foreground font-semibold px-7 py-3.5 rounded-lg text-sm hover:shadow-gold transition-all duration-300 inline-flex items-center gap-2">
               {ctaPrimary}<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </a>
@@ -73,7 +73,7 @@ const HeroSection = () => {
         </div>
 
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.65 }} className="mt-14 sm:mt-20">
-          <div className="bg-card/60 backdrop-blur-xl border border-border/60 rounded-2xl p-4 sm:p-5 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 max-w-4xl">
+          <div className="bg-card/60 backdrop-blur-xl border border-border/60 rounded-2xl p-4 sm:p-5 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto">
             {stats.map((stat: any, i: number) => {
               const IconComp = defaultIcons[i % defaultIcons.length];
               return (
