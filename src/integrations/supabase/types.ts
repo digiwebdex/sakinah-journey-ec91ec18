@@ -240,8 +240,10 @@ export type Database = {
           created_at: string
           customer_id: string | null
           date: string
+          expense_type: string
           id: string
           note: string | null
+          package_id: string | null
           title: string
         }
         Insert: {
@@ -251,8 +253,10 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           date?: string
+          expense_type?: string
           id?: string
           note?: string | null
+          package_id?: string | null
           title: string
         }
         Update: {
@@ -262,8 +266,10 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           date?: string
+          expense_type?: string
           id?: string
           note?: string | null
+          package_id?: string | null
           title?: string
         }
         Relationships: [
@@ -272,6 +278,13 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
             referencedColumns: ["id"]
           },
         ]
