@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounts: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          name: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          name: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          name?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       blog_posts: {
         Row: {
           author_id: string | null
@@ -211,6 +238,7 @@ export type Database = {
           booking_id: string | null
           category: string
           created_at: string
+          customer_id: string | null
           date: string
           id: string
           note: string | null
@@ -221,6 +249,7 @@ export type Database = {
           booking_id?: string | null
           category: string
           created_at?: string
+          customer_id?: string | null
           date?: string
           id?: string
           note?: string | null
@@ -231,6 +260,7 @@ export type Database = {
           booking_id?: string | null
           category?: string
           created_at?: string
+          customer_id?: string | null
           date?: string
           id?: string
           note?: string | null
@@ -245,6 +275,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      financial_summary: {
+        Row: {
+          id: string
+          net_profit: number
+          total_expense: number
+          total_income: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          net_profit?: number
+          total_expense?: number
+          total_income?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          net_profit?: number
+          total_expense?: number
+          total_income?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       hotel_bookings: {
         Row: {
@@ -571,6 +625,7 @@ export type Database = {
           amount: number
           booking_id: string
           created_at: string
+          customer_id: string | null
           due_date: string | null
           id: string
           installment_number: number | null
@@ -585,6 +640,7 @@ export type Database = {
           amount: number
           booking_id: string
           created_at?: string
+          customer_id?: string | null
           due_date?: string | null
           id?: string
           installment_number?: number | null
@@ -599,6 +655,7 @@ export type Database = {
           amount?: number
           booking_id?: string
           created_at?: string
+          customer_id?: string | null
           due_date?: string | null
           id?: string
           installment_number?: number | null
@@ -682,9 +739,12 @@ export type Database = {
           booking_id: string | null
           category: string
           created_at: string
+          customer_id: string | null
           date: string
           id: string
           note: string | null
+          payment_method: string | null
+          reference: string | null
           type: string
           user_id: string
         }
@@ -693,9 +753,12 @@ export type Database = {
           booking_id?: string | null
           category: string
           created_at?: string
+          customer_id?: string | null
           date?: string
           id?: string
           note?: string | null
+          payment_method?: string | null
+          reference?: string | null
           type: string
           user_id: string
         }
@@ -704,9 +767,12 @@ export type Database = {
           booking_id?: string | null
           category?: string
           created_at?: string
+          customer_id?: string | null
           date?: string
           id?: string
           note?: string | null
+          payment_method?: string | null
+          reference?: string | null
           type?: string
           user_id?: string
         }
