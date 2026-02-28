@@ -107,6 +107,29 @@ export default function AdminReportsPage() {
     return Object.entries(map).map(([y, d]) => ({ year: y, ...d, profit: d.income - d.expense })).sort((a, b) => Number(b.year) - Number(a.year));
   }, [bookings, payments, expenses, years]);
 
+  // ── Profit & Loss ──
+  const pnlData = useMemo(() => {
+    const yr = Number(selectedYear);
+    const completedPayments = payments.filter((p) => p.status === "completed" && p.paid_at && getYear(parseISO(p.paid_at)) === yr);
+    const yearExpenses = expenses.filter((e) => getYear(parseISO(e.date)) === yr);
+    const incomeByType: Record<string, number> = {};
+    completedPayments.forEach((p) => {
+      const bk = bookings.find((b) => b.id === p.booking_id);
+      const cat = bk?.packages?.type ? `${bk.packages.type.charAt(0).toUpperCase() + bk.packages.type.slice(1)} Package` : "Other Income";
+      incomeByType[cat] = (incomeByType[cat] || 0) + Number(p.amount);
+    });
+    const expenseByType: Record<string, number> = {};
+    yearExpenses.forEach((e) => {
+      const label = (e.expense_type || "other").replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
+      expenseByType[label] = (expenseByType[label] || 0) + Number(e.amount);
+    });
+    const totalIncome = Object.values(incomeByType).reduce((s, v) => s + v, 0);
+    const totalExpense = Object.values(expenseByType).reduce((s, v) => s + v, 0);
+    const grossProfit = totalIncome;
+    const netProfit = totalIncome - totalExpense;
+    return { incomeByType, expenseByType, totalIncome, totalExpense, grossProfit, netProfit };
+  }, [payments, expenses, bookings, selectedYear]);
+
   // ── Legacy tabs ──
   const packageRows = useMemo(() => {
     const map: Record<string, { name: string; type: string; count: number; revenue: number; expenses: number }> = {};
@@ -173,6 +196,15 @@ export default function AdminReportsPage() {
         return { title: "Due Report", columns: ["Tracking ID","Customer","Installment","Amount","Due Date"], rows: dueRows.map((r) => [r.trackingId, r.customer, r.installment, r.amount, r.dueDate]) };
       case "overdue":
         return { title: "Overdue Report", columns: ["Tracking ID","Customer","Installment","Amount","Due Date","Days Overdue"], rows: overdueRows.map((r) => [r.trackingId, r.customer, r.installment, r.amount, r.dueDate, r.daysOverdue]) };
+      case "pnl": {
+        const incRows = Object.entries(pnlData.incomeByType).map(([k, v]) => [k, v]);
+        const expRows = Object.entries(pnlData.expenseByType).map(([k, v]) => [k, v]);
+        return { title: `Profit & Loss Statement - ${selectedYear}`, columns: ["Category", "Amount (BDT)"], rows: [
+          ["── INCOME ──", ""], ...incRows, ["Total Income", pnlData.totalIncome],
+          ["", ""], ["── EXPENSES ──", ""], ...expRows, ["Total Expenses", pnlData.totalExpense],
+          ["", ""], ["Gross Profit", pnlData.grossProfit], ["Net Profit", pnlData.netProfit],
+        ] };
+      }
       default:
         return { title: "Report", columns: [], rows: [] };
     }
@@ -236,12 +268,20 @@ export default function AdminReportsPage() {
           { label: "Overdue", value: overdueRows.length, icon: CalendarIcon, color: "text-destructive" },
           { label: "Total Overdue", value: fmt(overdueRows.reduce((s, r) => s + r.amount, 0)), icon: TrendingDown, color: "text-destructive" },
         ];
+      case "pnl": {
+        return [
+          { label: "Total Income", value: fmt(pnlData.totalIncome), icon: TrendingUp, color: "text-primary" },
+          { label: "Total Expenses", value: fmt(pnlData.totalExpense), icon: TrendingDown, color: "text-destructive" },
+          { label: "Gross Profit", value: fmt(pnlData.grossProfit), icon: DollarSign, color: pnlData.grossProfit >= 0 ? "text-primary" : "text-destructive" },
+          { label: "Net Profit", value: fmt(pnlData.netProfit), icon: DollarSign, color: pnlData.netProfit >= 0 ? "text-primary" : "text-destructive" },
+        ];
+      }
       default: return [];
     }
   }, [activeTab, dailyFinancialRows, monthlyFinancialRows, yearlyRows, packageRows, hajjiRows, dueRows, overdueRows]);
 
   const showDateRange = activeTab === "daily-financial";
-  const showYearSelect = activeTab === "monthly-financial";
+  const showYearSelect = activeTab === "monthly-financial" || activeTab === "pnl";
 
   return (
     <div className="space-y-4">
@@ -259,6 +299,7 @@ export default function AdminReportsPage() {
           <TabsTrigger value="daily-financial">Daily Income/Expense</TabsTrigger>
           <TabsTrigger value="monthly-financial">Monthly Income/Expense</TabsTrigger>
           <TabsTrigger value="yearly">Yearly Summary</TabsTrigger>
+          <TabsTrigger value="pnl">Profit & Loss</TabsTrigger>
           <TabsTrigger value="package">Package-wise</TabsTrigger>
           <TabsTrigger value="hajji">Hajji-wise</TabsTrigger>
           <TabsTrigger value="due">Due</TabsTrigger>
@@ -411,6 +452,64 @@ export default function AdminReportsPage() {
               ))}
             </TableBody>
           </Table>
+        </TabsContent>
+
+        {/* Profit & Loss */}
+        <TabsContent value="pnl">
+          <div className="bg-card border border-border rounded-xl p-6 space-y-6">
+            <div className="text-center mb-4">
+              <h3 className="font-heading text-lg font-bold">Profit & Loss Statement</h3>
+              <p className="text-sm text-muted-foreground">For the year {selectedYear}</p>
+            </div>
+
+            {/* Income Section */}
+            <div>
+              <h4 className="font-heading font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-3 border-b border-border pb-2">Income</h4>
+              <div className="space-y-2">
+                {Object.entries(pnlData.incomeByType).map(([cat, amount]) => (
+                  <div key={cat} className="flex justify-between items-center px-2">
+                    <span className="text-sm">{cat}</span>
+                    <span className="text-sm font-medium text-primary">{fmt(amount)}</span>
+                  </div>
+                ))}
+                {Object.keys(pnlData.incomeByType).length === 0 && <p className="text-sm text-muted-foreground px-2">No income recorded</p>}
+              </div>
+              <div className="flex justify-between items-center px-2 mt-3 pt-2 border-t border-border font-bold">
+                <span>Total Income</span>
+                <span className="text-primary">{fmt(pnlData.totalIncome)}</span>
+              </div>
+            </div>
+
+            {/* Expense Section */}
+            <div>
+              <h4 className="font-heading font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-3 border-b border-border pb-2">Expenses</h4>
+              <div className="space-y-2">
+                {Object.entries(pnlData.expenseByType).map(([cat, amount]) => (
+                  <div key={cat} className="flex justify-between items-center px-2">
+                    <span className="text-sm">{cat}</span>
+                    <span className="text-sm font-medium text-destructive">{fmt(amount)}</span>
+                  </div>
+                ))}
+                {Object.keys(pnlData.expenseByType).length === 0 && <p className="text-sm text-muted-foreground px-2">No expenses recorded</p>}
+              </div>
+              <div className="flex justify-between items-center px-2 mt-3 pt-2 border-t border-border font-bold">
+                <span>Total Expenses</span>
+                <span className="text-destructive">{fmt(pnlData.totalExpense)}</span>
+              </div>
+            </div>
+
+            {/* Summary */}
+            <div className="border-t-2 border-border pt-4 space-y-3">
+              <div className="flex justify-between items-center px-2">
+                <span className="font-semibold">Gross Profit</span>
+                <span className={cn("font-bold text-lg", pnlData.grossProfit >= 0 ? "text-primary" : "text-destructive")}>{fmt(pnlData.grossProfit)}</span>
+              </div>
+              <div className="flex justify-between items-center px-2 bg-muted/40 rounded-lg py-3">
+                <span className="font-heading font-bold text-lg">Net Profit</span>
+                <span className={cn("font-heading font-bold text-xl", pnlData.netProfit >= 0 ? "text-primary" : "text-destructive")}>{fmt(pnlData.netProfit)}</span>
+              </div>
+            </div>
+          </div>
         </TabsContent>
 
         {/* Package-wise */}
