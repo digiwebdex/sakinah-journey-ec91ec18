@@ -30,7 +30,7 @@ export default function AdminCustomersPage() {
   const [search, setSearch] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [expandedData, setExpandedData] = useState<{ bookings: any[]; payments: any[]; documents: any[] }>({ bookings: [], payments: [], documents: [] });
+  const [expandedData, setExpandedData] = useState<{ bookings: any[]; payments: any[]; documents: any[]; expenses: any[] }>({ bookings: [], payments: [], documents: [], expenses: [] });
   const [expandLoading, setExpandLoading] = useState(false);
 
   // Add customer modal
@@ -61,12 +61,16 @@ export default function AdminCustomersPage() {
     }
     setExpandedId(customer.id);
     setExpandLoading(true);
-    const [bRes, pRes, dRes] = await Promise.all([
+    const [bRes, pRes, dRes, eRes] = await Promise.all([
       supabase.from("bookings").select("*, packages(name, type, price)").eq("user_id", customer.user_id).order("created_at", { ascending: false }),
-      supabase.from("payments").select("*, bookings(tracking_id)").eq("user_id", customer.user_id).order("created_at", { ascending: false }).limit(10),
+      supabase.from("payments").select("*, bookings(tracking_id)").eq("user_id", customer.user_id).order("created_at", { ascending: false }),
       supabase.from("booking_documents").select("*").eq("user_id", customer.user_id).order("created_at", { ascending: false }),
+      supabase.from("expenses").select("*").eq("customer_id", customer.user_id).order("date", { ascending: false }),
     ]);
-    setExpandedData({ bookings: bRes.data || [], payments: pRes.data || [], documents: dRes.data || [] });
+    setExpandedData({
+      bookings: bRes.data || [], payments: pRes.data || [],
+      documents: dRes.data || [], expenses: eRes.data || [],
+    });
     setExpandLoading(false);
   };
 
@@ -345,6 +349,40 @@ export default function AdminCustomersPage() {
                           )}
                         </div>
 
+                        {/* Financial Summary Cards */}
+                        {(() => {
+                          const totalPaid = expandedData.payments.filter((p: any) => p.status === "completed").reduce((s: number, p: any) => s + Number(p.amount), 0);
+                          const totalDue = expandedData.bookings.reduce((s: number, b: any) => s + Number(b.due_amount || 0), 0);
+                          const totalExpenses = expandedData.expenses.reduce((s: number, e: any) => s + Number(e.amount), 0);
+                          const netProfit = totalPaid - totalExpenses;
+                          const totalBookingAmount = expandedData.bookings.reduce((s: number, b: any) => s + Number(b.total_amount), 0);
+                          return (
+                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                              <div className="bg-secondary/50 rounded-lg p-3 text-center">
+                                <p className="text-[10px] text-muted-foreground uppercase">মোট বুকিং</p>
+                                <p className="text-sm font-heading font-bold text-foreground">{fmt(totalBookingAmount)}</p>
+                                <p className="text-[10px] text-muted-foreground">{expandedData.bookings.length} টি</p>
+                              </div>
+                              <div className="bg-emerald/5 border border-emerald/20 rounded-lg p-3 text-center">
+                                <p className="text-[10px] text-muted-foreground uppercase">পরিশোধিত</p>
+                                <p className="text-sm font-heading font-bold text-emerald">{fmt(totalPaid)}</p>
+                              </div>
+                              <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-3 text-center">
+                                <p className="text-[10px] text-muted-foreground uppercase">বকেয়া</p>
+                                <p className="text-sm font-heading font-bold text-destructive">{fmt(totalDue)}</p>
+                              </div>
+                              <div className="bg-secondary/50 rounded-lg p-3 text-center">
+                                <p className="text-[10px] text-muted-foreground uppercase">খরচ</p>
+                                <p className="text-sm font-heading font-bold text-foreground">{fmt(totalExpenses)}</p>
+                              </div>
+                              <div className={`rounded-lg p-3 text-center ${netProfit >= 0 ? "bg-emerald/5 border border-emerald/20" : "bg-destructive/5 border border-destructive/20"}`}>
+                                <p className="text-[10px] text-muted-foreground uppercase">নীট মুনাফা</p>
+                                <p className={`text-sm font-heading font-bold ${netProfit >= 0 ? "text-emerald" : "text-destructive"}`}>{fmt(netProfit)}</p>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
                         {/* Bookings */}
                         <div>
                           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1">
@@ -361,7 +399,10 @@ export default function AdminCustomersPage() {
                                   <div className="flex items-center gap-3 shrink-0">
                                     <div className="text-right">
                                       <p className="text-xs font-medium">{fmt(Number(b.total_amount))}</p>
-                                      <p className="text-[10px] text-muted-foreground">বকেয়া: {fmt(Number(b.due_amount || 0))}</p>
+                                      <p className="text-[10px] text-muted-foreground">
+                                        পরিশোধ: <span className="text-emerald">{fmt(Number(b.paid_amount || 0))}</span>
+                                        {" • "}বকেয়া: <span className="text-destructive">{fmt(Number(b.due_amount || 0))}</span>
+                                      </p>
                                     </div>
                                     <Badge variant={b.status === "completed" ? "default" : "secondary"} className="text-[10px]">{b.status}</Badge>
                                   </div>
@@ -373,25 +414,54 @@ export default function AdminCustomersPage() {
                           )}
                         </div>
 
-                        {/* Recent Payments */}
+                        {/* Payments */}
                         <div>
                           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1">
-                            <CreditCard className="h-3 w-3" /> সাম্প্রতিক পেমেন্ট ({expandedData.payments.length})
+                            <CreditCard className="h-3 w-3" /> পেমেন্ট ({expandedData.payments.length})
                           </h4>
                           {expandedData.payments.length > 0 ? (
                             <div className="space-y-1">
-                              {expandedData.payments.slice(0, 5).map((p: any) => (
+                              {expandedData.payments.map((p: any) => (
                                 <div key={p.id} className="flex items-center justify-between bg-secondary/30 rounded px-3 py-1.5">
                                   <div className="flex items-center gap-2 min-w-0">
                                     <Badge variant={p.status === "completed" ? "default" : "secondary"} className="text-[10px]">{p.status}</Badge>
                                     <span className="text-xs truncate">{p.bookings?.tracking_id || "—"} • #{p.installment_number || "—"}</span>
+                                    {p.payment_method && <span className="text-[10px] text-muted-foreground capitalize">{p.payment_method}</span>}
                                   </div>
-                                  <span className={`text-xs font-bold ${p.status === "completed" ? "text-emerald-500" : "text-muted-foreground"}`}>{fmt(Number(p.amount))}</span>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <span className={`text-xs font-bold ${p.status === "completed" ? "text-emerald" : "text-muted-foreground"}`}>{fmt(Number(p.amount))}</span>
+                                    {p.paid_at && <span className="text-[10px] text-muted-foreground">{new Date(p.paid_at).toLocaleDateString()}</span>}
+                                  </div>
                                 </div>
                               ))}
                             </div>
                           ) : (
                             <p className="text-xs text-muted-foreground">কোনো পেমেন্ট নেই</p>
+                          )}
+                        </div>
+
+                        {/* Expenses */}
+                        <div>
+                          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1">
+                            <Mail className="h-3 w-3" /> অ্যাসাইনড খরচ ({expandedData.expenses.length})
+                          </h4>
+                          {expandedData.expenses.length > 0 ? (
+                            <div className="space-y-1">
+                              {expandedData.expenses.map((e: any) => (
+                                <div key={e.id} className="flex items-center justify-between bg-secondary/30 rounded px-3 py-1.5">
+                                  <div className="min-w-0">
+                                    <span className="text-xs font-medium">{e.title}</span>
+                                    <span className="text-[10px] text-muted-foreground ml-2 capitalize">{e.expense_type}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <span className="text-xs font-bold text-foreground">{fmt(Number(e.amount))}</span>
+                                    <span className="text-[10px] text-muted-foreground">{new Date(e.date).toLocaleDateString()}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">কোনো খরচ অ্যাসাইন করা হয়নি</p>
                           )}
                         </div>
 
