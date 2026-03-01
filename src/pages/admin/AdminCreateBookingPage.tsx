@@ -117,7 +117,7 @@ export default function AdminCreateBookingPage() {
       let customerId: string | null = selectedCustomerId;
       const cleanPhone = form.guest_phone.trim().replace(/[^\d+]/g, "");
 
-      // If no customer selected, try to find by phone or email to prevent duplicates
+      // If no customer selected, try to find by phone or email, or auto-create profile
       if (!customerId) {
         const { data: byPhone } = await supabase
           .from("profiles")
@@ -134,6 +134,25 @@ export default function AdminCreateBookingPage() {
             .eq("email", form.guest_email.trim().toLowerCase())
             .maybeSingle();
           if (byEmail) customerId = byEmail.user_id;
+        }
+
+        // Auto-create customer profile if no match found
+        if (!customerId) {
+          const newUserId = crypto.randomUUID();
+          const { error: profileErr } = await supabase.from("profiles").insert({
+            user_id: newUserId,
+            full_name: form.guest_name.trim(),
+            phone: cleanPhone,
+            email: form.guest_email.trim().toLowerCase() || null,
+            passport_number: form.guest_passport.trim() || null,
+            address: form.guest_address.trim() || null,
+            notes: "Auto-created from admin booking",
+          });
+          if (!profileErr) {
+            customerId = newUserId;
+          } else {
+            console.error("Auto-create profile error:", profileErr);
+          }
         }
       }
 
