@@ -131,13 +131,7 @@ export default function AdminMoallemProfilePage() {
         remaining -= allocate;
       }
 
-      // 3. Update moallem totals
-      const newTotalDeposit = moallemPayments.reduce((s, p) => s + Number(p.amount), 0) + amount;
-      const totalBookingAmount = bookings.reduce((s, b) => s + Number(b.total_amount || 0), 0);
-      await supabase.from("moallems").update({
-        total_deposit: newTotalDeposit,
-        total_due: Math.max(0, totalBookingAmount - newTotalDeposit),
-      }).eq("id", id);
+      // Moallem totals are auto-updated by database triggers (trg_update_moallem_on_deposit + update_booking_paid_amount)
 
       toast({ title: "পেমেন্ট রেকর্ড হয়েছে", description: `৳${amount.toLocaleString()} জমা হয়েছে` });
       setShowPaymentForm(false);
