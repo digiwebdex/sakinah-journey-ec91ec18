@@ -79,9 +79,15 @@ Deno.serve(async (req) => {
     // AUTO ACCOUNT CREATION: If no logged-in user and email is provided
     if (!userId && email?.trim()) {
       const trimmedEmail = email.trim().toLowerCase();
+      console.log("Auto account creation: checking for existing user with email:", trimmedEmail);
 
       // Check if user already exists with this email
-      const { data: existingUsers } = await supabase.auth.admin.listUsers();
+      const { data: existingUsers, error: listError } = await supabase.auth.admin.listUsers();
+      if (listError) {
+        console.error("listUsers error:", JSON.stringify(listError));
+      }
+      console.log("Found users count:", existingUsers?.users?.length || 0);
+      
       const existingUser = existingUsers?.users?.find(
         (u: any) => u.email?.toLowerCase() === trimmedEmail
       );
@@ -89,13 +95,15 @@ Deno.serve(async (req) => {
       if (existingUser) {
         // Attach to existing user
         userId = existingUser.id;
+        console.log("Attached to existing user:", userId);
       } else {
         // Create new account with temporary password
         tempPassword = generateTempPassword();
+        console.log("Creating new user for:", trimmedEmail);
         const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
           email: trimmedEmail,
           password: tempPassword,
-          email_confirm: true, // Auto-confirm so they can log in immediately
+          email_confirm: true,
           user_metadata: {
             full_name: fullName.trim(),
             phone: phone.trim(),
@@ -104,9 +112,10 @@ Deno.serve(async (req) => {
         });
 
         if (createError) {
-          console.error("Auto account creation error:", createError);
+          console.error("Auto account creation error:", JSON.stringify(createError));
           // Don't fail the booking, just proceed without account
         } else if (newUser?.user) {
+          console.log("User created successfully:", newUser.user.id);
           userId = newUser.user.id;
           autoCreated = true;
 
@@ -240,16 +249,20 @@ Deno.serve(async (req) => {
 
         // Log notification
         if (userId) {
-          await supabase.from("notification_logs").insert({
-            user_id: userId,
-            booking_id: booking.id,
-            event_type: "booking_created",
-            channel: "email",
-            recipient: email.trim(),
-            subject,
-            message: html,
-            status: "sent",
-          }).catch(() => {});
+          try {
+            await supabase.from("notification_logs").insert({
+              user_id: userId,
+              booking_id: booking.id,
+              event_type: "booking_created",
+              channel: "email",
+              recipient: email.trim(),
+              subject,
+              message: html,
+              status: "sent",
+            });
+          } catch (logErr) {
+            console.error("Notification log error:", logErr);
+          }
         }
       }
     }
