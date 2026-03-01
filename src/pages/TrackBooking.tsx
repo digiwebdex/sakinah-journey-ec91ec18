@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { Search, Package, CheckCircle2, Clock, Plane, FileCheck, Loader2, History, X, User, ShieldCheck } from "lucide-react";
+import { Search, Package, CheckCircle2, Clock, Plane, FileCheck, Loader2, History, X, User, ShieldCheck, LogIn } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -40,7 +40,6 @@ const TrackBooking = () => {
   const navigate = useNavigate();
   const [trackingId, setTrackingId] = useState(searchParams.get("id") || "");
   const [booking, setBooking] = useState<any>(null);
-  const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [history, setHistory] = useState<string[]>(getHistory());
@@ -81,7 +80,6 @@ const TrackBooking = () => {
     let bookingData: any = null;
 
     if (isPhoneNumber(rawInput)) {
-      // Search by phone number — check guest_phone or profiles.phone
       const { data: guestBookings } = await supabase
         .from("bookings")
         .select("*, packages(name, type)")
@@ -93,7 +91,6 @@ const TrackBooking = () => {
         bookingData = guestBookings[0];
       }
     } else {
-      // Search by tracking ID
       const id = rawInput.toUpperCase();
       setTrackingId(id);
       const { data } = await supabase
@@ -110,14 +107,6 @@ const TrackBooking = () => {
       const displayId = bookingData.tracking_id;
       addToHistory(displayId);
       setHistory(getHistory());
-      const { data: paymentData } = await supabase
-        .from("payments")
-        .select("*")
-        .eq("booking_id", bookingData.id)
-        .order("installment_number", { ascending: true });
-      setPayments(paymentData || []);
-    } else {
-      setPayments([]);
     }
     setLoading(false);
   };
@@ -157,6 +146,11 @@ const TrackBooking = () => {
     }
   };
 
+  // Determine if user owns this booking (can see full details)
+  const isOwner = user && booking && booking.user_id === user.id;
+
+  const fmt = (n: number) => `৳${Number(n || 0).toLocaleString()}`;
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -193,7 +187,6 @@ const TrackBooking = () => {
           {/* Recent History + User Bookings (shown when no result displayed) */}
           {!booking && !loading && (
             <div className="space-y-6 mb-10">
-              {/* Search History */}
               {history.length > 0 && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card border border-border rounded-xl p-5">
                   <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
@@ -217,7 +210,6 @@ const TrackBooking = () => {
                 </motion.div>
               )}
 
-              {/* User's Bookings */}
               {user && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card border border-border rounded-xl p-5">
                   <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
@@ -313,13 +305,17 @@ const TrackBooking = () => {
                 </div>
               </div>
 
-              {/* Booking Details */}
+              {/* Booking Details — PUBLIC (limited info) */}
               <div className="bg-card border border-border rounded-xl p-6">
                 <h2 className="font-heading text-lg font-bold mb-4">Booking Details</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
                   <div>
                     <p className="text-muted-foreground">Tracking ID</p>
                     <p className="font-mono font-bold text-primary">{booking.tracking_id}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Customer</p>
+                    <p className="font-medium">{booking.guest_name || "N/A"}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Package</p>
@@ -330,53 +326,68 @@ const TrackBooking = () => {
                     <p className="font-medium">{booking.num_travelers}</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Total Amount</p>
-                    <p className="font-medium">৳{Number(booking.total_amount).toLocaleString()}</p>
+                    <p className="text-muted-foreground">Status</p>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${statusColor(booking.status)}`}>
+                      {statusLabel(booking.status)}
+                    </span>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Paid</p>
-                    <p className="font-medium text-emerald">৳{Number(booking.paid_amount).toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Due</p>
-                    <p className="font-medium text-destructive">৳{Number(booking.due_amount || 0).toLocaleString()}</p>
+                    <p className="text-muted-foreground">Payment Status</p>
+                    <p className="font-medium">
+                      {Number(booking.due_amount || 0) <= 0 ? (
+                        <span className="text-emerald font-semibold">Fully Paid ✅</span>
+                      ) : (
+                        <span className="text-destructive font-semibold">Due: {fmt(booking.due_amount || 0)}</span>
+                      )}
+                    </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Booked On</p>
                     <p className="font-medium">{new Date(booking.created_at).toLocaleDateString()}</p>
                   </div>
+                  {booking.notes && (
+                    <div className="col-span-2 sm:col-span-3">
+                      <p className="text-muted-foreground">Notes</p>
+                      <p className="font-medium text-sm">{booking.notes}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Payment History */}
-              {payments.length > 0 && (
+              {/* Login prompt for full details (non-authenticated users) */}
+              {!user && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 text-center">
+                  <LogIn className="h-6 w-6 text-primary mx-auto mb-2" />
+                  <p className="text-sm font-semibold mb-1">Want to see full details?</p>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Login to your dashboard to view payment history, documents, installment schedule and more.
+                  </p>
+                  <a
+                    href="/auth"
+                    className="inline-flex items-center gap-2 bg-gradient-gold text-primary-foreground font-semibold px-5 py-2 rounded-md text-sm hover:opacity-90 transition-opacity"
+                  >
+                    <LogIn className="h-4 w-4" /> Login to Dashboard
+                  </a>
+                </div>
+              )}
+
+              {/* Full financial details — ONLY for authenticated owner */}
+              {isOwner && (
                 <div className="bg-card border border-border rounded-xl p-6">
-                  <h2 className="font-heading text-lg font-bold mb-4">Payment Schedule</h2>
-                  <div className="space-y-3">
-                    {payments.map((p) => (
-                      <div key={p.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                        <div>
-                          <p className="text-sm font-medium">Installment #{p.installment_number || "—"}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Due: {p.due_date ? new Date(p.due_date).toLocaleDateString() : "—"}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-medium">৳{Number(p.amount).toLocaleString()}</p>
-                          <span
-                            className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${
-                              p.status === "completed"
-                                ? "bg-emerald/10 text-emerald"
-                                : p.status === "pending" && p.due_date && new Date(p.due_date) < new Date()
-                                ? "bg-destructive/10 text-destructive"
-                                : "bg-primary/10 text-primary"
-                            }`}
-                          >
-                            {p.status === "pending" && p.due_date && new Date(p.due_date) < new Date() ? "overdue" : p.status}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                  <h2 className="font-heading text-lg font-bold mb-4">Financial Summary</h2>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Total Amount</p>
+                      <p className="font-medium">{fmt(booking.total_amount)}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Paid</p>
+                      <p className="font-medium text-emerald">{fmt(booking.paid_amount)}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Due</p>
+                      <p className="font-medium text-destructive">{fmt(booking.due_amount || 0)}</p>
+                    </div>
                   </div>
                 </div>
               )}

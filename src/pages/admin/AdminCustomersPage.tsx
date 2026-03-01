@@ -306,12 +306,17 @@ export default function AdminCustomersPage() {
                     <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                       <Users className="h-4 w-4 text-primary" />
                     </div>
-                    <div className="min-w-0">
-                      <p className="font-medium text-sm">{c.full_name || "No name"}</p>
+                     <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm">{c.full_name || "No name"}</p>
+                        {c.notes?.includes("Auto-created") && (
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Auto</Badge>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground truncate">
                         {c.phone || "No phone"}
+                        {c.email ? ` • ${c.email}` : ""}
                         {c.passport_number ? ` • পাসপোর্ট: ${c.passport_number}` : ""}
-                        {c.nid_number ? ` • NID: ${c.nid_number}` : ""}
                       </p>
                     </div>
                   </div>

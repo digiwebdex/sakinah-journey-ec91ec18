@@ -6,6 +6,16 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function generateTempPassword(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%";
+  let pw = "";
+  const arr = new Uint8Array(12);
+  crypto.getRandomValues(arr);
+  for (const b of arr) pw += chars[b % chars.length];
+  // Ensure it meets password rules
+  return "Rk" + pw + "1!";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -31,7 +41,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Use service role to bypass RLS for guest inserts
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -56,12 +65,67 @@ Deno.serve(async (req) => {
 
     // Check if there's a logged-in user from the auth header
     let userId: string | null = null;
+    let autoCreated = false;
+    let tempPassword: string | null = null;
     const authHeader = req.headers.get("Authorization");
     if (authHeader?.startsWith("Bearer ")) {
       const token = authHeader.replace("Bearer ", "");
       const { data: claimsData } = await supabase.auth.getClaims(token);
       if (claimsData?.claims?.sub) {
         userId = claimsData.claims.sub;
+      }
+    }
+
+    // AUTO ACCOUNT CREATION: If no logged-in user and email is provided
+    if (!userId && email?.trim()) {
+      const trimmedEmail = email.trim().toLowerCase();
+
+      // Check if user already exists with this email
+      const { data: existingUsers } = await supabase.auth.admin.listUsers();
+      const existingUser = existingUsers?.users?.find(
+        (u: any) => u.email?.toLowerCase() === trimmedEmail
+      );
+
+      if (existingUser) {
+        // Attach to existing user
+        userId = existingUser.id;
+      } else {
+        // Create new account with temporary password
+        tempPassword = generateTempPassword();
+        const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+          email: trimmedEmail,
+          password: tempPassword,
+          email_confirm: true, // Auto-confirm so they can log in immediately
+          user_metadata: {
+            full_name: fullName.trim(),
+            phone: phone.trim(),
+            auto_created: true,
+          },
+        });
+
+        if (createError) {
+          console.error("Auto account creation error:", createError);
+          // Don't fail the booking, just proceed without account
+        } else if (newUser?.user) {
+          userId = newUser.user.id;
+          autoCreated = true;
+
+          // Assign 'user' role
+          await supabase.from("user_roles").insert({
+            user_id: userId,
+            role: "user",
+          });
+
+          // Update profile with additional details
+          await supabase.from("profiles").update({
+            full_name: fullName.trim(),
+            phone: phone.trim(),
+            email: trimmedEmail,
+            passport_number: passportNumber?.trim() || null,
+            address: address?.trim() || null,
+            notes: "Auto-created from guest booking",
+          }).eq("user_id", userId);
+        }
       }
     }
 
@@ -103,7 +167,6 @@ Deno.serve(async (req) => {
         .single();
 
       if (plan) {
-        // Use a system user ID for guest payment records
         const paymentUserId = userId || "00000000-0000-0000-0000-000000000000";
         await supabase.rpc("generate_installment_schedule", {
           p_booking_id: booking.id,
@@ -114,8 +177,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // If user is logged in, update their profile too
-    if (userId) {
+    // If user is logged in (not auto-created), update their profile
+    if (userId && !autoCreated) {
       await supabase
         .from("profiles")
         .update({
@@ -127,11 +190,76 @@ Deno.serve(async (req) => {
         .eq("user_id", userId);
     }
 
+    // SEND EMAIL NOTIFICATION with booking details + login credentials
+    if (email?.trim()) {
+      const resendKey = Deno.env.get("RESEND_API_KEY");
+      const fromEmail = Deno.env.get("NOTIFICATION_FROM_EMAIL") || "noreply@example.com";
+      const siteUrl = Deno.env.get("SUPABASE_URL")?.replace(".supabase.co", "").replace("https://", "") || "";
+
+      if (resendKey) {
+        const loginSection = autoCreated && tempPassword
+          ? `<tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Login Email</td><td style="padding:8px;border:1px solid #ddd">${email.trim()}</td></tr>
+             <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Temporary Password</td><td style="padding:8px;border:1px solid #ddd;font-family:monospace;font-size:16px;background:#fff3cd">${tempPassword}</td></tr>
+             <tr><td colspan="2" style="padding:12px;border:1px solid #ddd;background:#e8f5e9;color:#2e7d32;font-size:13px">
+               ⚠️ Please change your password after first login for security.
+             </td></tr>`
+          : "";
+
+        const subject = autoCreated
+          ? `🎉 Booking Created + Your Account — ${booking.tracking_id}`
+          : `📋 Booking Created — ${booking.tracking_id}`;
+
+        const html = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#f9f9f9;border-radius:8px">
+          <h2 style="color:#b8860b">Booking Confirmation</h2>
+          <p>Dear <strong>${fullName.trim()}</strong>,</p>
+          <p>Your booking for <strong>${pkg.name}</strong> has been successfully created!</p>
+          <table style="width:100%;border-collapse:collapse;margin:16px 0">
+            <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Tracking ID</td><td style="padding:8px;border:1px solid #ddd;font-family:monospace;font-size:16px;color:#b8860b">${booking.tracking_id}</td></tr>
+            <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Package</td><td style="padding:8px;border:1px solid #ddd">${pkg.name}</td></tr>
+            <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Travelers</td><td style="padding:8px;border:1px solid #ddd">${numTravelers}</td></tr>
+            <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold">Total Amount</td><td style="padding:8px;border:1px solid #ddd">৳${totalAmount.toLocaleString()}</td></tr>
+            ${loginSection}
+          </table>
+          <div style="background:#e3f2fd;padding:16px;border-radius:8px;margin:16px 0">
+            <p style="margin:0;font-size:14px"><strong>📍 Track Without Login:</strong> Visit our tracking page and enter your Tracking ID <strong>${booking.tracking_id}</strong> or your phone number.</p>
+            ${autoCreated ? `<p style="margin:8px 0 0;font-size:14px"><strong>🔐 Full Dashboard Access:</strong> <a href="https://rahe-kaba-journeys.lovable.app/auth" style="color:#b8860b">Login here</a> with your email and temporary password to view full booking details, payment history, and manage documents.</p>` : ""}
+          </div>
+          <hr style="border:none;border-top:1px solid #e0e0e0;margin:20px 0"/>
+          <p style="font-size:12px;color:#888">Rahe Kaba — Your trusted Hajj & Umrah partner</p>
+        </div>`;
+
+        try {
+          await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ from: fromEmail, to: [email.trim()], subject, html }),
+          });
+        } catch (e) {
+          console.error("Email send error:", e);
+        }
+
+        // Log notification
+        if (userId) {
+          await supabase.from("notification_logs").insert({
+            user_id: userId,
+            booking_id: booking.id,
+            event_type: "booking_created",
+            channel: "email",
+            recipient: email.trim(),
+            subject,
+            message: html,
+            status: "sent",
+          }).catch(() => {});
+        }
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         booking_id: booking.id,
         tracking_id: booking.tracking_id,
+        auto_created: autoCreated,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
