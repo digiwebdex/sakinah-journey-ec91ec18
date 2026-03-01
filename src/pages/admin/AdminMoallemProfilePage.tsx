@@ -45,6 +45,7 @@ export default function AdminMoallemProfilePage() {
     date: new Date().toISOString().split("T")[0],
     notes: "",
     wallet_account_id: "",
+    booking_id: "",
   };
   const [paymentForm, setPaymentForm] = useState(emptyPaymentForm);
 
@@ -100,6 +101,7 @@ export default function AdminMoallemProfilePage() {
         date: paymentForm.date,
         notes: paymentForm.notes.trim() || null,
         wallet_account_id: paymentForm.wallet_account_id || null,
+        booking_id: paymentForm.booking_id || null,
         recorded_by: session.user.id,
       });
       if (mpErr) throw mpErr;
@@ -164,6 +166,8 @@ export default function AdminMoallemProfilePage() {
   const totalDue = bookings.reduce((s, b) => s + Number(b.due_amount || 0), 0);
   const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
   const totalMoallemDeposit = moallemPayments.reduce((s, p) => s + Number(p.amount), 0);
+  const totalMoallemPaid = bookings.reduce((s, b) => s + Number(b.paid_by_moallem || 0), 0);
+  const totalMoallemDue = bookings.reduce((s, b) => s + Number(b.moallem_due || 0), 0);
   const profit = totalPaid - totalExpenses;
 
   // Hajji list
@@ -230,10 +234,10 @@ export default function AdminMoallemProfilePage() {
         {[
           { icon: <Users className="h-5 w-5 text-primary" />, value: totalHajji, label: "মোট হাজী", cls: "text-foreground" },
           { icon: <FileText className="h-5 w-5 text-primary" />, value: totalBookings, label: "মোট বুকিং", cls: "text-foreground" },
-          { icon: <CreditCard className="h-5 w-5 text-primary" />, value: fmt(totalPackageAmount), label: "প্যাকেজ মূল্য", cls: "text-foreground", small: true },
-          { icon: <Wallet className="h-5 w-5 text-emerald-500" />, value: fmt(totalMoallemDeposit), label: "মোয়াল্লেম জমা", cls: "text-emerald-500", small: true },
-          { icon: <TrendingUp className="h-5 w-5 text-emerald-500" />, value: fmt(totalPaid), label: "বুকিং পরিশোধিত", cls: "text-emerald-500", small: true },
-          { icon: <TrendingDown className="h-5 w-5 text-destructive" />, value: fmt(totalDue), label: "মোট বকেয়া", cls: "text-destructive", small: true },
+          { icon: <CreditCard className="h-5 w-5 text-primary" />, value: fmt(totalPackageAmount), label: "মোট বিক্রয়", cls: "text-foreground", small: true },
+          { icon: <Wallet className="h-5 w-5 text-emerald-500" />, value: fmt(totalMoallemPaid), label: "মোয়াল্লেম পরিশোধিত", cls: "text-emerald-500", small: true },
+          { icon: <TrendingDown className="h-5 w-5 text-destructive" />, value: fmt(totalMoallemDue), label: "মোয়াল্লেম বকেয়া", cls: "text-destructive", small: true },
+          { icon: <TrendingUp className="h-5 w-5 text-emerald-500" />, value: fmt(totalMoallemDeposit), label: "মোয়াল্লেম জমা", cls: "text-emerald-500", small: true },
           { icon: profit >= 0 ? <TrendingUp className="h-5 w-5 text-emerald-500" /> : <TrendingDown className="h-5 w-5 text-destructive" />, value: fmt(profit), label: "লাভ", cls: profit >= 0 ? "text-emerald-500" : "text-destructive", small: true },
         ].map((kpi, i) => (
           <Card key={i}>
@@ -260,20 +264,22 @@ export default function AdminMoallemProfilePage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-border text-left text-muted-foreground text-xs">
-                    <th className="pb-2 pr-3">তারিখ</th>
-                    <th className="pb-2 pr-3">পরিমাণ</th>
-                    <th className="pb-2 pr-3">পদ্ধতি</th>
-                    <th className="pb-2">নোট</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {moallemPayments.map((mp: any) => (
-                    <tr key={mp.id} className="border-b border-border/30">
-                      <td className="py-2 pr-3 text-xs">{format(new Date(mp.date), "dd MMM yyyy")}</td>
-                      <td className="py-2 pr-3 font-bold text-emerald-500">{fmt(mp.amount)}</td>
-                      <td className="py-2 pr-3 capitalize">{mp.payment_method}</td>
-                      <td className="py-2 text-xs text-muted-foreground">{mp.notes || "—"}</td>
+                   <tr className="border-b border-border text-left text-muted-foreground text-xs">
+                     <th className="pb-2 pr-3">তারিখ</th>
+                     <th className="pb-2 pr-3">বুকিং</th>
+                     <th className="pb-2 pr-3">পরিমাণ</th>
+                     <th className="pb-2 pr-3">পদ্ধতি</th>
+                     <th className="pb-2">নোট</th>
+                   </tr>
+                 </thead>
+                 <tbody>
+                   {moallemPayments.map((mp: any) => (
+                     <tr key={mp.id} className="border-b border-border/30">
+                       <td className="py-2 pr-3 text-xs">{format(new Date(mp.date), "dd MMM yyyy")}</td>
+                       <td className="py-2 pr-3 text-xs font-mono text-primary">{mp.booking_id ? bookings.find((b: any) => b.id === mp.booking_id)?.tracking_id || "—" : "FIFO"}</td>
+                       <td className="py-2 pr-3 font-bold text-emerald-500">{fmt(mp.amount)}</td>
+                       <td className="py-2 pr-3 capitalize">{mp.payment_method}</td>
+                       <td className="py-2 text-xs text-muted-foreground">{mp.notes || "—"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -336,11 +342,11 @@ export default function AdminMoallemProfilePage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-muted-foreground text-xs">
-                    <th className="pb-2 pr-3">ট্র্যাকিং</th><th className="pb-2 pr-3">কাস্টমার</th>
-                    <th className="pb-2 pr-3">প্যাকেজ</th><th className="pb-2 pr-3">যাত্রী</th>
-                    <th className="pb-2 pr-3">মোট</th><th className="pb-2 pr-3">পরিশোধিত</th>
-                    <th className="pb-2 pr-3">বকেয়া</th><th className="pb-2 pr-3">স্ট্যাটাস</th>
-                    <th className="pb-2">তারিখ</th>
+                     <th className="pb-2 pr-3">ট্র্যাকিং</th><th className="pb-2 pr-3">কাস্টমার</th>
+                     <th className="pb-2 pr-3">প্যাকেজ</th><th className="pb-2 pr-3">যাত্রী</th>
+                     <th className="pb-2 pr-3">মোট</th><th className="pb-2 pr-3">মোয়াল্লেম পরিশোধিত</th>
+                     <th className="pb-2 pr-3">মোয়াল্লেম বকেয়া</th><th className="pb-2 pr-3">স্ট্যাটাস</th>
+                     <th className="pb-2">তারিখ</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -351,9 +357,9 @@ export default function AdminMoallemProfilePage() {
                       <td className="py-2 pr-3">{b.guest_name || "—"}</td>
                       <td className="py-2 pr-3">{b.packages?.name || "—"}</td>
                       <td className="py-2 pr-3">{b.num_travelers}</td>
-                      <td className="py-2 pr-3 font-medium">{fmt(b.total_amount)}</td>
-                      <td className="py-2 pr-3 text-emerald-500">{fmt(b.paid_amount)}</td>
-                      <td className="py-2 pr-3 text-destructive">{fmt(b.due_amount)}</td>
+                       <td className="py-2 pr-3 font-medium">{fmt(b.total_amount)}</td>
+                       <td className="py-2 pr-3 text-emerald-500">{fmt(b.paid_by_moallem)}</td>
+                       <td className="py-2 pr-3 text-destructive">{fmt(b.moallem_due)}</td>
                       <td className="py-2 pr-3">
                         <Badge variant={b.status === "completed" ? "default" : "secondary"} className="text-[10px] capitalize">{b.status}</Badge>
                       </td>
@@ -415,28 +421,28 @@ export default function AdminMoallemProfilePage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-            <div className="bg-secondary/50 rounded-lg p-4">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">মোট প্যাকেজ মূল্য</p>
-              <p className="font-heading font-bold text-lg text-foreground">{fmt(totalPackageAmount)}</p>
-            </div>
-            <div className="bg-secondary/50 rounded-lg p-4">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">মোয়াল্লেম জমা</p>
-              <p className="font-heading font-bold text-lg text-emerald-500">{fmt(totalMoallemDeposit)}</p>
-            </div>
-            <div className="bg-secondary/50 rounded-lg p-4">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">বুকিং পেমেন্ট</p>
-              <p className="font-heading font-bold text-lg text-emerald-500">{fmt(totalPaid)}</p>
-            </div>
-            <div className="bg-secondary/50 rounded-lg p-4">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">মোট খরচ</p>
-              <p className="font-heading font-bold text-lg text-destructive">{fmt(totalExpenses)}</p>
-            </div>
-            <div className="bg-secondary/50 rounded-lg p-4">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">নিট লাভ</p>
-              <p className={`font-heading font-bold text-lg ${profit >= 0 ? "text-emerald-500" : "text-destructive"}`}>{fmt(profit)}</p>
-            </div>
-          </div>
+           <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+             <div className="bg-secondary/50 rounded-lg p-4">
+               <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">মোট বিক্রয় মূল্য</p>
+               <p className="font-heading font-bold text-lg text-foreground">{fmt(totalPackageAmount)}</p>
+             </div>
+             <div className="bg-secondary/50 rounded-lg p-4">
+               <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">মোয়াল্লেম পরিশোধিত</p>
+               <p className="font-heading font-bold text-lg text-emerald-500">{fmt(totalMoallemPaid)}</p>
+             </div>
+             <div className="bg-secondary/50 rounded-lg p-4">
+               <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">মোয়াল্লেম বকেয়া</p>
+               <p className="font-heading font-bold text-lg text-destructive">{fmt(totalMoallemDue)}</p>
+             </div>
+             <div className="bg-secondary/50 rounded-lg p-4">
+               <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">মোট খরচ</p>
+               <p className="font-heading font-bold text-lg text-destructive">{fmt(totalExpenses)}</p>
+             </div>
+             <div className="bg-secondary/50 rounded-lg p-4">
+               <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">নিট লাভ</p>
+               <p className={`font-heading font-bold text-lg ${profit >= 0 ? "text-emerald-500" : "text-destructive"}`}>{fmt(profit)}</p>
+             </div>
+           </div>
           <div className="mt-4 grid grid-cols-3 gap-4 text-center text-sm">
             <div>
               <p className="text-muted-foreground text-xs">সংগ্রহের হার</p>
@@ -459,11 +465,25 @@ export default function AdminMoallemProfilePage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>মোয়াল্লেম পেমেন্ট রেকর্ড</DialogTitle>
-            <DialogDescription>{moallem.name} — বকেয়া: {fmt(totalDue)}</DialogDescription>
+            <DialogDescription>{moallem.name} — মোয়াল্লেম বকেয়া: {fmt(totalMoallemDue)}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">পরিমাণ (৳) *</label>
+           <div className="space-y-4">
+             <div>
+               <label className="text-sm font-medium">বুকিং (ঐচ্ছিক)</label>
+               <Select value={paymentForm.booking_id} onValueChange={(v) => setPaymentForm({ ...paymentForm, booking_id: v })}>
+                 <SelectTrigger><SelectValue placeholder="-- বুকিং নির্বাচন করুন --" /></SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="">FIFO বিতরণ</SelectItem>
+                   {bookings.filter((b: any) => Number(b.moallem_due || 0) > 0).map((b: any) => (
+                     <SelectItem key={b.id} value={b.id}>
+                       {b.tracking_id} — {b.guest_name || "N/A"} — বকেয়া: {fmt(b.moallem_due)}
+                     </SelectItem>
+                   ))}
+                 </SelectContent>
+               </Select>
+             </div>
+             <div>
+               <label className="text-sm font-medium">পরিমাণ (৳) *</label>
               <Input type="number" min={1} value={paymentForm.amount}
                 onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
                 placeholder="পরিমাণ লিখুন" />

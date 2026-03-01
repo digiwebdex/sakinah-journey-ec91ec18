@@ -155,6 +155,8 @@ const AdminDashboardCharts = ({ bookings, payments, expenses = [], accounts = []
 
   // Moallem & Supplier totals
   const totalMoallemAdvance = moallemPayments.reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
+  const totalMoallemPaidBooking = filteredBookings.reduce((s: number, b: any) => s + Number(b.paid_by_moallem || 0), 0);
+  const totalMoallemDueBooking = filteredBookings.filter((b: any) => b.moallem_id).reduce((s: number, b: any) => s + Number(b.moallem_due || 0), 0);
   const totalSupplierPaid = filteredBookings.reduce((s: number, b: any) => s + Number(b.paid_to_supplier || 0), 0);
   const totalSupplierCost = filteredBookings.reduce((s: number, b: any) => s + Number(b.total_cost || 0), 0);
   const totalSupplierDue = filteredBookings.reduce((s: number, b: any) => s + Number(b.supplier_due || 0), 0);
@@ -239,6 +241,8 @@ const AdminDashboardCharts = ({ bookings, payments, expenses = [], accounts = []
       type: b.packages?.type || "N/A", travelers: b.num_travelers, total: Number(b.total_amount),
       paid: Number(b.paid_amount), due: Number(b.due_amount || 0), supplierCost, extraExpense: extraExp, expenses: expenseTotal,
       supplierPaid: Number(b.paid_to_supplier || 0), supplierDue: Number(b.supplier_due || 0),
+      moallemPaid: Number(b.paid_by_moallem || 0), moallemDue: Number(b.moallem_due || 0),
+      hasMoallem: !!b.moallem_id,
       profit: Number(b.profit_amount || 0), status: b.status, date: b.created_at,
     };
   }), [filteredBookings, expenses]);

@@ -147,11 +147,13 @@ export type Database = {
           guest_phone: string | null
           id: string
           installment_plan_id: string | null
+          moallem_due: number
           moallem_id: string | null
           notes: string | null
           num_travelers: number
           package_id: string
           paid_amount: number
+          paid_by_moallem: number
           paid_to_supplier: number
           profit_amount: number | null
           selling_price_per_person: number | null
@@ -176,11 +178,13 @@ export type Database = {
           guest_phone?: string | null
           id?: string
           installment_plan_id?: string | null
+          moallem_due?: number
           moallem_id?: string | null
           notes?: string | null
           num_travelers?: number
           package_id: string
           paid_amount?: number
+          paid_by_moallem?: number
           paid_to_supplier?: number
           profit_amount?: number | null
           selling_price_per_person?: number | null
@@ -205,11 +209,13 @@ export type Database = {
           guest_phone?: string | null
           id?: string
           installment_plan_id?: string | null
+          moallem_due?: number
           moallem_id?: string | null
           notes?: string | null
           num_travelers?: number
           package_id?: string
           paid_amount?: number
+          paid_by_moallem?: number
           paid_to_supplier?: number
           profit_amount?: number | null
           selling_price_per_person?: number | null
@@ -577,6 +583,7 @@ export type Database = {
       moallem_payments: {
         Row: {
           amount: number
+          booking_id: string | null
           created_at: string
           date: string
           id: string
@@ -588,6 +595,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          booking_id?: string | null
           created_at?: string
           date?: string
           id?: string
@@ -599,6 +607,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          booking_id?: string | null
           created_at?: string
           date?: string
           id?: string
@@ -609,6 +618,20 @@ export type Database = {
           wallet_account_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "moallem_payments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "moallem_payments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "v_booking_profit"
+            referencedColumns: ["booking_id"]
+          },
           {
             foreignKeyName: "moallem_payments_moallem_id_fkey"
             columns: ["moallem_id"]
@@ -1154,11 +1177,14 @@ export type Database = {
           due_amount: number | null
           extra_expense: number | null
           guest_name: string | null
+          moallem_due: number | null
+          moallem_id: string | null
           num_travelers: number | null
           package_id: string | null
           package_name: string | null
           package_type: string | null
           paid_amount: number | null
+          paid_by_moallem: number | null
           paid_to_supplier: number | null
           profit_amount: number | null
           selling_price_per_person: number | null
@@ -1171,6 +1197,13 @@ export type Database = {
           tracking_id: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "bookings_moallem_id_fkey"
+            columns: ["moallem_id"]
+            isOneToOne: false
+            referencedRelation: "moallems"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bookings_package_id_fkey"
             columns: ["package_id"]

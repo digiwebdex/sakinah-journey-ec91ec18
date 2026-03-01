@@ -465,6 +465,10 @@ export default function AdminBookingsPage() {
                 <div><span className="text-muted-foreground text-xs block">অতিরিক্ত খরচ</span><span className="font-medium">{fmt(Number(viewBooking.extra_expense || 0))}</span></div>
                 <div><span className="text-muted-foreground text-xs block">সাপ্লায়ার পরিশোধিত</span><span className="font-medium text-emerald-500">{fmt(Number(viewBooking.paid_to_supplier || 0))}</span></div>
                 <div><span className="text-muted-foreground text-xs block">সাপ্লায়ার বকেয়া</span><span className="font-medium text-destructive">{fmt(Number(viewBooking.supplier_due || 0))}</span></div>
+                {viewBooking.moallem_id && <>
+                  <div><span className="text-muted-foreground text-xs block">মোয়াল্লেম পরিশোধিত</span><span className="font-medium text-emerald-500">{fmt(Number(viewBooking.paid_by_moallem || 0))}</span></div>
+                  <div><span className="text-muted-foreground text-xs block">মোয়াল্লেম বকেয়া</span><span className="font-medium text-destructive">{fmt(Number(viewBooking.moallem_due || 0))}</span></div>
+                </>}
                 <div><span className="text-muted-foreground text-xs block">পরিশোধিত</span><span className="font-medium text-emerald-500">{fmt(Number(viewBooking.paid_amount))}</span></div>
                 <div><span className="text-muted-foreground text-xs block">বকেয়া</span><span className="font-medium text-destructive">{fmt(Number(viewBooking.due_amount || 0))}</span></div>
                 <div><span className="text-muted-foreground text-xs block">লাভ</span><span className={`font-medium ${Number(viewBooking.profit_amount || 0) >= 0 ? "text-emerald-500" : "text-destructive"}`}>{fmt(Number(viewBooking.profit_amount || 0))}</span></div>
