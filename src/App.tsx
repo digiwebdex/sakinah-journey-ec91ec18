@@ -37,6 +37,7 @@ const AdminNotificationsPage = lazy(() => import("./pages/admin/AdminNotificatio
 const AdminChartOfAccountsPage = lazy(() => import("./pages/admin/AdminChartOfAccountsPage"));
 const AdminReceivablesPage = lazy(() => import("./pages/admin/AdminReceivablesPage"));
 const AdminCreateBookingPage = lazy(() => import("./pages/admin/AdminCreateBookingPage"));
+const AdminMoallemsPage = lazy(() => import("./pages/admin/AdminMoallemsPage"));
 
 const queryClient = new QueryClient();
 
@@ -81,6 +82,7 @@ const App = () => (
               <Route path="chart-of-accounts" element={<AdminChartOfAccountsPage />} />
               <Route path="receivables" element={<AdminReceivablesPage />} />
               <Route path="reports" element={<AdminReportsPage />} />
+              <Route path="moallems" element={<AdminMoallemsPage />} />
               <Route path="cms" element={<AdminCmsPage />} />
               <Route path="settings" element={<AdminSettingsPage />} />
             </Route>

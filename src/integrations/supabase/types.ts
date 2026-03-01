@@ -533,6 +533,45 @@ export type Database = {
         }
         Relationships: []
       }
+      moallems: {
+        Row: {
+          address: string | null
+          contract_date: string | null
+          created_at: string
+          id: string
+          name: string
+          nid_number: string | null
+          notes: string | null
+          phone: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          contract_date?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          nid_number?: string | null
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          contract_date?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          nid_number?: string | null
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notification_logs: {
         Row: {
           booking_id: string | null
