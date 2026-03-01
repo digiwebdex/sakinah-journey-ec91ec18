@@ -16,6 +16,7 @@ interface Props {
   payments: any[];
   expenses?: any[];
   accounts?: any[];
+  financialSummary?: any;
   onMarkPaid: (id: string) => void;
 }
 
@@ -120,7 +121,7 @@ const ReconciliationWidget = ({ bookings, payments }: { bookings: any[]; payment
   );
 };
 
-const AdminDashboardCharts = ({ bookings, payments, expenses = [], accounts = [], onMarkPaid }: Props) => {
+const AdminDashboardCharts = ({ bookings, payments, expenses = [], accounts = [], financialSummary, onMarkPaid }: Props) => {
   const [dateFrom, setDateFrom] = useState(() => format(subMonths(new Date(), 11), "yyyy-MM-dd"));
   const [dateTo, setDateTo] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [packageTypeFilter, setPackageTypeFilter] = useState("all");
@@ -136,10 +137,10 @@ const AdminDashboardCharts = ({ bookings, payments, expenses = [], accounts = []
     return isWithinInterval(d, { start: parseISO(dateFrom), end: endOfMonth(parseISO(dateTo)) }) && (paymentStatusFilter === "all" || p.status === paymentStatusFilter);
   }), [payments, dateFrom, dateTo, paymentStatusFilter]);
 
-  // KPIs
-  const totalRevenue = filteredPayments.filter((p) => p.status === "completed").reduce((s: number, p: any) => s + Number(p.amount), 0);
-  const totalExpenses = expenses.reduce((s: number, e: any) => s + Number(e.amount), 0);
-  const netProfit = totalRevenue - totalExpenses;
+  // KPIs from accounting tables (single source of truth)
+  const totalRevenue = financialSummary ? Number(financialSummary.total_income) : filteredPayments.filter((p) => p.status === "completed").reduce((s: number, p: any) => s + Number(p.amount), 0);
+  const totalExpenses = financialSummary ? Number(financialSummary.total_expense) : expenses.reduce((s: number, e: any) => s + Number(e.amount), 0);
+  const netProfit = financialSummary ? Number(financialSummary.net_profit) : totalRevenue - totalExpenses;
   const totalDue = filteredBookings.reduce((s: number, b: any) => s + Number(b.due_amount || 0), 0);
   const overduePayments = filteredPayments.filter((p: any) => p.status === "pending" && p.due_date && new Date(p.due_date) < new Date());
   const walletAccounts = accounts.filter((a: any) => a.type === "asset");
