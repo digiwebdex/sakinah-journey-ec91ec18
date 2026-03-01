@@ -135,6 +135,7 @@ export default function AdminBookingsPage() {
   const [searchParams] = useSearchParams();
   const isViewer = useIsViewer();
   const [bookings, setBookings] = useState<any[]>([]);
+  const [moallems, setMoallems] = useState<any[]>([]);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>({});
@@ -150,7 +151,10 @@ export default function AdminBookingsPage() {
       .order("created_at", { ascending: false })
       .then(({ data }) => setBookings(data || []));
 
-  useEffect(() => { fetchBookings(); }, []);
+  useEffect(() => {
+    fetchBookings();
+    supabase.from("moallems").select("id, name, phone, status").eq("status", "active").order("name").then(({ data }) => setMoallems(data || []));
+  }, []);
 
   useEffect(() => {
     if (searchParams.get("action") === "create") navigate("/admin/bookings/create", { replace: true });
@@ -164,6 +168,7 @@ export default function AdminBookingsPage() {
       guest_name: b.guest_name || "", guest_phone: b.guest_phone || "",
       guest_email: b.guest_email || "", guest_address: b.guest_address || "",
       guest_passport: b.guest_passport || "", user_id: b.user_id || null,
+      moallem_id: b.moallem_id || "",
     });
   };
 
@@ -180,6 +185,7 @@ export default function AdminBookingsPage() {
       guest_name: editForm.guest_name?.trim() || null, guest_phone: editForm.guest_phone?.trim() || null,
       guest_email: editForm.guest_email?.trim() || null, guest_address: editForm.guest_address?.trim() || null,
       guest_passport: editForm.guest_passport?.trim() || null, user_id: editForm.user_id || null,
+      moallem_id: editForm.moallem_id || null,
     }).eq("id", editingId);
     if (error) { toast.error(error.message); return; }
     toast.success("বুকিং আপডেট হয়েছে");
@@ -350,9 +356,20 @@ export default function AdminBookingsPage() {
                   <input className={inputClass} type="number" min={1} value={editForm.num_travelers} onChange={(e) => setEditForm({ ...editForm, num_travelers: e.target.value })} />
                 </div>
               </div>
-              <div>
-                <label className="text-xs text-muted-foreground block mb-1">নোট</label>
-                <input className={inputClass} value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} placeholder="অতিরিক্ত তথ্য..." />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">মোয়াল্লেম (ঐচ্ছিক)</label>
+                  <select className={inputClass} value={editForm.moallem_id || ""} onChange={(e) => setEditForm({ ...editForm, moallem_id: e.target.value })}>
+                    <option value="">-- মোয়াল্লেম নেই --</option>
+                    {moallems.map((m: any) => (
+                      <option key={m.id} value={m.id}>{m.name} {m.phone ? `(${m.phone})` : ""}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">নোট</label>
+                  <input className={inputClass} value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} placeholder="অতিরিক্ত তথ্য..." />
+                </div>
               </div>
             </div>
           ) : (
