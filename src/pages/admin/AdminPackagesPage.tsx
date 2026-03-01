@@ -11,7 +11,7 @@ const TYPES = ["hajj", "umrah", "tour", "visa", "hotel", "transport", "ziyara"];
 
 const EMPTY_FORM = {
   name: "", type: "umrah", description: "", price: "", duration_days: "",
-  image_url: "", start_date: "", services: "", is_active: true,
+  image_url: "", start_date: "", expiry_date: "", services: "", is_active: true,
 };
 
 export default function AdminPackagesPage() {
@@ -48,6 +48,7 @@ export default function AdminPackagesPage() {
     name: f.name.trim(), type: f.type, description: f.description.trim() || null,
     price: parseFloat(f.price), duration_days: f.duration_days ? parseInt(f.duration_days) : null,
     image_url: f.image_url || null, start_date: f.start_date || null,
+    expiry_date: f.expiry_date || null,
     services: f.services ? f.services.split(",").map(s => s.trim()).filter(Boolean) : [],
     is_active: f.is_active,
   });
@@ -68,7 +69,7 @@ export default function AdminPackagesPage() {
     setForm({
       name: p.name, type: p.type, description: p.description || "", price: String(p.price),
       duration_days: p.duration_days ? String(p.duration_days) : "", image_url: p.image_url || "",
-      start_date: p.start_date || "", services: svc, is_active: p.is_active,
+      start_date: p.start_date || "", expiry_date: p.expiry_date || "", services: svc, is_active: p.is_active,
     });
     setShowForm(true);
   };
@@ -94,7 +95,7 @@ export default function AdminPackagesPage() {
     const { error } = await supabase.from("packages").insert({
       name: p.name + " (Copy)", type: p.type, description: p.description,
       price: p.price, duration_days: p.duration_days, image_url: p.image_url,
-      start_date: p.start_date, services: svc, is_active: false,
+      start_date: p.start_date, expiry_date: p.expiry_date, services: svc, is_active: false,
     });
     if (error) { toast.error(error.message); return; }
     toast.success("প্যাকেজ ডুপ্লিকেট হয়েছে");
@@ -139,6 +140,11 @@ export default function AdminPackagesPage() {
           <label className="text-xs text-muted-foreground block mb-1">শুরুর তারিখ</label>
           <input className={inputClass} type="date" value={form.start_date}
             onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground block mb-1">শেষ তারিখ</label>
+          <input className={inputClass} type="date" value={form.expiry_date}
+            onChange={(e) => setForm({ ...form, expiry_date: e.target.value })} />
         </div>
         <div className="sm:col-span-2">
           <label className="text-xs text-muted-foreground block mb-1">সেবাসমূহ (কমা দিয়ে আলাদা করুন)</label>
@@ -216,6 +222,7 @@ export default function AdminPackagesPage() {
                 <p className="text-xs text-muted-foreground capitalize mt-0.5">
                   {p.type} • {p.duration_days ? `${p.duration_days} দিন` : "—"}
                   {p.start_date && ` • শুরু: ${p.start_date}`}
+                  {p.expiry_date && ` • শেষ: ${p.expiry_date}`}
                 </p>
                 {Array.isArray(p.services) && p.services.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1.5">
@@ -267,6 +274,7 @@ export default function AdminPackagesPage() {
                 <div><span className="text-muted-foreground text-xs block">ধরন</span><span className="font-medium capitalize">{viewPkg.type}</span></div>
                 <div><span className="text-muted-foreground text-xs block">মূল্য</span><span className="font-medium text-primary">৳{Number(viewPkg.price).toLocaleString()}</span></div>
                 <div><span className="text-muted-foreground text-xs block">সময়কাল</span><span className="font-medium">{viewPkg.duration_days ? `${viewPkg.duration_days} দিন` : "—"}</span></div>
+                <div><span className="text-muted-foreground text-xs block">শেষ তারিখ</span><span className="font-medium">{viewPkg.expiry_date || "—"}</span></div>
                 <div><span className="text-muted-foreground text-xs block">স্ট্যাটাস</span><span className={`font-medium ${viewPkg.is_active ? "text-emerald" : "text-destructive"}`}>{viewPkg.is_active ? "সক্রিয়" : "নিষ্ক্রিয়"}</span></div>
               </div>
               {viewPkg.description && <div><span className="text-muted-foreground text-xs block">বিবরণ</span><p>{viewPkg.description}</p></div>}
