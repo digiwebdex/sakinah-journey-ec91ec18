@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsViewer } from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ const emptyForm = {
 };
 
 export default function AdminSupplierAgentsPage() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const isViewer = useIsViewer();
   const [agents, setAgents] = useState<SupplierAgent[]>([]);
@@ -156,7 +158,7 @@ export default function AdminSupplierAgentsPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((a) => (
-            <Card key={a.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setViewItem(a)}>
+            <Card key={a.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/admin/supplier-agents/${a.id}`)}>
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                   <CardTitle className="text-base">{a.agent_name}</CardTitle>
