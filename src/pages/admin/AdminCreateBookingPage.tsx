@@ -33,7 +33,7 @@ export default function AdminCreateBookingPage() {
   }, [selectedCustomerId]);
 
   const [moallems, setMoallems] = useState<any[]>([]);
-
+  const [supplierAgents, setSupplierAgents] = useState<any[]>([]);
   const [form, setForm] = useState({
     guest_name: "",
     guest_phone: "",
@@ -48,9 +48,12 @@ export default function AdminCreateBookingPage() {
     status: "pending",
     notes: "",
     moallem_id: "",
+    supplier_agent_id: "",
+    cost_price_per_person: 0,
   });
 
   const dueAmount = Math.max(0, form.total_amount - form.paid_amount);
+  const totalCost = form.cost_price_per_person * form.num_travelers;
 
   useEffect(() => {
     supabase
@@ -65,6 +68,12 @@ export default function AdminCreateBookingPage() {
       .eq("status", "active")
       .order("name")
       .then(({ data }) => setMoallems(data || []));
+    supabase
+      .from("supplier_agents")
+      .select("id, agent_name, company_name, status")
+      .eq("status", "active")
+      .order("agent_name")
+      .then(({ data }) => setSupplierAgents((data as any[]) || []));
   }, []);
 
   const handleCustomerSelect = (customer: any | null) => {
@@ -181,6 +190,9 @@ export default function AdminCreateBookingPage() {
         notes: form.notes.trim() || null,
         user_id: customerId,
         moallem_id: form.moallem_id || null,
+        supplier_agent_id: form.supplier_agent_id || null,
+        cost_price_per_person: form.cost_price_per_person || 0,
+        total_cost: totalCost,
       }).select("id, tracking_id").single();
 
       if (error) throw error;
@@ -333,6 +345,35 @@ export default function AdminCreateBookingPage() {
             ))}
           </select>
         </div>
+        {/* Supplier Agent */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="sm:col-span-2">
+            <label className="text-xs text-muted-foreground block mb-1">সাপ্লায়ার এজেন্ট (ঐচ্ছিক)</label>
+            <select className={inputClass} value={form.supplier_agent_id} onChange={(e) => setForm({ ...form, supplier_agent_id: e.target.value })}>
+              <option value="">-- সাপ্লায়ার নির্বাচন করুন --</option>
+              {supplierAgents.map((a) => (
+                <option key={a.id} value={a.id}>{a.agent_name} {a.company_name ? `(${a.company_name})` : ""}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground block mb-1">প্রতি ব্যক্তি খরচ (৳)</label>
+            <input className={inputClass} type="number" min={0} value={form.cost_price_per_person}
+              onChange={(e) => setForm(f => ({ ...f, cost_price_per_person: Math.max(0, parseFloat(e.target.value) || 0) }))} />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground block mb-1">মোট খরচ (৳) — স্বয়ংক্রিয়</label>
+            <div className={`${inputClass} bg-muted/50 font-bold text-foreground`}>
+              ৳{totalCost.toLocaleString()}
+            </div>
+          </div>
+        </div>
+        {totalCost > 0 && form.total_amount > 0 && (
+          <div className="bg-secondary/50 rounded-lg p-3 text-xs text-muted-foreground">
+            খরচ: ৳{form.cost_price_per_person.toLocaleString()} × {form.num_travelers} জন = ৳{totalCost.toLocaleString()} | 
+            আনুমানিক লাভ: <span className={`font-bold ${form.total_amount - totalCost >= 0 ? "text-primary" : "text-destructive"}`}>৳{(form.total_amount - totalCost).toLocaleString()}</span>
+          </div>
+        )}
         {selectedPkg && (
           <div className="bg-secondary/50 rounded-lg p-3 text-xs text-muted-foreground">
             প্যাকেজ মূল্য: ৳{Number(selectedPkg.price).toLocaleString()} × {form.num_travelers} জন = <span className="font-bold text-foreground">৳{(Number(selectedPkg.price) * form.num_travelers).toLocaleString()}</span>
@@ -386,7 +427,7 @@ export default function AdminCreateBookingPage() {
       {/* Live Summary */}
       <div className="bg-primary/5 border border-primary/20 rounded-xl p-5">
         <h3 className="font-heading font-semibold text-sm mb-3">সারসংক্ষেপ</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-sm">
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 text-sm">
           <div>
             <p className="text-xs text-muted-foreground">কাস্টমার</p>
             <p className="font-medium">{form.guest_name || "—"}</p>
@@ -406,6 +447,10 @@ export default function AdminCreateBookingPage() {
           <div>
             <p className="text-xs text-muted-foreground">বকেয়া</p>
             <p className={`font-heading font-bold ${dueAmount > 0 ? "text-destructive" : "text-emerald"}`}>৳{dueAmount.toLocaleString()}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">মোট খরচ</p>
+            <p className="font-heading font-bold text-foreground">৳{totalCost.toLocaleString()}</p>
           </div>
         </div>
       </div>
