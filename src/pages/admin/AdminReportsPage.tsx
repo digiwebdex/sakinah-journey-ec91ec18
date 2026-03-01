@@ -21,6 +21,8 @@ export default function AdminReportsPage() {
   const [expenses, setExpenses] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
   const [expenseTransactions, setExpenseTransactions] = useState<any[]>([]);
+  const [moallems, setMoallems] = useState<any[]>([]);
+  const [moallemPayments, setMoallemPayments] = useState<any[]>([]);
 
   const [activeTab, setActiveTab] = useState("daily-financial");
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -35,12 +37,16 @@ export default function AdminReportsPage() {
       supabase.from("expenses").select("*").order("date", { ascending: false }),
       supabase.from("profiles").select("*"),
       supabase.from("transactions").select("*").eq("type", "expense"),
-    ]).then(([bk, py, ex, pr, tx]) => {
+      supabase.from("moallems").select("*"),
+      supabase.from("moallem_payments").select("*").order("date", { ascending: false }),
+    ]).then(([bk, py, ex, pr, tx, ml, mp]) => {
       setBookings(bk.data || []);
       setPayments(py.data || []);
       setExpenses(ex.data || []);
       setProfiles(pr.data || []);
       setExpenseTransactions(tx.data || []);
+      setMoallems(ml.data || []);
+      setMoallemPayments(mp.data || []);
     });
   }, []);
 
@@ -49,6 +55,12 @@ export default function AdminReportsPage() {
     profiles.forEach((p) => { m[p.user_id] = p; });
     return m;
   }, [profiles]);
+
+  const moallemMap = useMemo(() => {
+    const m: Record<string, any> = {};
+    moallems.forEach((ml) => { m[ml.id] = ml; });
+    return m;
+  }, [moallems]);
 
   const years = useMemo(() => {
     const s = new Set<number>();
@@ -179,6 +191,95 @@ export default function AdminReportsPage() {
     });
   }, [payments, profileMap]);
 
+  // ── Moallem-wise Reports ──
+  const moallemRows = useMemo(() => {
+    const map: Record<string, {
+      name: string; phone: string; status: string;
+      bookingCount: number; travelers: number;
+      totalAmount: number; paidAmount: number; dueAmount: number;
+      deposit: number; expenses: number;
+      bookingDetails: any[];
+      paymentDetails: any[];
+    }> = {};
+
+    // Build per-moallem data from bookings
+    bookings.filter((b) => b.moallem_id).forEach((b) => {
+      const ml = moallemMap[b.moallem_id];
+      if (!map[b.moallem_id]) {
+        map[b.moallem_id] = {
+          name: ml?.name || "Unknown",
+          phone: ml?.phone || "-",
+          status: ml?.status || "active",
+          bookingCount: 0, travelers: 0,
+          totalAmount: 0, paidAmount: 0, dueAmount: 0,
+          deposit: 0, expenses: 0,
+          bookingDetails: [], paymentDetails: [],
+        };
+      }
+      const m = map[b.moallem_id];
+      m.bookingCount++;
+      m.travelers += Number(b.num_travelers || 1);
+      m.totalAmount += Number(b.total_amount || 0);
+      m.paidAmount += Number(b.paid_amount || 0);
+      m.dueAmount += Number(b.due_amount ?? (b.total_amount - b.paid_amount));
+      m.bookingDetails.push({
+        trackingId: b.tracking_id,
+        guestName: b.guest_name || profileMap[b.user_id]?.full_name || "-",
+        packageName: b.packages?.name || "-",
+        total: Number(b.total_amount),
+        paid: Number(b.paid_amount),
+        due: Number(b.due_amount ?? (b.total_amount - b.paid_amount)),
+        status: b.status,
+        date: format(parseISO(b.created_at), "dd MMM yyyy"),
+      });
+    });
+
+    // Add expenses linked to moallem bookings
+    const moallemBookingIds = new Set(bookings.filter((b) => b.moallem_id).map((b) => b.id));
+    expenses.forEach((e) => {
+      if (e.booking_id && moallemBookingIds.has(e.booking_id)) {
+        const bk = bookings.find((b) => b.id === e.booking_id);
+        if (bk && map[bk.moallem_id]) {
+          map[bk.moallem_id].expenses += Number(e.amount);
+        }
+      }
+    });
+
+    // Add moallem deposits
+    moallemPayments.forEach((mp) => {
+      if (map[mp.moallem_id]) {
+        map[mp.moallem_id].deposit += Number(mp.amount);
+        map[mp.moallem_id].paymentDetails.push({
+          amount: Number(mp.amount),
+          date: format(parseISO(mp.date), "dd MMM yyyy"),
+          method: mp.payment_method || "cash",
+          notes: mp.notes || "-",
+        });
+      } else {
+        const ml = moallemMap[mp.moallem_id];
+        if (ml) {
+          map[mp.moallem_id] = {
+            name: ml.name, phone: ml.phone || "-", status: ml.status || "active",
+            bookingCount: 0, travelers: 0, totalAmount: 0, paidAmount: 0, dueAmount: 0,
+            deposit: Number(mp.amount), expenses: 0,
+            bookingDetails: [],
+            paymentDetails: [{
+              amount: Number(mp.amount),
+              date: format(parseISO(mp.date), "dd MMM yyyy"),
+              method: mp.payment_method || "cash",
+              notes: mp.notes || "-",
+            }],
+          };
+        }
+      }
+    });
+
+    return Object.values(map).map((d) => ({
+      ...d,
+      profit: d.paidAmount - d.expenses,
+    }));
+  }, [bookings, expenses, moallemPayments, moallemMap, profileMap]);
+
   // ── Export ──
   const getExportData = () => {
     switch (activeTab) {
@@ -205,6 +306,14 @@ export default function AdminReportsPage() {
           ["", ""], ["Gross Profit", pnlData.grossProfit], ["Net Profit", pnlData.netProfit],
         ] };
       }
+      case "moallem-bookings":
+        return { title: "Moallem-wise Bookings", columns: ["Moallem","Phone","Status","Bookings","Travelers","Total Amount","Paid","Due"], rows: moallemRows.map((r) => [r.name, r.phone, r.status, r.bookingCount, r.travelers, r.totalAmount, r.paidAmount, r.dueAmount]) };
+      case "moallem-payments":
+        return { title: "Moallem-wise Payments", columns: ["Moallem","Phone","Total Deposit","Total Package","Paid Amount","Due Amount"], rows: moallemRows.map((r) => [r.name, r.phone, r.deposit, r.totalAmount, r.paidAmount, r.dueAmount]) };
+      case "moallem-due":
+        return { title: "Moallem-wise Due", columns: ["Moallem","Phone","Total Amount","Paid","Due","Deposit","Collection %"], rows: moallemRows.filter((r) => r.dueAmount > 0).map((r) => [r.name, r.phone, r.totalAmount, r.paidAmount, r.dueAmount, r.deposit, r.totalAmount > 0 ? `${Math.round((r.paidAmount / r.totalAmount) * 100)}%` : "0%"]) };
+      case "moallem-profit":
+        return { title: "Moallem-wise Profit", columns: ["Moallem","Phone","Revenue (Paid)","Expenses","Profit","Margin %"], rows: moallemRows.map((r) => [r.name, r.phone, r.paidAmount, r.expenses, r.profit, r.paidAmount > 0 ? `${Math.round((r.profit / r.paidAmount) * 100)}%` : "0%"]) };
       default:
         return { title: "Report", columns: [], rows: [] };
     }
@@ -276,9 +385,42 @@ export default function AdminReportsPage() {
           { label: "Net Profit", value: fmt(pnlData.netProfit), icon: DollarSign, color: pnlData.netProfit >= 0 ? "text-primary" : "text-destructive" },
         ];
       }
+      case "moallem-bookings":
+      case "moallem-payments":
+      case "moallem-due":
+      case "moallem-profit": {
+        const t = moallemRows.reduce((a, r) => ({
+          moallems: a.moallems + 1, bookings: a.bookings + r.bookingCount, travelers: a.travelers + r.travelers,
+          total: a.total + r.totalAmount, paid: a.paid + r.paidAmount, due: a.due + r.dueAmount,
+          deposit: a.deposit + r.deposit, expenses: a.expenses + r.expenses, profit: a.profit + r.profit,
+        }), { moallems: 0, bookings: 0, travelers: 0, total: 0, paid: 0, due: 0, deposit: 0, expenses: 0, profit: 0 });
+        if (activeTab === "moallem-bookings") return [
+          { label: "মোয়াল্লেম", value: t.moallems, icon: Users, color: "text-foreground" },
+          { label: "বুকিং", value: t.bookings, icon: CalendarIcon, color: "text-foreground" },
+          { label: "হাজী", value: t.travelers, icon: Users, color: "text-primary" },
+          { label: "মোট পরিমাণ", value: fmt(t.total), icon: DollarSign, color: "text-foreground" },
+        ];
+        if (activeTab === "moallem-payments") return [
+          { label: "মোট ডিপোজিট", value: fmt(t.deposit), icon: TrendingUp, color: "text-primary" },
+          { label: "মোট প্যাকেজ", value: fmt(t.total), icon: DollarSign, color: "text-foreground" },
+          { label: "মোট পেইড", value: fmt(t.paid), icon: TrendingUp, color: "text-primary" },
+          { label: "মোট বকেয়া", value: fmt(t.due), icon: TrendingDown, color: "text-destructive" },
+        ];
+        if (activeTab === "moallem-due") return [
+          { label: "বকেয়া মোয়াল্লেম", value: moallemRows.filter((r) => r.dueAmount > 0).length, icon: Users, color: "text-destructive" },
+          { label: "মোট বকেয়া", value: fmt(t.due), icon: TrendingDown, color: "text-destructive" },
+          { label: "আদায় হার", value: t.total > 0 ? `${Math.round((t.paid / t.total) * 100)}%` : "0%", icon: TrendingUp, color: "text-primary" },
+        ];
+        return [
+          { label: "মোট রেভিনিউ", value: fmt(t.paid), icon: TrendingUp, color: "text-primary" },
+          { label: "মোট খরচ", value: fmt(t.expenses), icon: TrendingDown, color: "text-destructive" },
+          { label: "মোট লাভ", value: fmt(t.profit), icon: DollarSign, color: t.profit >= 0 ? "text-primary" : "text-destructive" },
+          { label: "মার্জিন", value: t.paid > 0 ? `${Math.round((t.profit / t.paid) * 100)}%` : "0%", icon: TrendingUp, color: "text-primary" },
+        ];
+      }
       default: return [];
     }
-  }, [activeTab, dailyFinancialRows, monthlyFinancialRows, yearlyRows, packageRows, hajjiRows, dueRows, overdueRows]);
+  }, [activeTab, dailyFinancialRows, monthlyFinancialRows, yearlyRows, packageRows, hajjiRows, dueRows, overdueRows, moallemRows, pnlData]);
 
   const showDateRange = activeTab === "daily-financial";
   const showYearSelect = activeTab === "monthly-financial" || activeTab === "pnl";
@@ -304,6 +446,10 @@ export default function AdminReportsPage() {
           <TabsTrigger value="hajji">Hajji-wise</TabsTrigger>
           <TabsTrigger value="due">Due</TabsTrigger>
           <TabsTrigger value="overdue">Overdue</TabsTrigger>
+          <TabsTrigger value="moallem-bookings">মোয়াল্লেম বুকিং</TabsTrigger>
+          <TabsTrigger value="moallem-payments">মোয়াল্লেম পেমেন্ট</TabsTrigger>
+          <TabsTrigger value="moallem-due">মোয়াল্লেম বকেয়া</TabsTrigger>
+          <TabsTrigger value="moallem-profit">মোয়াল্লেম লাভ</TabsTrigger>
         </TabsList>
 
         {/* Filters */}
@@ -558,8 +704,184 @@ export default function AdminReportsPage() {
             </TableBody>
           </Table>
         </TabsContent>
+
+        {/* Moallem Bookings */}
+        <TabsContent value="moallem-bookings">
+          <MoallemExpandableTable rows={moallemRows} fmt={fmt} view="bookings" />
+        </TabsContent>
+
+        {/* Moallem Payments */}
+        <TabsContent value="moallem-payments">
+          <MoallemExpandableTable rows={moallemRows} fmt={fmt} view="payments" />
+        </TabsContent>
+
+        {/* Moallem Due */}
+        <TabsContent value="moallem-due">
+          <MoallemExpandableTable rows={moallemRows.filter((r) => r.dueAmount > 0)} fmt={fmt} view="due" />
+        </TabsContent>
+
+        {/* Moallem Profit */}
+        <TabsContent value="moallem-profit">
+          <MoallemExpandableTable rows={moallemRows} fmt={fmt} view="profit" />
+        </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+// ── Moallem Expandable Report Table ──
+function MoallemExpandableTable({ rows, fmt, view }: { rows: any[]; fmt: (n: number) => string; view: "bookings" | "payments" | "due" | "profit" }) {
+  const [expanded, setExpanded] = useState<number | null>(null);
+  const totals = rows.reduce((a, r) => ({
+    bookings: a.bookings + r.bookingCount, travelers: a.travelers + r.travelers,
+    total: a.total + r.totalAmount, paid: a.paid + r.paidAmount, due: a.due + r.dueAmount,
+    deposit: a.deposit + r.deposit, expenses: a.expenses + r.expenses, profit: a.profit + r.profit,
+  }), { bookings: 0, travelers: 0, total: 0, paid: 0, due: 0, deposit: 0, expenses: 0, profit: 0 });
+
+  const headers: Record<string, string[]> = {
+    bookings: ["", "মোয়াল্লেম", "ফোন", "স্ট্যাটাস", "বুকিং", "হাজী", "মোট পরিমাণ", "পেইড", "বকেয়া"],
+    payments: ["", "মোয়াল্লেম", "ফোন", "মোট ডিপোজিট", "মোট প্যাকেজ", "পেইড", "বকেয়া"],
+    due: ["", "মোয়াল্লেম", "ফোন", "মোট পরিমাণ", "পেইড", "বকেয়া", "ডিপোজিট", "আদায় %"],
+    profit: ["", "মোয়াল্লেম", "ফোন", "রেভিনিউ", "খরচ", "লাভ", "মার্জিন %"],
+  };
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          {headers[view].map((h, i) => (
+            <TableHead key={i} className={i > 2 ? "text-right" : i === 0 ? "w-8" : ""}>{h}</TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.length === 0 && <TableRow><TableCell colSpan={headers[view].length} className="text-center text-muted-foreground">কোনো ডেটা নেই</TableCell></TableRow>}
+        {rows.map((r, i) => (
+          <Fragment key={i}>
+            <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => setExpanded(expanded === i ? null : i)}>
+              <TableCell className="px-2">{expanded === i ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}</TableCell>
+              <TableCell className="font-medium">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0"><Users className="h-3.5 w-3.5 text-primary" /></div>
+                  <div>
+                    <p>{r.name}</p>
+                    <span className={cn("text-xs px-1.5 py-0.5 rounded-full", r.status === "active" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>{r.status}</span>
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell>{r.phone}</TableCell>
+              {view === "bookings" && (
+                <>
+                  <TableCell className="text-right capitalize"><span className={cn("text-xs px-1.5 py-0.5 rounded-full", r.status === "active" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>{r.status}</span></TableCell>
+                  <TableCell className="text-right">{r.bookingCount}</TableCell>
+                  <TableCell className="text-right">{r.travelers}</TableCell>
+                  <TableCell className="text-right">{fmt(r.totalAmount)}</TableCell>
+                  <TableCell className="text-right text-primary">{fmt(r.paidAmount)}</TableCell>
+                  <TableCell className="text-right text-destructive">{fmt(r.dueAmount)}</TableCell>
+                </>
+              )}
+              {view === "payments" && (
+                <>
+                  <TableCell className="text-right text-primary font-bold">{fmt(r.deposit)}</TableCell>
+                  <TableCell className="text-right">{fmt(r.totalAmount)}</TableCell>
+                  <TableCell className="text-right text-primary">{fmt(r.paidAmount)}</TableCell>
+                  <TableCell className="text-right text-destructive">{fmt(r.dueAmount)}</TableCell>
+                </>
+              )}
+              {view === "due" && (
+                <>
+                  <TableCell className="text-right">{fmt(r.totalAmount)}</TableCell>
+                  <TableCell className="text-right text-primary">{fmt(r.paidAmount)}</TableCell>
+                  <TableCell className="text-right text-destructive font-bold">{fmt(r.dueAmount)}</TableCell>
+                  <TableCell className="text-right">{fmt(r.deposit)}</TableCell>
+                  <TableCell className="text-right">{r.totalAmount > 0 ? `${Math.round((r.paidAmount / r.totalAmount) * 100)}%` : "0%"}</TableCell>
+                </>
+              )}
+              {view === "profit" && (
+                <>
+                  <TableCell className="text-right text-primary">{fmt(r.paidAmount)}</TableCell>
+                  <TableCell className="text-right text-destructive">{fmt(r.expenses)}</TableCell>
+                  <TableCell className={cn("text-right font-bold", r.profit >= 0 ? "text-primary" : "text-destructive")}>{fmt(r.profit)}</TableCell>
+                  <TableCell className="text-right">{r.paidAmount > 0 ? `${Math.round((r.profit / r.paidAmount) * 100)}%` : "0%"}</TableCell>
+                </>
+              )}
+            </TableRow>
+            {expanded === i && (
+              <TableRow>
+                <TableCell colSpan={headers[view].length} className="bg-muted/20 p-0">
+                  <div className="p-4 space-y-4">
+                    {/* Booking Details */}
+                    {r.bookingDetails.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold text-muted-foreground mb-2">বুকিং বিবরণ — {r.name}</p>
+                        <table className="w-full text-sm">
+                          <thead><tr className="text-left text-muted-foreground border-b border-border/50">
+                            <th className="pb-2 pr-3">Tracking ID</th><th className="pb-2 pr-3">হাজী</th><th className="pb-2 pr-3">প্যাকেজ</th><th className="pb-2 pr-3">তারিখ</th>
+                            <th className="pb-2 pr-3 text-right">মোট</th><th className="pb-2 pr-3 text-right">পেইড</th><th className="pb-2 pr-3 text-right">বকেয়া</th><th className="pb-2">স্ট্যাটাস</th>
+                          </tr></thead>
+                          <tbody>
+                            {r.bookingDetails.map((bd: any, j: number) => (
+                              <tr key={j} className="border-b border-border/30">
+                                <td className="py-2 pr-3 font-mono text-xs text-primary">{bd.trackingId}</td>
+                                <td className="py-2 pr-3">{bd.guestName}</td>
+                                <td className="py-2 pr-3">{bd.packageName}</td>
+                                <td className="py-2 pr-3 text-muted-foreground">{bd.date}</td>
+                                <td className="py-2 pr-3 text-right">{fmt(bd.total)}</td>
+                                <td className="py-2 pr-3 text-right text-primary">{fmt(bd.paid)}</td>
+                                <td className="py-2 pr-3 text-right text-destructive">{fmt(bd.due)}</td>
+                                <td className="py-2 capitalize"><span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full", bd.status === "completed" ? "bg-primary/10 text-primary" : bd.status === "cancelled" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground")}>{bd.status}</span></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                    {/* Payment Details */}
+                    {(view === "payments" || view === "due") && r.paymentDetails.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold text-muted-foreground mb-2">ডিপোজিট ইতিহাস — {r.name}</p>
+                        <table className="w-full text-sm">
+                          <thead><tr className="text-left text-muted-foreground border-b border-border/50">
+                            <th className="pb-2 pr-3">তারিখ</th><th className="pb-2 pr-3 text-right">পরিমাণ</th><th className="pb-2 pr-3">পদ্ধতি</th><th className="pb-2">নোট</th>
+                          </tr></thead>
+                          <tbody>
+                            {r.paymentDetails.map((pd: any, j: number) => (
+                              <tr key={j} className="border-b border-border/30">
+                                <td className="py-2 pr-3 text-muted-foreground">{pd.date}</td>
+                                <td className="py-2 pr-3 text-right text-primary font-medium">{fmt(pd.amount)}</td>
+                                <td className="py-2 pr-3 capitalize">{pd.method}</td>
+                                <td className="py-2 text-muted-foreground">{pd.notes}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </Fragment>
+        ))}
+        {rows.length > 0 && (
+          <TableRow className="bg-muted/40 font-bold border-t-2 border-border">
+            <TableCell></TableCell><TableCell>মোট</TableCell><TableCell></TableCell>
+            {view === "bookings" && (
+              <><TableCell></TableCell><TableCell className="text-right">{totals.bookings}</TableCell><TableCell className="text-right">{totals.travelers}</TableCell><TableCell className="text-right">{fmt(totals.total)}</TableCell><TableCell className="text-right text-primary">{fmt(totals.paid)}</TableCell><TableCell className="text-right text-destructive">{fmt(totals.due)}</TableCell></>
+            )}
+            {view === "payments" && (
+              <><TableCell className="text-right text-primary">{fmt(totals.deposit)}</TableCell><TableCell className="text-right">{fmt(totals.total)}</TableCell><TableCell className="text-right text-primary">{fmt(totals.paid)}</TableCell><TableCell className="text-right text-destructive">{fmt(totals.due)}</TableCell></>
+            )}
+            {view === "due" && (
+              <><TableCell className="text-right">{fmt(totals.total)}</TableCell><TableCell className="text-right text-primary">{fmt(totals.paid)}</TableCell><TableCell className="text-right text-destructive">{fmt(totals.due)}</TableCell><TableCell className="text-right">{fmt(totals.deposit)}</TableCell><TableCell className="text-right">{totals.total > 0 ? `${Math.round((totals.paid / totals.total) * 100)}%` : "0%"}</TableCell></>
+            )}
+            {view === "profit" && (
+              <><TableCell className="text-right text-primary">{fmt(totals.paid)}</TableCell><TableCell className="text-right text-destructive">{fmt(totals.expenses)}</TableCell><TableCell className={cn("text-right", totals.profit >= 0 ? "text-primary" : "text-destructive")}>{fmt(totals.profit)}</TableCell><TableCell className="text-right">{totals.paid > 0 ? `${Math.round((totals.profit / totals.paid) * 100)}%` : "0%"}</TableCell></>
+            )}
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
   );
 }
 
