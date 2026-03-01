@@ -64,6 +64,7 @@ export default function AdminAccountingPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>({});
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [viewExpense, setViewExpense] = useState<any>(null);
   const [bookings, setBookings] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [packages, setPackages] = useState<any[]>([]);
@@ -277,7 +278,7 @@ export default function AdminAccountingPage() {
           {/* Expense List */}
           <div className="space-y-2">
             {filtered.map((e: any) => (
-              <div key={e.id} className="bg-card border border-border rounded-lg p-4">
+              <div key={e.id} className="bg-card border border-border rounded-lg p-4 cursor-pointer hover:border-primary/30 transition-colors" onClick={() => { if (editingId !== e.id) setViewExpense(e); }}>
                 {editingId === e.id ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     <input className={inputClass} value={editForm.title} onChange={(ev) => setEditForm({ ...editForm, title: ev.target.value })} />
@@ -309,7 +310,7 @@ export default function AdminAccountingPage() {
                         {e.package_id && <span className="text-[10px] text-muted-foreground">📦 {getPackageLabel(e.package_id)}</span>}
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 shrink-0">
+                    <div className="flex items-center gap-3 shrink-0" onClick={(ev) => ev.stopPropagation()}>
                       <p className="font-heading font-bold text-destructive">{fmt(e.amount)}</p>
                       {canModify && <button onClick={() => startEdit(e)} className="text-muted-foreground hover:text-foreground"><Edit2 className="h-3.5 w-3.5" /></button>}
                       {canModify && <button onClick={() => setDeleteId(e.id)} className="text-destructive hover:underline"><Trash2 className="h-3.5 w-3.5" /></button>}
@@ -512,6 +513,41 @@ export default function AdminAccountingPage() {
               </button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Expense Detail Modal */}
+      <Dialog open={!!viewExpense} onOpenChange={(o) => { if (!o) setViewExpense(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-heading">খরচের বিবরণ</DialogTitle>
+          </DialogHeader>
+          {viewExpense && (
+            <div className="space-y-4 text-sm">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2"><span className="text-muted-foreground text-xs block">শিরোনাম</span><span className="font-medium text-base">{viewExpense.title}</span></div>
+                <div><span className="text-muted-foreground text-xs block">পরিমাণ</span><span className="font-bold text-destructive text-lg">{fmt(viewExpense.amount)}</span></div>
+                <div><span className="text-muted-foreground text-xs block">তারিখ</span><span className="font-medium">{new Date(viewExpense.date).toLocaleDateString()}</span></div>
+                <div><span className="text-muted-foreground text-xs block">ধরন</span><span className="font-medium capitalize">{EXPENSE_TYPES.find(t => t.value === viewExpense.expense_type)?.label || viewExpense.expense_type}</span></div>
+                <div><span className="text-muted-foreground text-xs block">অ্যাসাইনমেন্ট</span><span className="font-medium capitalize">{ASSIGN_TO.find(a => a.value === viewExpense.category)?.label || viewExpense.category || "সাধারণ"}</span></div>
+                {viewExpense.booking_id && (
+                  <div className="col-span-2"><span className="text-muted-foreground text-xs block">বুকিং</span><span className="font-medium">📋 {getBookingLabel(viewExpense.booking_id)}</span></div>
+                )}
+                {viewExpense.customer_id && (
+                  <div className="col-span-2"><span className="text-muted-foreground text-xs block">কাস্টমার</span><span className="font-medium">👤 {getCustomerLabel(viewExpense.customer_id)}</span></div>
+                )}
+                {viewExpense.package_id && (
+                  <div className="col-span-2"><span className="text-muted-foreground text-xs block">প্যাকেজ</span><span className="font-medium">📦 {getPackageLabel(viewExpense.package_id)}</span></div>
+                )}
+                {viewExpense.wallet_account_id && (
+                  <div className="col-span-2"><span className="text-muted-foreground text-xs block">ওয়ালেট</span><span className="font-medium">{walletAccounts.find(w => w.id === viewExpense.wallet_account_id)?.name || "—"}</span></div>
+                )}
+              </div>
+              {viewExpense.note && (
+                <div><span className="text-muted-foreground text-xs block">নোট</span><p>{viewExpense.note}</p></div>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
