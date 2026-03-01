@@ -1,12 +1,21 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Download, Edit2, Trash2, Save, X, Plus, Wallet } from "lucide-react";
+import { Download, Edit2, Trash2, Save, X, Plus, Wallet, Search } from "lucide-react";
 import { generateReceipt, CompanyInfo, InvoicePayment } from "@/lib/invoiceGenerator";
 import { useIsViewer, useCanModifyFinancials } from "@/components/admin/AdminLayout";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const inputClass = "w-full bg-secondary border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40";
 const fmt = (n: number) => `৳${Number(n || 0).toLocaleString()}`;
+
+const PAYMENT_METHODS = [
+  { value: "cash", label: "Cash" },
+  { value: "bkash", label: "bKash" },
+  { value: "nagad", label: "Nagad" },
+  { value: "bank", label: "Bank Transfer" },
+  { value: "manual", label: "Manual" },
+];
 
 export default function AdminPaymentsPage() {
   const isViewer = useIsViewer();
@@ -17,23 +26,98 @@ export default function AdminPaymentsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>({});
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [showAdd, setShowAdd] = useState(false);
-  const [addForm, setAddForm] = useState({ booking_id: "", amount: "", due_date: "", payment_method: "manual", notes: "", wallet_account_id: "" });
-  const [bookingsList, setBookingsList] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Add payment modal
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [customerBookings, setCustomerBookings] = useState<any[]>([]);
+  const [addForm, setAddForm] = useState({
+    customer_id: "", booking_id: "", amount: "",
+    payment_method: "cash", transaction_id: "", paid_date: new Date().toISOString().split("T")[0],
+    notes: "", wallet_account_id: "",
+  });
+  const [addLoading, setAddLoading] = useState(false);
+  const [selectedBookingInfo, setSelectedBookingInfo] = useState<any>(null);
 
   const fetchPayments = async () => {
     const [payRes, walletRes] = await Promise.all([
-      supabase.from("payments").select("*, bookings(tracking_id, total_amount, paid_amount, due_amount, num_travelers, created_at, status, package_id, user_id, packages(name, type, duration_days))").order("created_at", { ascending: false }),
+      supabase.from("payments").select("*, bookings(tracking_id, total_amount, paid_amount, due_amount, guest_name, num_travelers, status, packages(name, type, duration_days)), profiles:user_id(full_name, phone)").order("created_at", { ascending: false }),
       supabase.from("accounts" as any).select("*").eq("type", "asset"),
     ]);
     setPayments(payRes.data || []);
     setWalletAccounts((walletRes.data as any[]) || []);
   };
+
   useEffect(() => { fetchPayments(); }, []);
 
-  const loadBookings = async () => {
-    const { data } = await supabase.from("bookings").select("id, tracking_id, user_id, profiles(full_name)").order("created_at", { ascending: false });
-    setBookingsList(data || []);
+  const openAddModal = async () => {
+    setShowAddModal(true);
+    const { data } = await supabase.from("profiles").select("user_id, full_name, phone").order("full_name");
+    setCustomers(data || []);
+  };
+
+  const handleCustomerChange = async (customerId: string) => {
+    setAddForm((prev) => ({ ...prev, customer_id: customerId, booking_id: "" }));
+    setSelectedBookingInfo(null);
+    if (!customerId) { setCustomerBookings([]); return; }
+    const { data } = await supabase.from("bookings")
+      .select("id, tracking_id, total_amount, paid_amount, due_amount, packages(name)")
+      .eq("user_id", customerId)
+      .in("status", ["pending", "confirmed", "visa_processing", "ticket_issued"])
+      .order("created_at", { ascending: false });
+    setCustomerBookings(data || []);
+  };
+
+  const handleBookingChange = (bookingId: string) => {
+    const booking = customerBookings.find((b) => b.id === bookingId);
+    setSelectedBookingInfo(booking);
+    setAddForm((prev) => ({ ...prev, booking_id: bookingId }));
+  };
+
+  const handleAddPayment = async () => {
+    if (!addForm.booking_id) { toast.error("বুকিং নির্বাচন করুন"); return; }
+    if (!addForm.amount || parseFloat(addForm.amount) <= 0) { toast.error("সঠিক পরিমাণ দিন"); return; }
+
+    setAddLoading(true);
+    try {
+      const booking = customerBookings.find((b) => b.id === addForm.booking_id);
+      const maxInstallment = payments
+        .filter((p) => p.booking_id === addForm.booking_id)
+        .reduce((max, p) => Math.max(max, p.installment_number || 0), 0);
+
+      const { error } = await supabase.from("payments").insert({
+        booking_id: addForm.booking_id,
+        user_id: addForm.customer_id,
+        customer_id: addForm.customer_id,
+        amount: parseFloat(addForm.amount),
+        payment_method: addForm.payment_method,
+        transaction_id: addForm.transaction_id.trim() || null,
+        status: "completed",
+        paid_at: new Date(addForm.paid_date).toISOString(),
+        due_date: addForm.paid_date,
+        installment_number: maxInstallment + 1,
+        notes: addForm.notes.trim() || null,
+        wallet_account_id: addForm.wallet_account_id || null,
+      } as any);
+
+      if (error) throw error;
+
+      toast.success("পেমেন্ট সফলভাবে যোগ হয়েছে");
+      setShowAddModal(false);
+      setAddForm({
+        customer_id: "", booking_id: "", amount: "",
+        payment_method: "cash", transaction_id: "", paid_date: new Date().toISOString().split("T")[0],
+        notes: "", wallet_account_id: "",
+      });
+      setSelectedBookingInfo(null);
+      setCustomerBookings([]);
+      fetchPayments();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setAddLoading(false);
+    }
   };
 
   const markPaid = async (id: string, walletId?: string) => {
@@ -41,13 +125,13 @@ export default function AdminPaymentsPage() {
     if (walletId) update.wallet_account_id = walletId;
     const { error } = await supabase.from("payments").update(update).eq("id", id);
     if (error) { toast.error(error.message); return; }
-    toast.success("Payment marked as completed");
+    toast.success("পেমেন্ট সম্পন্ন হয়েছে");
     fetchPayments();
   };
 
   const startEdit = (p: any) => {
     setEditingId(p.id);
-    setEditForm({ amount: p.amount, due_date: p.due_date || "", status: p.status, payment_method: p.payment_method || "manual", notes: p.notes || "" });
+    setEditForm({ amount: p.amount, due_date: p.due_date || "", status: p.status, payment_method: p.payment_method || "manual", notes: p.notes || "", transaction_id: p.transaction_id || "" });
   };
 
   const saveEdit = async () => {
@@ -58,10 +142,11 @@ export default function AdminPaymentsPage() {
       status: editForm.status,
       payment_method: editForm.payment_method,
       notes: editForm.notes || null,
+      transaction_id: editForm.transaction_id || null,
       ...(editForm.status === "completed" && !payments.find(p => p.id === editingId)?.paid_at ? { paid_at: new Date().toISOString() } : {}),
     }).eq("id", editingId);
     if (error) { toast.error(error.message); return; }
-    toast.success("Payment updated");
+    toast.success("পেমেন্ট আপডেট হয়েছে");
     setEditingId(null);
     fetchPayments();
   };
@@ -70,29 +155,8 @@ export default function AdminPaymentsPage() {
     if (!deleteId) return;
     const { error } = await supabase.from("payments").delete().eq("id", deleteId);
     if (error) { toast.error(error.message); return; }
-    toast.success("Payment deleted");
+    toast.success("পেমেন্ট মুছে ফেলা হয়েছে");
     setDeleteId(null);
-    fetchPayments();
-  };
-
-  const handleAddPayment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const booking = bookingsList.find((b) => b.id === addForm.booking_id);
-    if (!booking) { toast.error("Select a booking"); return; }
-    const { error } = await supabase.from("payments").insert({
-      booking_id: addForm.booking_id,
-      user_id: booking.user_id,
-      amount: parseFloat(addForm.amount),
-      due_date: addForm.due_date || null,
-      payment_method: addForm.payment_method,
-      notes: addForm.notes || null,
-      status: "pending",
-      wallet_account_id: addForm.wallet_account_id || null,
-    } as any);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Payment added");
-    setShowAdd(false);
-    setAddForm({ booking_id: "", amount: "", due_date: "", payment_method: "manual", notes: "", wallet_account_id: "" });
     fetchPayments();
   };
 
@@ -106,14 +170,25 @@ export default function AdminPaymentsPage() {
       const company: CompanyInfo = { name: "RAHE KABA", phone: cmsContent.phone || "", email: cmsContent.email || "", address: cmsContent.location || "" };
       const booking = p.bookings || {};
       await generateReceipt(p as InvoicePayment, { ...booking, packages: booking.packages }, profile || {}, company, (allPayments || []) as InvoicePayment[]);
-      toast.success("Receipt downloaded");
-    } catch { toast.error("Failed to generate receipt"); }
+      toast.success("রসিদ ডাউনলোড হয়েছে");
+    } catch { toast.error("রসিদ তৈরি ব্যর্থ"); }
     setGeneratingId(null);
   };
 
-  // Mark paid state
   const [markPaidId, setMarkPaidId] = useState<string | null>(null);
   const [markPaidWallet, setMarkPaidWallet] = useState("");
+
+  const filtered = payments.filter((p) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      p.bookings?.tracking_id?.toLowerCase().includes(q) ||
+      p.bookings?.guest_name?.toLowerCase().includes(q) ||
+      (p as any).profiles?.full_name?.toLowerCase().includes(q) ||
+      p.payment_method?.toLowerCase().includes(q) ||
+      p.transaction_id?.toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div>
@@ -132,63 +207,50 @@ export default function AdminPaymentsPage() {
         </div>
       )}
 
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="font-heading text-xl font-bold">All Payments</h2>
-        {canModify && (
-          <button onClick={() => { setShowAdd(!showAdd); if (!showAdd) loadBookings(); }} className="bg-gradient-gold text-primary-foreground text-sm font-semibold px-4 py-2 rounded-md flex items-center gap-2">
-            {showAdd ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-            {showAdd ? "Cancel" : "Add Payment"}
-          </button>
-        )}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+        <h2 className="font-heading text-xl font-bold">পেমেন্ট ব্যবস্থাপনা</h2>
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          {canModify && (
+            <button onClick={openAddModal}
+              className="inline-flex items-center gap-1.5 text-sm bg-gradient-gold text-primary-foreground font-semibold px-4 py-2 rounded-md hover:opacity-90 transition-opacity shadow-gold whitespace-nowrap">
+              <Plus className="h-4 w-4" /> নতুন পেমেন্ট
+            </button>
+          )}
+          <div className="relative flex-1 sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input className={inputClass + " pl-9"} placeholder="ট্র্যাকিং ID, নাম দিয়ে খুঁজুন..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+          </div>
+        </div>
       </div>
 
-      {showAdd && (
-        <form onSubmit={handleAddPayment} className="bg-card border border-border rounded-xl p-5 mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <select className={inputClass} required value={addForm.booking_id} onChange={(e) => setAddForm({ ...addForm, booking_id: e.target.value })}>
-            <option value="">Select Booking</option>
-            {bookingsList.map((b) => <option key={b.id} value={b.id}>{b.tracking_id} — {b.profiles?.full_name || "N/A"}</option>)}
-          </select>
-          <input className={inputClass} placeholder="Amount (BDT)" type="number" required value={addForm.amount} onChange={(e) => setAddForm({ ...addForm, amount: e.target.value })} />
-          <input className={inputClass} type="date" value={addForm.due_date} onChange={(e) => setAddForm({ ...addForm, due_date: e.target.value })} />
-          <select className={inputClass} value={addForm.payment_method} onChange={(e) => setAddForm({ ...addForm, payment_method: e.target.value })}>
-            {["manual", "bkash", "nagad", "bank", "cash"].map((m) => <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
-          </select>
-          <select className={inputClass} value={addForm.wallet_account_id} onChange={(e) => setAddForm({ ...addForm, wallet_account_id: e.target.value })}>
-            <option value="">Select Wallet (optional)</option>
-            {walletAccounts.map((w) => <option key={w.id} value={w.id}>{w.name} — {fmt(w.balance)}</option>)}
-          </select>
-          <input className={inputClass} placeholder="Notes (optional)" value={addForm.notes} onChange={(e) => setAddForm({ ...addForm, notes: e.target.value })} />
-          <button type="submit" className="bg-gradient-gold text-primary-foreground font-semibold py-2.5 rounded-md text-sm sm:col-span-2">Add Payment</button>
-        </form>
-      )}
-
+      {/* Payments Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left text-muted-foreground">
-              <th className="pb-3 pr-4">Booking</th>
-              <th className="pb-3 pr-4">#</th>
-              <th className="pb-3 pr-4">Amount</th>
-              <th className="pb-3 pr-4">Due Date</th>
-              <th className="pb-3 pr-4">Method</th>
-              <th className="pb-3 pr-4">Status</th>
-              <th className="pb-3">Actions</th>
+              <th className="pb-3 pr-4">বুকিং</th>
+              <th className="pb-3 pr-4">কাস্টমার</th>
+              <th className="pb-3 pr-4">পরিমাণ</th>
+              <th className="pb-3 pr-4">পদ্ধতি</th>
+              <th className="pb-3 pr-4">তারিখ</th>
+              <th className="pb-3 pr-4">স্ট্যাটাস</th>
+              <th className="pb-3">অ্যাকশন</th>
             </tr>
           </thead>
           <tbody>
-            {payments.map((p: any) => (
+            {filtered.map((p: any) => (
               <tr key={p.id} className="border-b border-border/50">
                 {editingId === p.id ? (
                   <>
-                    <td className="py-3 pr-4 font-mono text-xs">{p.bookings?.tracking_id || p.booking_id.slice(0, 8)}</td>
-                    <td className="py-3 pr-4">{p.installment_number || "—"}</td>
+                    <td className="py-3 pr-4 font-mono text-xs">{p.bookings?.tracking_id || "—"}</td>
+                    <td className="py-3 pr-4 text-xs">{(p as any).profiles?.full_name || p.bookings?.guest_name || "—"}</td>
                     <td className="py-3 pr-4"><input className={inputClass + " w-24"} type="number" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })} /></td>
-                    <td className="py-3 pr-4"><input className={inputClass + " w-32"} type="date" value={editForm.due_date} onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })} /></td>
                     <td className="py-3 pr-4">
                       <select className={inputClass + " w-24"} value={editForm.payment_method} onChange={(e) => setEditForm({ ...editForm, payment_method: e.target.value })}>
-                        {["manual", "bkash", "nagad", "bank", "cash"].map((m) => <option key={m} value={m}>{m}</option>)}
+                        {PAYMENT_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
                       </select>
                     </td>
+                    <td className="py-3 pr-4"><input className={inputClass + " w-32"} type="date" value={editForm.due_date} onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })} /></td>
                     <td className="py-3 pr-4">
                       <select className={inputClass + " w-28"} value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}>
                         {["pending", "completed", "failed", "refunded"].map((s) => <option key={s} value={s}>{s}</option>)}
@@ -203,11 +265,11 @@ export default function AdminPaymentsPage() {
                   </>
                 ) : (
                   <>
-                    <td className="py-3 pr-4 font-mono text-xs">{p.bookings?.tracking_id || p.booking_id.slice(0, 8)}</td>
-                    <td className="py-3 pr-4">{p.installment_number || "—"}</td>
-                    <td className="py-3 pr-4 font-medium">৳{Number(p.amount).toLocaleString()}</td>
-                    <td className="py-3 pr-4">{p.due_date ? new Date(p.due_date).toLocaleDateString() : "—"}</td>
-                    <td className="py-3 pr-4 capitalize text-xs">{p.payment_method || "—"}</td>
+                    <td className="py-3 pr-4 font-mono text-xs">{p.bookings?.tracking_id || "—"}</td>
+                    <td className="py-3 pr-4 text-xs">{(p as any).profiles?.full_name || p.bookings?.guest_name || "—"}</td>
+                    <td className="py-3 pr-4 font-medium">{fmt(Number(p.amount))}</td>
+                    <td className="py-3 pr-4 capitalize text-xs">{p.payment_method || "—"}{p.transaction_id ? <span className="block text-muted-foreground">TxID: {p.transaction_id}</span> : ""}</td>
+                    <td className="py-3 pr-4 text-xs">{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : p.due_date ? new Date(p.due_date).toLocaleDateString() : "—"}</td>
                     <td className="py-3 pr-4">
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${p.status === "completed" ? "text-emerald bg-emerald/10" : p.status === "pending" ? "text-primary bg-primary/10" : "text-destructive bg-destructive/10"}`}>
                         {p.status}
@@ -215,8 +277,8 @@ export default function AdminPaymentsPage() {
                     </td>
                     <td className="py-3">
                       <div className="flex items-center gap-2 flex-wrap">
-                        {p.status === "pending" && markPaidId !== p.id && (
-                          <button onClick={() => { setMarkPaidId(p.id); setMarkPaidWallet(""); }} className="text-xs text-primary hover:underline">Mark Paid</button>
+                        {p.status === "pending" && markPaidId !== p.id && canModify && (
+                          <button onClick={() => { setMarkPaidId(p.id); setMarkPaidWallet(""); }} className="text-xs text-primary hover:underline">পেমেন্ট করুন</button>
                         )}
                         {p.status === "pending" && markPaidId === p.id && (
                           <div className="flex items-center gap-1.5">
@@ -230,7 +292,7 @@ export default function AdminPaymentsPage() {
                         )}
                         {p.status === "completed" && (
                           <button onClick={() => handleReceipt(p)} disabled={generatingId === p.id} className="inline-flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-50">
-                            <Download className="h-3 w-3" /> {generatingId === p.id ? "..." : "Receipt"}
+                            <Download className="h-3 w-3" /> {generatingId === p.id ? "..." : "রসিদ"}
                           </button>
                         )}
                         {canModify && <button onClick={() => startEdit(p)} className="text-xs text-muted-foreground hover:text-foreground"><Edit2 className="h-3 w-3" /></button>}
@@ -244,16 +306,110 @@ export default function AdminPaymentsPage() {
           </tbody>
         </table>
       </div>
-      {payments.length === 0 && <p className="text-center text-muted-foreground py-12">No payments yet.</p>}
+      {filtered.length === 0 && <p className="text-center text-muted-foreground py-12">কোনো পেমেন্ট নেই।</p>}
 
+      {/* Add Payment Modal */}
+      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-heading">নতুন পেমেন্ট যোগ করুন</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Customer Selection */}
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">কাস্টমার নির্বাচন *</label>
+              <select className={inputClass} value={addForm.customer_id} onChange={(e) => handleCustomerChange(e.target.value)}>
+                <option value="">-- কাস্টমার বাছাই করুন --</option>
+                {customers.map((c) => (
+                  <option key={c.user_id} value={c.user_id}>{c.full_name || "Unnamed"} — {c.phone || "No phone"}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Booking Selection */}
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">বুকিং নির্বাচন *</label>
+              <select className={inputClass} value={addForm.booking_id} onChange={(e) => handleBookingChange(e.target.value)} disabled={!addForm.customer_id}>
+                <option value="">-- বুকিং বাছাই করুন --</option>
+                {customerBookings.map((b) => (
+                  <option key={b.id} value={b.id}>{b.tracking_id} — {b.packages?.name || "N/A"} (বকেয়া: {fmt(Number(b.due_amount || 0))})</option>
+                ))}
+              </select>
+              {addForm.customer_id && customerBookings.length === 0 && (
+                <p className="text-xs text-muted-foreground mt-1">এই কাস্টমারের কোনো সক্রিয় বুকিং নেই।</p>
+              )}
+            </div>
+
+            {/* Booking Info */}
+            {selectedBookingInfo && (
+              <div className="bg-secondary/50 rounded-lg p-3 grid grid-cols-3 gap-2 text-xs">
+                <div><span className="text-muted-foreground block">মোট</span><span className="font-bold">{fmt(Number(selectedBookingInfo.total_amount))}</span></div>
+                <div><span className="text-muted-foreground block">পরিশোধিত</span><span className="font-bold text-emerald-500">{fmt(Number(selectedBookingInfo.paid_amount))}</span></div>
+                <div><span className="text-muted-foreground block">বকেয়া</span><span className="font-bold text-destructive">{fmt(Number(selectedBookingInfo.due_amount || 0))}</span></div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">পরিমাণ (৳) *</label>
+                <input className={inputClass} type="number" min={1} value={addForm.amount}
+                  onChange={(e) => setAddForm({ ...addForm, amount: e.target.value })} placeholder="0" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">পদ্ধতি *</label>
+                <select className={inputClass} value={addForm.payment_method} onChange={(e) => setAddForm({ ...addForm, payment_method: e.target.value })}>
+                  {PAYMENT_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Transaction ID</label>
+                <input className={inputClass} value={addForm.transaction_id}
+                  onChange={(e) => setAddForm({ ...addForm, transaction_id: e.target.value })} placeholder="ঐচ্ছিক" maxLength={50} />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">তারিখ *</label>
+                <input className={inputClass} type="date" value={addForm.paid_date}
+                  onChange={(e) => setAddForm({ ...addForm, paid_date: e.target.value })} />
+              </div>
+            </div>
+
+            {walletAccounts.length > 0 && (
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">ওয়ালেট অ্যাকাউন্ট</label>
+                <select className={inputClass} value={addForm.wallet_account_id} onChange={(e) => setAddForm({ ...addForm, wallet_account_id: e.target.value })}>
+                  <option value="">-- ঐচ্ছিক --</option>
+                  {walletAccounts.map((w) => <option key={w.id} value={w.id}>{w.name} — {fmt(w.balance)}</option>)}
+                </select>
+              </div>
+            )}
+
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">নোট</label>
+              <textarea className={inputClass + " resize-none"} rows={2} value={addForm.notes}
+                onChange={(e) => setAddForm({ ...addForm, notes: e.target.value })} placeholder="অতিরিক্ত তথ্য..." maxLength={500} />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button onClick={() => setShowAddModal(false)} className="text-sm px-4 py-2 rounded-md bg-secondary">বাতিল</button>
+              <button onClick={handleAddPayment} disabled={addLoading}
+                className="text-sm px-4 py-2 rounded-md bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90 transition-opacity shadow-gold disabled:opacity-50 flex items-center gap-2">
+                <Save className="h-4 w-4" />
+                {addLoading ? "যোগ হচ্ছে..." : "পেমেন্ট যোগ করুন"}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
       {deleteId && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setDeleteId(null)}>
           <div className="bg-card border border-border rounded-xl p-6 max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-heading font-bold text-lg mb-2">Delete Payment?</h3>
-            <p className="text-sm text-muted-foreground mb-4">This action cannot be undone.</p>
+            <h3 className="font-heading font-bold text-lg mb-2">পেমেন্ট মুছবেন?</h3>
+            <p className="text-sm text-muted-foreground mb-4">এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।</p>
             <div className="flex gap-3 justify-end">
-              <button onClick={() => setDeleteId(null)} className="text-sm px-4 py-2 rounded-md bg-secondary">Cancel</button>
-              <button onClick={confirmDelete} className="text-sm px-4 py-2 rounded-md bg-destructive text-destructive-foreground">Delete</button>
+              <button onClick={() => setDeleteId(null)} className="text-sm px-4 py-2 rounded-md bg-secondary">বাতিল</button>
+              <button onClick={confirmDelete} className="text-sm px-4 py-2 rounded-md bg-destructive text-destructive-foreground">মুছুন</button>
             </div>
           </div>
         </div>
