@@ -41,13 +41,11 @@ export default function AdminPaymentsPage() {
     const params = new URLSearchParams(window.location.search);
     return params.get("action") === "add";
   });
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [customerBookings, setCustomerBookings] = useState<any[]>([]);
+  const [allBookings, setAllBookings] = useState<any[]>([]);
   const [moallems, setMoallems] = useState<any[]>([]);
-  const [moallemBookings, setMoallemBookings] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
-  const [supplierBookings, setSupplierBookings] = useState<any[]>([]);
   const [paymentType, setPaymentType] = useState<PaymentType>("customer");
+  const [bookingSearch, setBookingSearch] = useState("");
   const [addForm, setAddForm] = useState({
     customer_id: "", booking_id: "", amount: "",
     payment_method: "cash", transaction_id: "", paid_date: new Date().toISOString().split("T")[0],
@@ -91,22 +89,20 @@ export default function AdminPaymentsPage() {
     setShowAddModal(true);
     setPaymentType("customer");
     resetAddForm();
-    const [{ data: profileData }, { data: moallemData }, { data: supplierData }] = await Promise.all([
-      supabase.from("profiles").select("user_id, full_name, phone").order("full_name"),
+    const [{ data: moallemData }, { data: supplierData }, { data: bookingsData }] = await Promise.all([
       supabase.from("moallems").select("id, name, phone, total_due, total_deposit").eq("status", "active").order("name"),
       supabase.from("supplier_agents").select("id, agent_name, company_name, phone").eq("status", "active").order("agent_name"),
+      supabase.from("bookings").select("id, tracking_id, total_amount, paid_amount, due_amount, paid_by_moallem, moallem_due, total_cost, paid_to_supplier, supplier_due, guest_name, guest_phone, guest_passport, user_id, moallem_id, supplier_agent_id, status, packages(name, type)").order("created_at", { ascending: false }),
     ]);
-    setCustomers(profileData || []);
     setMoallems(moallemData || []);
     setSuppliers(supplierData || []);
+    setAllBookings(bookingsData || []);
   };
 
   const resetAddForm = () => {
     setAddForm({ customer_id: "", booking_id: "", amount: "", payment_method: "cash", transaction_id: "", paid_date: new Date().toISOString().split("T")[0], notes: "", wallet_account_id: "", moallem_id: "", supplier_id: "" });
     setSelectedBookingInfo(null);
-    setCustomerBookings([]);
-    setMoallemBookings([]);
-    setSupplierBookings([]);
+    setBookingSearch("");
   };
 
   const handlePaymentTypeChange = (type: PaymentType) => {
@@ -114,80 +110,52 @@ export default function AdminPaymentsPage() {
     resetAddForm();
   };
 
-  const handleCustomerChange = async (customerId: string) => {
-    setAddForm((prev) => ({ ...prev, customer_id: customerId, booking_id: "" }));
-    setSelectedBookingInfo(null);
-    if (!customerId) { setCustomerBookings([]); return; }
-    
-    const { data: byUserId } = await supabase.from("bookings")
-      .select("id, tracking_id, total_amount, paid_amount, due_amount, packages(name)")
-      .eq("user_id", customerId)
-      .order("created_at", { ascending: false });
-    
-    const { data: profile } = await supabase.from("profiles")
-      .select("phone, email")
-      .eq("user_id", customerId)
-      .maybeSingle();
-    
-    let allBookings = [...(byUserId || [])];
-    const existingIds = new Set(allBookings.map(b => b.id));
-    
-    if (profile?.phone) {
-      const { data: byPhone } = await supabase.from("bookings")
-        .select("id, tracking_id, total_amount, paid_amount, due_amount, packages(name)")
-        .eq("guest_phone", profile.phone)
-        .order("created_at", { ascending: false });
-      (byPhone || []).forEach(b => { if (!existingIds.has(b.id)) { allBookings.push(b); existingIds.add(b.id); } });
-    }
-    
-    if (profile?.email) {
-      const { data: byEmail } = await supabase.from("bookings")
-        .select("id, tracking_id, total_amount, paid_amount, due_amount, packages(name)")
-        .eq("guest_email", profile.email)
-        .order("created_at", { ascending: false });
-      (byEmail || []).forEach(b => { if (!existingIds.has(b.id)) { allBookings.push(b); existingIds.add(b.id); } });
-    }
-    
-    setCustomerBookings(allBookings);
-  };
+  // Filter bookings based on payment type and search
+  const filteredBookings = useMemo(() => {
+    let filtered = allBookings;
 
-  const handleMoallemChange = async (moallemId: string) => {
-    setAddForm((prev) => ({ ...prev, moallem_id: moallemId, booking_id: "" }));
-    setSelectedBookingInfo(null);
-    if (!moallemId) { setMoallemBookings([]); return; }
-    
-    const { data } = await supabase.from("bookings")
-      .select("id, tracking_id, total_amount, paid_amount, due_amount, paid_by_moallem, moallem_due, guest_name, packages(name)")
-      .eq("moallem_id", moallemId)
-      .order("created_at", { ascending: false });
-    
-    setMoallemBookings(data || []);
-  };
+    // Filter by entity when selected
+    if (paymentType === "moallem" && addForm.moallem_id) {
+      filtered = filtered.filter(b => b.moallem_id === addForm.moallem_id);
+    } else if (paymentType === "supplier" && addForm.supplier_id) {
+      filtered = filtered.filter(b => b.supplier_agent_id === addForm.supplier_id);
+    } else if (paymentType === "customer" && addForm.customer_id) {
+      filtered = filtered.filter(b => 
+        b.user_id === addForm.customer_id || 
+        (b.guest_phone && b.guest_phone === allBookings.find(bk => bk.user_id === addForm.customer_id)?.guest_phone)
+      );
+    }
 
-  const handleSupplierChange = async (supplierId: string) => {
-    setAddForm((prev) => ({ ...prev, supplier_id: supplierId, booking_id: "" }));
-    setSelectedBookingInfo(null);
-    if (!supplierId) { setSupplierBookings([]); return; }
-    
-    const { data } = await supabase.from("bookings")
-      .select("id, tracking_id, total_amount, total_cost, paid_to_supplier, supplier_due, guest_name, packages(name)")
-      .eq("supplier_agent_id", supplierId)
-      .order("created_at", { ascending: false });
-    
-    setSupplierBookings(data || []);
-  };
+    // Search filter
+    if (bookingSearch.trim()) {
+      const q = bookingSearch.toLowerCase();
+      filtered = filtered.filter(b =>
+        b.tracking_id?.toLowerCase().includes(q) ||
+        b.guest_name?.toLowerCase().includes(q) ||
+        b.guest_phone?.toLowerCase().includes(q) ||
+        b.guest_passport?.toLowerCase().includes(q)
+      );
+    }
+
+    return filtered;
+  }, [allBookings, paymentType, addForm.moallem_id, addForm.supplier_id, addForm.customer_id, bookingSearch]);
 
   const handleBookingChange = (bookingId: string) => {
-    let booking: any = null;
-    if (paymentType === "customer") {
-      booking = customerBookings.find((b) => b.id === bookingId);
-    } else if (paymentType === "moallem") {
-      booking = moallemBookings.find((b) => b.id === bookingId);
-    } else {
-      booking = supplierBookings.find((b) => b.id === bookingId);
-    }
-    setSelectedBookingInfo(booking);
+    const booking = allBookings.find((b) => b.id === bookingId);
+    setSelectedBookingInfo(booking || null);
     setAddForm((prev) => ({ ...prev, booking_id: bookingId }));
+  };
+
+  const handleMoallemChange = (moallemId: string) => {
+    setAddForm((prev) => ({ ...prev, moallem_id: moallemId, booking_id: "" }));
+    setSelectedBookingInfo(null);
+    setBookingSearch("");
+  };
+
+  const handleSupplierChange = (supplierId: string) => {
+    setAddForm((prev) => ({ ...prev, supplier_id: supplierId, booking_id: "" }));
+    setSelectedBookingInfo(null);
+    setBookingSearch("");
   };
 
   const handleAddPayment = async () => {
@@ -197,12 +165,14 @@ export default function AdminPaymentsPage() {
       if (!addForm.booking_id) { toast.error("বুকিং নির্বাচন করুন"); return; }
       setAddLoading(true);
       try {
+        const booking = allBookings.find(b => b.id === addForm.booking_id);
+        const userId = addForm.customer_id || booking?.user_id || "00000000-0000-0000-0000-000000000000";
         const maxInstallment = payments
           .filter((p) => p.booking_id === addForm.booking_id)
           .reduce((max, p) => Math.max(max, p.installment_number || 0), 0);
         const { error } = await supabase.from("payments").insert({
-          booking_id: addForm.booking_id, user_id: addForm.customer_id,
-          customer_id: addForm.customer_id, amount: parseFloat(addForm.amount),
+          booking_id: addForm.booking_id, user_id: userId,
+          customer_id: addForm.customer_id || null, amount: parseFloat(addForm.amount),
           payment_method: addForm.payment_method, transaction_id: addForm.transaction_id.trim() || null,
           status: "completed", paid_at: new Date(addForm.paid_date).toISOString(),
           due_date: addForm.paid_date, installment_number: maxInstallment + 1,
@@ -236,7 +206,6 @@ export default function AdminPaymentsPage() {
         fetchPayments();
       } catch (err: any) { toast.error(err.message); } finally { setAddLoading(false); }
     } else {
-      // Supplier payment
       if (!addForm.supplier_id) { toast.error("সাপ্লায়ার নির্বাচন করুন"); return; }
       setAddLoading(true);
       try {
@@ -551,80 +520,73 @@ export default function AdminPaymentsPage() {
               </div>
             </div>
 
-            {paymentType === "customer" ? (
-              <>
-                <div>
-                  <label className="text-xs text-muted-foreground block mb-1">কাস্টমার নির্বাচন *</label>
-                  <CustomerSearchSelect
-                    selectedId={addForm.customer_id || null}
-                    onSelect={(c) => {
-                      if (c) handleCustomerChange(c.user_id);
-                      else handleCustomerChange("");
-                    }}
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground block mb-1">বুকিং নির্বাচন *</label>
-                  <select className={inputClass} value={addForm.booking_id} onChange={(e) => handleBookingChange(e.target.value)} disabled={!addForm.customer_id}>
-                    <option value="">-- বুকিং বাছাই করুন --</option>
-                    {customerBookings.map((b) => (
-                      <option key={b.id} value={b.id}>{b.tracking_id} — {b.packages?.name || "N/A"} (বকেয়া: {fmt(Number(b.due_amount || 0))})</option>
-                    ))}
-                  </select>
-                  {addForm.customer_id && customerBookings.length === 0 && (
-                    <p className="text-xs text-muted-foreground mt-1">এই কাস্টমারের কোনো সক্রিয় বুকিং নেই।</p>
-                  )}
-                </div>
-              </>
-            ) : paymentType === "moallem" ? (
-              <>
-                <div>
-                  <label className="text-xs text-muted-foreground block mb-1">মোয়াল্লেম নির্বাচন *</label>
-                  <select className={inputClass} value={addForm.moallem_id} onChange={(e) => handleMoallemChange(e.target.value)}>
-                    <option value="">-- মোয়াল্লেম বাছাই করুন --</option>
-                    {moallems.map((m) => (
-                      <option key={m.id} value={m.id}>{m.name}{m.phone ? ` (${m.phone})` : ""} — বকেয়া: {fmt(Number(m.total_due || 0))}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground block mb-1">বুকিং নির্বাচন (ঐচ্ছিক)</label>
-                  <select className={inputClass} value={addForm.booking_id} onChange={(e) => handleBookingChange(e.target.value)} disabled={!addForm.moallem_id}>
-                    <option value="">-- সব বুকিংয়ে বণ্টন --</option>
-                    {moallemBookings.map((b) => (
-                      <option key={b.id} value={b.id}>{b.tracking_id} — {b.guest_name || "N/A"} (মোয়াল্লেম বকেয়া: {fmt(Number(b.moallem_due || 0))})</option>
-                    ))}
-                  </select>
-                  {addForm.moallem_id && moallemBookings.length === 0 && (
-                    <p className="text-xs text-muted-foreground mt-1">এই মোয়াল্লেমের কোনো বুকিং নেই।</p>
-                  )}
-                </div>
-              </>
-            ) : (
-              <>
-                <div>
-                  <label className="text-xs text-muted-foreground block mb-1">সাপ্লায়ার এজেন্ট নির্বাচন *</label>
-                  <select className={inputClass} value={addForm.supplier_id} onChange={(e) => handleSupplierChange(e.target.value)}>
-                    <option value="">-- সাপ্লায়ার বাছাই করুন --</option>
-                    {suppliers.map((s) => (
-                      <option key={s.id} value={s.id}>{s.agent_name}{s.company_name ? ` (${s.company_name})` : ""}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground block mb-1">বুকিং নির্বাচন (ঐচ্ছিক)</label>
-                  <select className={inputClass} value={addForm.booking_id} onChange={(e) => handleBookingChange(e.target.value)} disabled={!addForm.supplier_id}>
-                    <option value="">-- নির্দিষ্ট বুকিং ছাড়া --</option>
-                    {supplierBookings.map((b) => (
-                      <option key={b.id} value={b.id}>{b.tracking_id} — {b.guest_name || "N/A"} (সাপ্লায়ার বকেয়া: {fmt(Number(b.supplier_due || 0))})</option>
-                    ))}
-                  </select>
-                  {addForm.supplier_id && supplierBookings.length === 0 && (
-                    <p className="text-xs text-muted-foreground mt-1">এই সাপ্লায়ারের কোনো বুকিং নেই।</p>
-                  )}
-                </div>
-              </>
+            {/* Customer selection (optional for customer type) */}
+            {paymentType === "customer" && (
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">কাস্টমার নির্বাচন (ঐচ্ছিক)</label>
+                <CustomerSearchSelect
+                  selectedId={addForm.customer_id || null}
+                  onSelect={(c) => {
+                    setAddForm(prev => ({ ...prev, customer_id: c?.user_id || "", booking_id: "" }));
+                    setSelectedBookingInfo(null);
+                    setBookingSearch("");
+                  }}
+                />
+              </div>
             )}
+
+            {/* Moallem selection */}
+            {paymentType === "moallem" && (
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">মোয়াল্লেম নির্বাচন *</label>
+                <select className={inputClass} value={addForm.moallem_id} onChange={(e) => handleMoallemChange(e.target.value)}>
+                  <option value="">-- মোয়াল্লেম বাছাই করুন --</option>
+                  {moallems.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}{m.phone ? ` (${m.phone})` : ""} — বকেয়া: {fmt(Number(m.total_due || 0))}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Supplier selection */}
+            {paymentType === "supplier" && (
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">সাপ্লায়ার এজেন্ট নির্বাচন *</label>
+                <select className={inputClass} value={addForm.supplier_id} onChange={(e) => handleSupplierChange(e.target.value)}>
+                  <option value="">-- সাপ্লায়ার বাছাই করুন --</option>
+                  {suppliers.map((s) => (
+                    <option key={s.id} value={s.id}>{s.agent_name}{s.company_name ? ` (${s.company_name})` : ""}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Booking selection - searchable, always enabled */}
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">
+                বুকিং নির্বাচন {paymentType === "customer" ? "*" : "(ঐচ্ছিক)"}
+              </label>
+              <div className="relative mb-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <input
+                  className={inputClass + " pl-9 !text-xs"}
+                  placeholder="ট্র্যাকিং ID, নাম, ফোন দিয়ে বুকিং খুঁজুন..."
+                  value={bookingSearch}
+                  onChange={(e) => setBookingSearch(e.target.value)}
+                />
+              </div>
+              <select className={inputClass} value={addForm.booking_id} onChange={(e) => handleBookingChange(e.target.value)}>
+                <option value="">-- বুকিং বাছাই করুন ({filteredBookings.length}টি) --</option>
+                {filteredBookings.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.tracking_id} — {b.guest_name || "N/A"} ({paymentType === "supplier" ? `সাপ্লায়ার বকেয়া: ${fmt(Number(b.supplier_due || 0))}` : paymentType === "moallem" ? `মোয়াল্লেম বকেয়া: ${fmt(Number(b.moallem_due || 0))}` : `বকেয়া: ${fmt(Number(b.due_amount || 0))}`})
+                  </option>
+                ))}
+              </select>
+              {filteredBookings.length === 0 && bookingSearch && (
+                <p className="text-xs text-muted-foreground mt-1">কোনো বুকিং পাওয়া যায়নি।</p>
+              )}
+            </div>
 
             {selectedBookingInfo && (
               <div className="bg-secondary/50 rounded-lg p-3 grid grid-cols-3 gap-2 text-xs">
