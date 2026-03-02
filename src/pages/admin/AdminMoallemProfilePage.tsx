@@ -16,9 +16,10 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, Users, FileText, CreditCard, TrendingUp, TrendingDown,
-  Phone, MapPin, CalendarDays, Hash, Plus, Wallet,
+  Phone, MapPin, CalendarDays, Hash, Plus, Wallet, Printer, Download,
 } from "lucide-react";
 import { format } from "date-fns";
+import { generateMoallemPdf, getCompanyInfoForPdf, MoallemPdfData } from "@/lib/entityPdfGenerator";
 
 const fmt = (n: number) => `৳${Number(n || 0).toLocaleString()}`;
 
@@ -256,7 +257,44 @@ export default function AdminMoallemProfilePage() {
           <h1 className="text-2xl font-bold text-foreground">{moallem.name}</h1>
           <p className="text-sm text-muted-foreground">মোয়াল্লেম প্রোফাইল ড্যাশবোর্ড</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Printer className="h-4 w-4 mr-1" /> প্রিন্ট
+          </Button>
+          <Button variant="outline" size="sm" onClick={async () => {
+            const company = await getCompanyInfoForPdf();
+            const pdfData: MoallemPdfData = {
+              name: moallem.name, phone: moallem.phone, address: moallem.address,
+              nid_number: moallem.nid_number, contract_date: moallem.contract_date,
+              status: moallem.status, notes: moallem.notes,
+              bookings: bookings.map(b => ({
+                tracking_id: b.tracking_id, guest_name: b.guest_name || "—",
+                package_name: b.packages?.name || "—",
+                total: Number(b.total_amount), paid: Number(b.paid_amount),
+                due: Number(b.due_amount || 0), status: b.status,
+                date: format(new Date(b.created_at), "dd MMM yyyy"),
+              })),
+              moallemPayments: moallemPayments.map(p => ({
+                amount: Number(p.amount), date: p.date,
+                method: p.payment_method || "cash", notes: p.notes,
+              })),
+              commissionPayments: commissionPayments.map(p => ({
+                amount: Number(p.amount), date: p.date,
+                method: p.payment_method || "cash", notes: p.notes,
+              })),
+              summary: {
+                totalBookings, totalTravelers: totalHajji,
+                totalAmount: totalPackageAmount, totalPaid, totalDue,
+                totalDeposit: totalMoallemDeposit,
+                totalCommission: totalCommissionEarned,
+                commissionPaid: totalCommissionPaid, commissionDue: totalCommissionDue,
+              },
+            };
+            await generateMoallemPdf(pdfData, company);
+            toast({ title: "PDF ডাউনলোড হয়েছে" });
+          }}>
+            <Download className="h-4 w-4 mr-1" /> PDF
+          </Button>
           {!isViewer && (
             <>
               <Button variant="outline" onClick={() => setShowCommissionForm(true)}>

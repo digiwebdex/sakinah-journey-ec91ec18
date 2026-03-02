@@ -11,6 +11,7 @@ import {
   FileText, Hotel, Package, CreditCard, Eye, CalendarDays
 } from "lucide-react";
 import { generateInvoice, generateReceipt, CompanyInfo, InvoicePayment } from "@/lib/invoiceGenerator";
+import { generateCustomerPdf, getCompanyInfoForPdf, CustomerPdfData } from "@/lib/entityPdfGenerator";
 import { toast } from "sonner";
 
 interface CustomerFinancialReportProps {
@@ -31,9 +32,7 @@ export default function CustomerFinancialReport({ customer, open, onOpenChange }
   const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
 
   const getCompanyInfo = async (): Promise<CompanyInfo> => {
-    const { data: cms } = await supabase.from("site_content" as any).select("content").eq("section_key", "contact").maybeSingle();
-    const c = (cms as any)?.content || {};
-    return { name: "RAHE KABA", phone: c.phone || "", email: c.email || "", address: c.location || "" };
+    return getCompanyInfoForPdf();
   };
 
   const handleInvoice = async (b: any) => {
@@ -194,6 +193,43 @@ export default function CustomerFinancialReport({ customer, open, onOpenChange }
             {customer.full_name || "Unnamed Customer"} — Ledger
           </DialogTitle>
           <DialogDescription>Complete financial ledger with all bookings, payments, expenses, and profit.</DialogDescription>
+          <div className="flex gap-2 pt-2 print:hidden">
+            <Button variant="outline" size="sm" onClick={() => window.print()}>
+              <Printer className="h-4 w-4 mr-1" /> প্রিন্ট
+            </Button>
+            <Button variant="outline" size="sm" onClick={async () => {
+              const company = await getCompanyInfo();
+              const pdfData: CustomerPdfData = {
+                full_name: customer.full_name || "N/A",
+                phone: customer.phone, email: customer.email,
+                passport_number: customer.passport_number, nid_number: customer.nid_number,
+                address: customer.address, date_of_birth: customer.date_of_birth,
+                emergency_contact: customer.emergency_contact,
+                bookings: bookings.map(b => ({
+                  tracking_id: b.tracking_id, package_name: b.packages?.name || "—",
+                  total: Number(b.total_amount), paid: Number(b.paid_amount),
+                  due: Number(b.due_amount || 0), status: b.status,
+                  date: b.created_at,
+                })),
+                payments: payments.filter(p => p.status === "completed").map(p => ({
+                  amount: Number(p.amount), date: p.paid_at || p.created_at,
+                  method: p.payment_method || "—", status: p.status,
+                  installment: p.installment_number,
+                  tracking_id: bookings.find(b => b.id === p.booking_id)?.tracking_id || "—",
+                })),
+                summary: {
+                  totalBookings: bookings.length,
+                  totalAmount: summary.totalPaid + summary.totalDue,
+                  totalPaid: summary.totalPaid, totalDue: summary.totalDue,
+                  totalExpenses: summary.totalExpenses, profit: summary.netProfit,
+                },
+              };
+              await generateCustomerPdf(pdfData, company);
+              toast.success("Customer PDF downloaded");
+            }}>
+              <Download className="h-4 w-4 mr-1" /> PDF
+            </Button>
+          </div>
         </DialogHeader>
 
         {/* Customer Info */}

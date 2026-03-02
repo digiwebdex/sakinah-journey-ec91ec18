@@ -8,6 +8,7 @@ import {
   FileText, RefreshCw, Upload as UploadIcon, User
 } from "lucide-react";
 import { generateInvoice, CompanyInfo, InvoicePayment } from "@/lib/invoiceGenerator";
+import { getCompanyInfoForPdf } from "@/lib/entityPdfGenerator";
 import { useIsViewer } from "@/components/admin/AdminLayout";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -249,9 +250,7 @@ export default function AdminBookingsPage() {
     setGeneratingId(b.id);
     try {
       const { data: payments } = await supabase.from("payments").select("*").eq("booking_id", b.id).order("installment_number", { ascending: true });
-      const { data: cms } = await supabase.from("site_content" as any).select("content").eq("section_key", "contact").maybeSingle();
-      const cmsContent = (cms as any)?.content || {};
-      const company: CompanyInfo = { name: cmsContent.company_name || "RAHE KABA Tours & Travels", phone: cmsContent.phone || "+880 1601-505050", email: cmsContent.email || "rahekaba.info@gmail.com", address: "Dailorbagh Palli Bidyut Adjacent, Sonargaon Thana Road, Narayanganj-Dhaka" };
+      const company = await getCompanyInfoForPdf();
       await generateInvoice({ ...b, packages: b.packages }, { full_name: b.guest_name, phone: b.guest_phone, passport_number: b.guest_passport, address: b.guest_address }, (payments || []) as InvoicePayment[], company);
       toast.success("Invoice downloaded");
     } catch { toast.error("Failed to generate invoice"); }

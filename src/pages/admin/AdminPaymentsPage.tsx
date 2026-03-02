@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Download, Edit2, Trash2, Save, X, Plus, Wallet, Search, CheckCircle, XCircle } from "lucide-react";
 import { generateReceipt, CompanyInfo, InvoicePayment } from "@/lib/invoiceGenerator";
+import { getCompanyInfoForPdf } from "@/lib/entityPdfGenerator";
 import { useIsViewer, useCanModifyFinancials } from "@/components/admin/AdminLayout";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import AdminActionMenu from "@/components/admin/AdminActionMenu";
@@ -176,9 +177,7 @@ export default function AdminPaymentsPage() {
     try {
       const { data: profile } = await supabase.from("profiles").select("full_name, phone, passport_number, address").eq("user_id", p.user_id).maybeSingle();
       const { data: allPayments } = await supabase.from("payments").select("*").eq("booking_id", p.booking_id);
-      const { data: cms } = await supabase.from("site_content" as any).select("content").eq("section_key", "contact").maybeSingle();
-      const cmsContent = (cms as any)?.content || {};
-      const company: CompanyInfo = { name: cmsContent.company_name || "RAHE KABA Tours & Travels", phone: cmsContent.phone || "+880 1601-505050", email: cmsContent.email || "rahekaba.info@gmail.com", address: "Dailorbagh Palli Bidyut Adjacent, Sonargaon Thana Road, Narayanganj-Dhaka" };
+      const company = await getCompanyInfoForPdf();
       const booking = p.bookings || {};
       await generateReceipt(p as InvoicePayment, { ...booking, packages: booking.packages }, profile || {}, company, (allPayments || []) as InvoicePayment[]);
       toast.success("রসিদ ডাউনলোড হয়েছে");

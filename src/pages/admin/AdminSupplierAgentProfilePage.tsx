@@ -16,9 +16,10 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, Users, FileText, CreditCard, TrendingUp, TrendingDown,
-  Phone, MapPin, Truck, Building2, DollarSign, Plus, Wallet,
+  Phone, MapPin, Truck, Building2, DollarSign, Plus, Wallet, Printer, Download,
 } from "lucide-react";
 import { format } from "date-fns";
+import { generateSupplierPdf, getCompanyInfoForPdf, SupplierPdfData } from "@/lib/entityPdfGenerator";
 
 const fmt = (n: number) => `৳${Number(n || 0).toLocaleString()}`;
 const PAYMENT_METHODS = ["cash", "bkash", "nagad", "bank", "other"];
@@ -166,7 +167,37 @@ export default function AdminSupplierAgentProfilePage() {
           </h1>
           <p className="text-sm text-muted-foreground">সাপ্লায়ার এজেন্ট প্রোফাইল ড্যাশবোর্ড</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Printer className="h-4 w-4 mr-1" /> প্রিন্ট
+          </Button>
+          <Button variant="outline" size="sm" onClick={async () => {
+            const company = await getCompanyInfoForPdf();
+            const pdfData: SupplierPdfData = {
+              agent_name: agent.agent_name, company_name: agent.company_name,
+              phone: agent.phone, address: agent.address, status: agent.status, notes: agent.notes,
+              bookings: bookings.map(b => ({
+                tracking_id: b.tracking_id, guest_name: b.guest_name || "—",
+                package_name: b.packages?.name || "—",
+                total: Number(b.total_amount), cost: Number(b.total_cost || 0),
+                paid_to_supplier: Number(b.paid_to_supplier || 0),
+                supplier_due: Number(b.supplier_due || 0), status: b.status,
+              })),
+              agentPayments: agentPayments.map(p => ({
+                amount: Number(p.amount), date: p.date,
+                method: p.payment_method || "cash", notes: p.notes,
+              })),
+              summary: {
+                totalBookings, totalTravelers: totalHajji,
+                totalCost: totalPurchaseAmount, totalPaid: totalAgentPayments,
+                totalDue: dueToAgent, profit,
+              },
+            };
+            await generateSupplierPdf(pdfData, company);
+            toast({ title: "PDF ডাউনলোড হয়েছে" });
+          }}>
+            <Download className="h-4 w-4 mr-1" /> PDF
+          </Button>
           {!isViewer && (
             <Button onClick={() => setShowPaymentForm(true)}>
               <Plus className="h-4 w-4 mr-1" /> পেমেন্ট রেকর্ড
