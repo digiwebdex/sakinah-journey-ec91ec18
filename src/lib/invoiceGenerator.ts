@@ -156,7 +156,7 @@ export async function generateInvoice(
   const pageWidth = doc.internal.pageSize.getWidth();
 
   // QR verification stamp top-right
-  addQrToDoc(doc, qrDataUrl, { x: pageWidth - 44, y: 8, size: 26 });
+  addQrToDoc(doc, qrDataUrl, { x: pageWidth - 44, y: 8, size: 26, trackingId: booking.tracking_id });
 
   // Payment watermark
   addPaymentWatermark(doc, getWatermarkStatus(Number(booking.paid_amount), Number(booking.due_amount || 0)));
@@ -262,7 +262,7 @@ export async function generateReceipt(
   const pageWidth = doc.internal.pageSize.getWidth();
 
   // QR verification stamp top-right
-  addQrToDoc(doc, qrDataUrl, { x: pageWidth - 44, y: 8, size: 26 });
+  addQrToDoc(doc, qrDataUrl, { x: pageWidth - 44, y: 8, size: 26, trackingId: booking.tracking_id });
 
   // Payment watermark (receipt is always for a completed payment)
   addPaymentWatermark(doc, "paid");
@@ -358,7 +358,7 @@ export async function generateCommissionReceipt(
   const pageWidth = doc.internal.pageSize.getWidth();
 
   // QR verification stamp top-right
-  addQrToDoc(doc, qrDataUrl, { x: pageWidth - 44, y: 8, size: 26 });
+  addQrToDoc(doc, qrDataUrl, { x: pageWidth - 44, y: 8, size: 26, trackingId: data.bookingTrackingId });
 
   // Commission watermark
   addPaymentWatermark(doc, getWatermarkStatus(data.commissionPaid, data.commissionDue));

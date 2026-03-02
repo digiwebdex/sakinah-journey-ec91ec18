@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { generateInvoice, generateReceipt, CompanyInfo, InvoicePayment } from "@/lib/invoiceGenerator";
 import { Printer, Download, Search } from "lucide-react";
+import { generateVerificationId } from "@/lib/pdfQrCode";
 
 const fmt = (n: number) => `৳${Number(n || 0).toLocaleString()}`;
 const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
@@ -150,6 +151,7 @@ export default function InvoicePage() {
                     className="w-[72px] h-[72px]"
                     style={{ imageRendering: "pixelated" }}
                   />
+                  <p className="text-[5.5px] font-bold text-gray-700 mt-0.5">{generateVerificationId(booking.tracking_id)}</p>
                   <p className="text-[6px] text-gray-400 mt-0.5">Scan to verify booking authenticity</p>
                 </div>
               </div>

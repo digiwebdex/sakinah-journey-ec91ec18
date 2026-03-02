@@ -17,13 +17,28 @@ export async function generateTrackingQr(trackingId: string): Promise<string> {
 }
 
 /**
+ * Generate a verification ID from a tracking ID.
+ * Format: INV-YYYY-NNNNN
+ */
+export function generateVerificationId(trackingId: string): string {
+  const year = new Date().getFullYear();
+  // Create a numeric hash from tracking ID
+  let hash = 0;
+  for (let i = 0; i < trackingId.length; i++) {
+    hash = ((hash << 5) - hash + trackingId.charCodeAt(i)) | 0;
+  }
+  const num = String(Math.abs(hash) % 100000).padStart(5, "0");
+  return `INV-${year}-${num}`;
+}
+
+/**
  * Add QR verification stamp to a jsPDF document.
- * Includes QR code, checkmark badge, "Verified Booking" and "Scan to Verify" text.
+ * Includes QR code, checkmark badge, "Verified Booking", verification ID, and "Scan to Verify" text.
  */
 export function addQrToDoc(
   doc: jsPDF,
   qrDataUrl: string,
-  options?: { x?: number; y?: number; size?: number }
+  options?: { x?: number; y?: number; size?: number; trackingId?: string }
 ) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const size = options?.size ?? 28;
@@ -34,7 +49,7 @@ export function addQrToDoc(
     // Draw stamp border (rounded rect)
     const stampPadding = 3;
     const stampW = size + stampPadding * 2;
-    const stampH = size + 18;
+    const stampH = size + 24;
     const stampX = x - stampPadding;
     const stampY = y - stampPadding;
 
@@ -52,11 +67,20 @@ export function addQrToDoc(
     // QR image
     doc.addImage(qrDataUrl, "PNG", x, y + 2, size, size);
 
+    // Verification ID
+    if (options?.trackingId) {
+      const verId = generateVerificationId(options.trackingId);
+      doc.setFontSize(4.5);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(40, 46, 56);
+      doc.text(verId, headerX, y + size + 5, { align: "center" });
+    }
+
     // "Scan to Verify" footer
-    doc.setFontSize(5);
+    doc.setFontSize(4.5);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(100);
-    doc.text("Scan to verify booking authenticity", headerX, y + size + 5.5, { align: "center" });
+    doc.text("Scan to verify booking authenticity", headerX, y + size + 9, { align: "center" });
 
     doc.setTextColor(0);
   } catch {
