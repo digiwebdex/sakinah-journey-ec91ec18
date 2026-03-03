@@ -134,13 +134,80 @@ export type Database = {
           },
         ]
       }
+      booking_members: {
+        Row: {
+          booking_id: string
+          created_at: string
+          discount: number
+          final_price: number
+          full_name: string
+          id: string
+          package_id: string | null
+          passport_number: string | null
+          selling_price: number
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          discount?: number
+          final_price?: number
+          full_name: string
+          id?: string
+          package_id?: string | null
+          passport_number?: string | null
+          selling_price?: number
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          discount?: number
+          final_price?: number
+          full_name?: string
+          id?: string
+          package_id?: string | null
+          passport_number?: string | null
+          selling_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_members_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_members_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "v_booking_profit"
+            referencedColumns: ["booking_id"]
+          },
+          {
+            foreignKeyName: "booking_members_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_members_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "v_package_profit"
+            referencedColumns: ["package_id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
+          booking_type: string
           commission_due: number
           commission_paid: number
           commission_per_person: number
           cost_price_per_person: number | null
           created_at: string
+          discount: number
           due_amount: number | null
           extra_expense: number | null
           guest_address: string | null
@@ -171,11 +238,13 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          booking_type?: string
           commission_due?: number
           commission_paid?: number
           commission_per_person?: number
           cost_price_per_person?: number | null
           created_at?: string
+          discount?: number
           due_amount?: number | null
           extra_expense?: number | null
           guest_address?: string | null
@@ -206,11 +275,13 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          booking_type?: string
           commission_due?: number
           commission_paid?: number
           commission_per_person?: number
           cost_price_per_person?: number | null
           created_at?: string
+          discount?: number
           due_amount?: number | null
           extra_expense?: number | null
           guest_address?: string | null

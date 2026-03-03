@@ -5,7 +5,6 @@ import { useIsViewer } from "@/components/admin/AdminLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -15,8 +14,8 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, Users, FileText, CreditCard, TrendingUp, TrendingDown,
-  Phone, MapPin, Truck, Building2, DollarSign, Plus, Wallet, Printer, Download,
+  ArrowLeft, FileText, CreditCard, TrendingDown,
+  Phone, MapPin, Truck, Building2, Plus, Wallet, Download,
 } from "lucide-react";
 import { format } from "date-fns";
 import { generateSupplierPdf, getCompanyInfoForPdf, SupplierPdfData } from "@/lib/entityPdfGenerator";
@@ -31,72 +30,50 @@ export default function AdminSupplierAgentProfilePage() {
   const isViewer = useIsViewer();
   const [agent, setAgent] = useState<any>(null);
   const [bookings, setBookings] = useState<any[]>([]);
-  const [payments, setPayments] = useState<any[]>([]);
-  const [expenses, setExpenses] = useState<any[]>([]);
   const [agentPayments, setAgentPayments] = useState<any[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
 
-  const emptyPaymentForm = {
-    amount: "",
-    payment_method: "cash",
+  // Date filter
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
+  const emptyForm = {
+    amount: "", payment_method: "cash",
     date: new Date().toISOString().split("T")[0],
-    notes: "",
-    wallet_account_id: "",
-    booking_id: "",
+    notes: "", wallet_account_id: "", booking_id: "",
   };
-  const [paymentForm, setPaymentForm] = useState(emptyPaymentForm);
+  const [paymentForm, setPaymentForm] = useState(emptyForm);
 
   const loadData = async () => {
     if (!id) return;
     setLoading(true);
-
     const [agRes, bRes, apRes, accRes] = await Promise.all([
       supabase.from("supplier_agents").select("*").eq("id", id).maybeSingle(),
       supabase.from("bookings").select("*, packages(name, type, price)").eq("supplier_agent_id", id).order("created_at", { ascending: false }),
-      supabase.from("supplier_agent_payments").select("*").eq("supplier_agent_id", id).order("created_at", { ascending: false }),
+      supabase.from("supplier_agent_payments").select("*").eq("supplier_agent_id", id).order("date", { ascending: false }),
       supabase.from("accounts").select("id, name, type, balance").order("name"),
     ]);
-
     setAgent(agRes.data);
     setBookings((bRes.data as any[]) || []);
     setAgentPayments(apRes.data || []);
     setAccounts(accRes.data || []);
-
-    const bookingIds = ((bRes.data as any[]) || []).map((b: any) => b.id);
-    if (bookingIds.length > 0) {
-      const [payRes, expRes] = await Promise.all([
-        supabase.from("payments").select("*").in("booking_id", bookingIds).order("created_at", { ascending: false }),
-        supabase.from("expenses").select("*").in("booking_id", bookingIds).order("date", { ascending: false }),
-      ]);
-      setPayments(payRes.data || []);
-      setExpenses(expRes.data || []);
-    } else {
-      setPayments([]);
-      setExpenses([]);
-    }
-
     setLoading(false);
   };
 
   useEffect(() => { loadData(); }, [id]);
 
-  // === Record Supplier Agent Payment ===
   const handleRecordPayment = async () => {
     const amount = parseFloat(paymentForm.amount);
     if (!amount || amount <= 0) { toast({ title: "সঠিক পরিমাণ দিন", variant: "destructive" }); return; }
-
     setPaymentLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast({ title: "Not authenticated", variant: "destructive" }); return; }
-
-      // 1. Insert supplier agent payment record
+      if (!session) return;
       const { error: apErr } = await supabase.from("supplier_agent_payments").insert({
-        supplier_agent_id: id,
-        amount,
+        supplier_agent_id: id, amount,
         payment_method: paymentForm.payment_method,
         date: paymentForm.date,
         notes: paymentForm.notes.trim() || null,
@@ -105,174 +82,136 @@ export default function AdminSupplierAgentProfilePage() {
         recorded_by: session.user.id,
       });
       if (apErr) throw apErr;
-
-      // 2. Create expense record for accounting
       const { error: expErr } = await supabase.from("expenses").insert({
-        title: `সাপ্লায়ার এজেন্ট পেমেন্ট — ${agent?.agent_name || ""}`,
-        amount,
-        category: "supplier_payment",
-        expense_type: "supplier",
+        title: `সাপ্লায়ার পেমেন্ট — ${agent?.agent_name || ""}`,
+        amount, category: "supplier_payment", expense_type: "supplier",
         date: paymentForm.date,
-        note: paymentForm.notes.trim() || `Payment to supplier agent: ${agent?.agent_name}`,
+        note: paymentForm.notes.trim() || `Payment to supplier: ${agent?.agent_name}`,
         wallet_account_id: paymentForm.wallet_account_id || null,
       });
       if (expErr) throw expErr;
-
-      toast({ title: "পেমেন্ট রেকর্ড হয়েছে", description: `৳${amount.toLocaleString()} সাপ্লায়ার এজেন্টকে পরিশোধ করা হয়েছে` });
+      toast({ title: "পেমেন্ট রেকর্ড হয়েছে" });
       setShowPaymentForm(false);
-      setPaymentForm(emptyPaymentForm);
+      setPaymentForm(emptyForm);
       loadData();
     } catch (err: any) {
       toast({ title: "ত্রুটি", description: err.message, variant: "destructive" });
-    } finally {
-      setPaymentLoading(false);
-    }
+    } finally { setPaymentLoading(false); }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+  if (!agent) return <div className="text-center py-20 text-muted-foreground">সাপ্লায়ার এজেন্ট পাওয়া যায়নি</div>;
 
-  if (!agent) {
-    return <div className="text-center py-20 text-muted-foreground">সাপ্লায়ার এজেন্ট পাওয়া যায়নি</div>;
-  }
+  const totalCost = bookings.reduce((s, b) => s + Number(b.total_cost || 0), 0);
+  const totalAgentPaid = agentPayments.reduce((s, p) => s + Number(p.amount || 0), 0);
+  const totalDue = Math.max(0, totalCost - totalAgentPaid);
 
-  // Stats
-  const totalHajji = bookings.reduce((s, b) => s + Number(b.num_travelers || 0), 0);
-  const totalBookings = bookings.length;
-  const totalPurchaseAmount = bookings.reduce((s, b) => s + Number(b.total_cost || 0), 0);
-  const totalSellingAmount = bookings.reduce((s, b) => s + Number(b.total_amount || 0), 0);
-  const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
-  const completedPayments = payments.filter((p) => p.status === "completed");
-  const totalAgentPayments = agentPayments.reduce((s, p) => s + Number(p.amount || 0), 0);
-  const profit = totalSellingAmount - totalPurchaseAmount - totalExpenses;
-  const dueToAgent = Math.max(0, totalPurchaseAmount - totalAgentPayments);
+  const filterByDate = (items: any[]) => items.filter(p => {
+    if (dateFrom && p.date < dateFrom) return false;
+    if (dateTo && p.date > dateTo) return false;
+    return true;
+  });
+  const filteredPayments = filterByDate(agentPayments);
+  const walletAccounts = accounts.filter(a => ["asset", "wallet"].includes(a.type) || ["Cash", "bKash", "Nagad", "Bank"].includes(a.name));
 
-  const walletAccounts = accounts.filter((a) => ["asset", "wallet"].includes(a.type) || ["Cash", "bKash", "Nagad", "Bank"].includes(a.name));
+  const handleDownloadStatement = async () => {
+    const company = await getCompanyInfoForPdf();
+    const pdfData: SupplierPdfData = {
+      agent_name: agent.agent_name, company_name: agent.company_name,
+      phone: agent.phone, address: agent.address, status: agent.status, notes: agent.notes,
+      bookings: bookings.map(b => ({
+        tracking_id: b.tracking_id, guest_name: b.guest_name || "—",
+        package_name: b.packages?.name || "—",
+        total: Number(b.total_amount), cost: Number(b.total_cost || 0),
+        paid_to_supplier: Number(b.paid_to_supplier || 0),
+        supplier_due: Number(b.supplier_due || 0), status: b.status,
+      })),
+      agentPayments: filteredPayments.map(p => ({ amount: Number(p.amount), date: p.date, method: p.payment_method || "cash", notes: p.notes })),
+      summary: {
+        totalBookings: bookings.length,
+        totalTravelers: bookings.reduce((s, b) => s + Number(b.num_travelers || 0), 0),
+        totalCost, totalPaid: totalAgentPaid, totalDue,
+        profit: bookings.reduce((s, b) => s + Number(b.total_amount || 0), 0) - totalCost,
+      },
+    };
+    await generateSupplierPdf(pdfData, company);
+    toast({ title: "PDF ডাউনলোড হয়েছে" });
+  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate("/admin/supplier-agents")} className="text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Truck className="h-6 w-6 text-primary" /> {agent.agent_name}
-          </h1>
-          <p className="text-sm text-muted-foreground">সাপ্লায়ার এজেন্ট প্রোফাইল ড্যাশবোর্ড</p>
+      <div className="flex items-center gap-3 flex-wrap">
+        <button onClick={() => navigate("/admin/supplier-agents")} className="text-muted-foreground hover:text-foreground"><ArrowLeft className="h-5 w-5" /></button>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl font-bold text-foreground flex items-center gap-2"><Truck className="h-5 w-5 text-primary" />{agent.agent_name}</h1>
+          <p className="text-sm text-muted-foreground">সাপ্লায়ার এজেন্ট প্রোফাইল</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="outline" size="sm" onClick={() => window.print()}>
-            <Printer className="h-4 w-4 mr-1" /> প্রিন্ট
-          </Button>
-          <Button variant="outline" size="sm" onClick={async () => {
-            const company = await getCompanyInfoForPdf();
-            const pdfData: SupplierPdfData = {
-              agent_name: agent.agent_name, company_name: agent.company_name,
-              phone: agent.phone, address: agent.address, status: agent.status, notes: agent.notes,
-              bookings: bookings.map(b => ({
-                tracking_id: b.tracking_id, guest_name: b.guest_name || "—",
-                package_name: b.packages?.name || "—",
-                total: Number(b.total_amount), cost: Number(b.total_cost || 0),
-                paid_to_supplier: Number(b.paid_to_supplier || 0),
-                supplier_due: Number(b.supplier_due || 0), status: b.status,
-              })),
-              agentPayments: agentPayments.map(p => ({
-                amount: Number(p.amount), date: p.date,
-                method: p.payment_method || "cash", notes: p.notes,
-              })),
-              summary: {
-                totalBookings, totalTravelers: totalHajji,
-                totalCost: totalPurchaseAmount, totalPaid: totalAgentPayments,
-                totalDue: dueToAgent, profit,
-              },
-            };
-            await generateSupplierPdf(pdfData, company);
-            toast({ title: "PDF ডাউনলোড হয়েছে" });
-          }}>
-            <Download className="h-4 w-4 mr-1" /> PDF
-          </Button>
-          {!isViewer && (
-            <Button onClick={() => setShowPaymentForm(true)}>
-              <Plus className="h-4 w-4 mr-1" /> পেমেন্ট রেকর্ড
-            </Button>
-          )}
-          <Badge variant={agent.status === "active" ? "default" : "secondary"} className="text-sm">
-            {agent.status === "active" ? "সক্রিয়" : "নিষ্ক্রিয়"}
-          </Badge>
+          <Button variant="outline" size="sm" onClick={handleDownloadStatement}><Download className="h-4 w-4 mr-1" /> স্টেটমেন্ট PDF</Button>
+          {!isViewer && <Button size="sm" onClick={() => setShowPaymentForm(true)}><Plus className="h-4 w-4 mr-1" /> পেমেন্ট</Button>}
+          <Badge variant={agent.status === "active" ? "default" : "secondary"}>{agent.status === "active" ? "সক্রিয়" : "নিষ্ক্রিয়"}</Badge>
         </div>
       </div>
 
-      {/* Agent Info */}
-      <Card>
-        <CardContent className="pt-5">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-            <div className="flex items-center gap-2"><Building2 className="h-4 w-4 text-muted-foreground" /><span>{agent.company_name || "—"}</span></div>
-            <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /><span>{agent.phone || "—"}</span></div>
-            <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted-foreground" /><span>{agent.address || "—"}</span></div>
-            <div className="flex items-center gap-2"><FileText className="h-4 w-4 text-muted-foreground" /><span>তৈরি: {format(new Date(agent.created_at), "dd MMM yyyy")}</span></div>
-          </div>
-          {agent.notes && <p className="text-sm text-muted-foreground mt-3 border-t border-border pt-3">{agent.notes}</p>}
-        </CardContent>
-      </Card>
+      {/* Info */}
+      <Card><CardContent className="pt-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+          <div className="flex items-center gap-2"><Building2 className="h-4 w-4 text-muted-foreground" />{agent.company_name || "—"}</div>
+          <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" />{agent.phone || "—"}</div>
+          <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted-foreground" />{agent.address || "—"}</div>
+          <div className="flex items-center gap-2"><FileText className="h-4 w-4 text-muted-foreground" />তৈরি: {format(new Date(agent.created_at), "dd MMM yyyy")}</div>
+        </div>
+      </CardContent></Card>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
-        {[
-          { icon: <Users className="h-5 w-5 text-primary" />, value: totalHajji, label: "মোট হাজী", cls: "text-foreground" },
-          { icon: <FileText className="h-5 w-5 text-primary" />, value: totalBookings, label: "মোট বুকিং", cls: "text-foreground" },
-          { icon: <DollarSign className="h-5 w-5 text-foreground" />, value: fmt(totalPurchaseAmount), label: "মোট ক্রয় মূল্য", cls: "text-foreground", small: true },
-          { icon: <Wallet className="h-5 w-5 text-emerald-500" />, value: fmt(totalAgentPayments), label: "এজেন্ট পেমেন্ট", cls: "text-emerald-500", small: true },
-          { icon: <TrendingDown className="h-5 w-5 text-destructive" />, value: fmt(dueToAgent), label: "এজেন্টের বকেয়া", cls: "text-destructive", small: true },
-          { icon: <CreditCard className="h-5 w-5 text-primary" />, value: fmt(totalSellingAmount), label: "বিক্রয় মূল্য", cls: "text-foreground", small: true },
-          { icon: profit >= 0 ? <TrendingUp className="h-5 w-5 text-emerald-500" /> : <TrendingDown className="h-5 w-5 text-destructive" />, value: fmt(profit), label: "লাভ", cls: profit >= 0 ? "text-emerald-500" : "text-destructive", small: true },
-        ].map((kpi, i) => (
-          <Card key={i}>
-            <CardContent className="pt-4 pb-4 text-center">
-              <div className="mx-auto mb-1 flex justify-center">{kpi.icon}</div>
-              <p className={`${kpi.small ? "text-lg" : "text-2xl"} font-bold ${kpi.cls}`}>{kpi.value}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{kpi.label}</p>
-            </CardContent>
-          </Card>
-        ))}
+      {/* KPIs */}
+      <div className="grid grid-cols-3 gap-3">
+        <Card><CardContent className="pt-4 pb-4 text-center">
+          <CreditCard className="h-5 w-5 text-primary mx-auto mb-1" />
+          <p className="text-lg font-bold">{fmt(totalCost)}</p>
+          <p className="text-[10px] text-muted-foreground uppercase">মোট খরচ</p>
+        </CardContent></Card>
+        <Card><CardContent className="pt-4 pb-4 text-center">
+          <Wallet className="h-5 w-5 text-emerald-500 mx-auto mb-1" />
+          <p className="text-lg font-bold text-emerald-500">{fmt(totalAgentPaid)}</p>
+          <p className="text-[10px] text-muted-foreground uppercase">মোট পরিশোধিত</p>
+        </CardContent></Card>
+        <Card><CardContent className="pt-4 pb-4 text-center">
+          <TrendingDown className="h-5 w-5 text-destructive mx-auto mb-1" />
+          <p className="text-lg font-bold text-destructive">{fmt(totalDue)}</p>
+          <p className="text-[10px] text-muted-foreground uppercase">মোট বকেয়া</p>
+        </CardContent></Card>
       </div>
 
-      {/* Agent Payment History */}
+      {/* Date Filter */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-40" />
+        <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-40" />
+        {(dateFrom || dateTo) && <Button variant="outline" size="sm" onClick={() => { setDateFrom(""); setDateTo(""); }}>রিসেট</Button>}
+      </div>
+
+      {/* Payment History */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Wallet className="h-4 w-4 text-primary" /> এজেন্ট পেমেন্ট হিস্ট্রি ({agentPayments.length})
-          </CardTitle>
+          <CardTitle className="text-base flex items-center gap-2"><Wallet className="h-4 w-4 text-primary" /> পেমেন্ট হিস্ট্রি ({filteredPayments.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          {agentPayments.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">কোনো পেমেন্ট রেকর্ড নেই</p>
+          {filteredPayments.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">কোনো পেমেন্ট নেই</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-muted-foreground text-xs">
-                     <th className="pb-2 pr-3">তারিখ</th>
-                     <th className="pb-2 pr-3">বুকিং</th>
-                     <th className="pb-2 pr-3">পরিমাণ</th>
-                     <th className="pb-2 pr-3">পদ্ধতি</th>
-                     <th className="pb-2">নোট</th>
-                  </tr>
-                </thead>
+                <thead><tr className="border-b border-border text-left text-muted-foreground text-xs">
+                  <th className="pb-2 pr-3">তারিখ</th><th className="pb-2 pr-3">পরিমাণ</th><th className="pb-2 pr-3">পদ্ধতি</th><th className="pb-2 pr-3">বুকিং</th><th className="pb-2">নোট</th>
+                </tr></thead>
                 <tbody>
-                  {agentPayments.map((ap: any) => (
-                    <tr key={ap.id} className="border-b border-border/30">
-                       <td className="py-2 pr-3 text-xs">{format(new Date(ap.date), "dd MMM yyyy")}</td>
-                       <td className="py-2 pr-3 text-xs font-mono text-primary">{ap.booking_id ? bookings.find((b: any) => b.id === ap.booking_id)?.tracking_id || "—" : "General"}</td>
-                       <td className="py-2 pr-3 font-bold text-emerald-500">{fmt(ap.amount)}</td>
-                       <td className="py-2 pr-3 capitalize">{ap.payment_method}</td>
-                       <td className="py-2 text-xs text-muted-foreground">{ap.notes || "—"}</td>
+                  {filteredPayments.map((p: any) => (
+                    <tr key={p.id} className="border-b border-border/30">
+                      <td className="py-2 pr-3 text-xs">{format(new Date(p.date), "dd MMM yyyy")}</td>
+                      <td className="py-2 pr-3 font-bold text-emerald-500">{fmt(p.amount)}</td>
+                      <td className="py-2 pr-3 capitalize">{p.payment_method}</td>
+                      <td className="py-2 pr-3 text-xs font-mono text-primary">{p.booking_id ? bookings.find(b => b.id === p.booking_id)?.tracking_id || "—" : "General"}</td>
+                      <td className="py-2 text-xs text-muted-foreground">{p.notes || "—"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -282,49 +221,30 @@ export default function AdminSupplierAgentProfilePage() {
         </CardContent>
       </Card>
 
-      {/* Bookings Section */}
+      {/* Bookings */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <FileText className="h-4 w-4 text-primary" /> বুকিং তালিকা ({bookings.length})
-          </CardTitle>
+          <CardTitle className="text-base flex items-center gap-2"><FileText className="h-4 w-4 text-primary" /> বুকিং তালিকা ({bookings.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {bookings.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">কোনো বুকিং পাওয়া যায়নি</p>
+            <p className="text-sm text-muted-foreground text-center py-6">কোনো বুকিং নেই</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-muted-foreground text-xs">
-                     <th className="pb-2 pr-3">ট্র্যাকিং</th>
-                     <th className="pb-2 pr-3">কাস্টমার</th>
-                     <th className="pb-2 pr-3">প্যাকেজ</th>
-                     <th className="pb-2 pr-3">যাত্রী</th>
-                     <th className="pb-2 pr-3">মোট খরচ</th>
-                     <th className="pb-2 pr-3">সাপ্লায়ার পরিশোধিত</th>
-                     <th className="pb-2 pr-3">সাপ্লায়ার বকেয়া</th>
-                     <th className="pb-2 pr-3">বিক্রয় মূল্য</th>
-                     <th className="pb-2 pr-3">স্ট্যাটাস</th>
-                     <th className="pb-2">তারিখ</th>
-                  </tr>
-                </thead>
+                <thead><tr className="border-b border-border text-left text-muted-foreground text-xs">
+                  <th className="pb-2 pr-3">ট্র্যাকিং</th><th className="pb-2 pr-3">কাস্টমার</th><th className="pb-2 pr-3">মোট খরচ</th>
+                  <th className="pb-2 pr-3">পরিশোধিত</th><th className="pb-2 pr-3">বকেয়া</th><th className="pb-2">স্ট্যাটাস</th>
+                </tr></thead>
                 <tbody>
-                  {bookings.map((b) => (
-                    <tr key={b.id} className="border-b border-border/30 cursor-pointer hover:bg-muted/30 transition-colors"
-                      onClick={() => navigate(`/admin/bookings`)}>
-                       <td className="py-2 pr-3 font-mono text-primary font-medium text-xs">{b.tracking_id}</td>
-                       <td className="py-2 pr-3">{b.guest_name || "—"}</td>
-                       <td className="py-2 pr-3">{b.packages?.name || "—"}</td>
-                       <td className="py-2 pr-3">{b.num_travelers}</td>
-                       <td className="py-2 pr-3 font-medium">{fmt(b.total_cost)}</td>
-                       <td className="py-2 pr-3 font-medium text-emerald-500">{fmt(b.paid_to_supplier)}</td>
-                       <td className="py-2 pr-3 font-medium text-destructive">{fmt(b.supplier_due)}</td>
-                       <td className="py-2 pr-3 font-medium">{fmt(b.total_amount)}</td>
-                      <td className="py-2 pr-3">
-                        <Badge variant={b.status === "completed" ? "default" : "secondary"} className="text-[10px] capitalize">{b.status}</Badge>
-                      </td>
-                      <td className="py-2 text-xs text-muted-foreground">{format(new Date(b.created_at), "dd MMM yyyy")}</td>
+                  {bookings.map(b => (
+                    <tr key={b.id} className="border-b border-border/30">
+                      <td className="py-2 pr-3 font-mono text-primary text-xs">{b.tracking_id}</td>
+                      <td className="py-2 pr-3">{b.guest_name || "—"}</td>
+                      <td className="py-2 pr-3 font-medium">{fmt(b.total_cost)}</td>
+                      <td className="py-2 pr-3 text-emerald-500">{fmt(b.paid_to_supplier)}</td>
+                      <td className="py-2 pr-3 text-destructive">{fmt(b.supplier_due)}</td>
+                      <td className="py-2"><Badge variant={b.status === "completed" ? "default" : "secondary"} className="text-[10px] capitalize">{b.status}</Badge></td>
                     </tr>
                   ))}
                 </tbody>
@@ -334,165 +254,38 @@ export default function AdminSupplierAgentProfilePage() {
         </CardContent>
       </Card>
 
-      {/* Customer Payments Section */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <CreditCard className="h-4 w-4 text-primary" /> বুকিং পেমেন্ট হিস্ট্রি ({completedPayments.length}/{payments.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {payments.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">কোনো পেমেন্ট পাওয়া যায়নি</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-muted-foreground text-xs">
-                    <th className="pb-2 pr-3">#</th>
-                    <th className="pb-2 pr-3">পরিমাণ</th>
-                    <th className="pb-2 pr-3">পদ্ধতি</th>
-                    <th className="pb-2 pr-3">নির্ধারিত তারিখ</th>
-                    <th className="pb-2 pr-3">পরিশোধের তারিখ</th>
-                    <th className="pb-2">স্ট্যাটাস</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {payments.map((p) => (
-                    <tr key={p.id} className="border-b border-border/30">
-                      <td className="py-2 pr-3 font-medium">{p.installment_number || "—"}</td>
-                      <td className="py-2 pr-3 font-medium">{fmt(p.amount)}</td>
-                      <td className="py-2 pr-3 capitalize">{p.payment_method || "—"}</td>
-                      <td className="py-2 pr-3 text-xs">{p.due_date ? format(new Date(p.due_date), "dd MMM yyyy") : "—"}</td>
-                      <td className="py-2 pr-3 text-xs">{p.paid_at ? format(new Date(p.paid_at), "dd MMM yyyy") : "—"}</td>
-                      <td className="py-2">
-                        <Badge variant={p.status === "completed" ? "default" : "secondary"} className="text-[10px] capitalize">{p.status}</Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Financial Summary */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-primary" /> আর্থিক সারসংক্ষেপ
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-            <div className="bg-secondary/50 rounded-lg p-4">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">মোট ক্রয় মূল্য</p>
-              <p className="font-heading font-bold text-lg text-foreground">{fmt(totalPurchaseAmount)}</p>
-            </div>
-            <div className="bg-secondary/50 rounded-lg p-4">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">এজেন্ট পেমেন্ট</p>
-              <p className="font-heading font-bold text-lg text-emerald-500">{fmt(totalAgentPayments)}</p>
-            </div>
-            <div className="bg-secondary/50 rounded-lg p-4">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">মোট বিক্রয় মূল্য</p>
-              <p className="font-heading font-bold text-lg text-foreground">{fmt(totalSellingAmount)}</p>
-            </div>
-            <div className="bg-secondary/50 rounded-lg p-4">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">এজেন্টের বকেয়া</p>
-              <p className="font-heading font-bold text-lg text-destructive">{fmt(dueToAgent)}</p>
-            </div>
-            <div className="bg-secondary/50 rounded-lg p-4">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">নিট লাভ</p>
-              <p className={`font-heading font-bold text-lg ${profit >= 0 ? "text-emerald-500" : "text-destructive"}`}>{fmt(profit)}</p>
-            </div>
-          </div>
-          <div className="mt-4 grid grid-cols-3 gap-4 text-center text-sm">
-            <div>
-              <p className="text-muted-foreground text-xs">লাভের মার্জিন</p>
-              <p className="font-bold text-foreground">{totalSellingAmount > 0 ? `${((profit / totalSellingAmount) * 100).toFixed(1)}%` : "0%"}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-xs">প্রতি হাজী গড় খরচ</p>
-              <p className="font-bold text-foreground">{totalHajji > 0 ? fmt(totalPurchaseAmount / totalHajji) : "৳0"}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-xs">প্রতি হাজী গড় বিক্রয়</p>
-              <p className="font-bold text-foreground">{totalHajji > 0 ? fmt(totalSellingAmount / totalHajji) : "৳0"}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Record Payment Dialog */}
-      <Dialog open={showPaymentForm} onOpenChange={(o) => { if (!o) setShowPaymentForm(false); }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>সাপ্লায়ার এজেন্ট পেমেন্ট রেকর্ড</DialogTitle>
-            <DialogDescription>{agent.agent_name} — বকেয়া: {fmt(dueToAgent)}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">বুকিং (ঐচ্ছিক)</label>
-              <Select value={paymentForm.booking_id} onValueChange={(v) => setPaymentForm({ ...paymentForm, booking_id: v })}>
-                <SelectTrigger><SelectValue placeholder="-- বুকিং নির্বাচন করুন --" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">সাধারণ পেমেন্ট</SelectItem>
-                  {bookings.filter((b: any) => Number(b.supplier_due || 0) > 0).map((b: any) => (
-                    <SelectItem key={b.id} value={b.id}>
-                      {b.tracking_id} — {b.guest_name || "N/A"} — বকেয়া: {fmt(b.supplier_due)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-sm font-medium">পরিমাণ (৳) *</label>
-              <Input type="number" min={1} value={paymentForm.amount}
-                onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
-                placeholder="পরিমাণ লিখুন" />
-            </div>
-            <div>
-              <label className="text-sm font-medium">পেমেন্ট পদ্ধতি</label>
+      {/* Payment Dialog */}
+      <Dialog open={showPaymentForm} onOpenChange={setShowPaymentForm}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>সাপ্লায়ার পেমেন্ট রেকর্ড</DialogTitle><DialogDescription>পেমেন্ট তথ্য দিন</DialogDescription></DialogHeader>
+          <div className="space-y-3">
+            <div><label className="text-xs text-muted-foreground block mb-1">পরিমাণ (৳) *</label>
+              <Input type="number" min={0} value={paymentForm.amount} onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })} /></div>
+            <div><label className="text-xs text-muted-foreground block mb-1">পদ্ধতি</label>
               <Select value={paymentForm.payment_method} onValueChange={(v) => setPaymentForm({ ...paymentForm, payment_method: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {PAYMENT_METHODS.map((m) => <SelectItem key={m} value={m} className="capitalize">{m}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-sm font-medium">ওয়ালেট অ্যাকাউন্ট (ঐচ্ছিক)</label>
-              <Select value={paymentForm.wallet_account_id} onValueChange={(v) => setPaymentForm({ ...paymentForm, wallet_account_id: v })}>
-                <SelectTrigger><SelectValue placeholder="-- নির্বাচন করুন --" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">কোনোটি নয়</SelectItem>
-                  {walletAccounts.map((a: any) => (
-                    <SelectItem key={a.id} value={a.id}>{a.name} ({fmt(a.balance)})</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-sm font-medium">তারিখ</label>
-              <Input type="date" value={paymentForm.date}
-                onChange={(e) => setPaymentForm({ ...paymentForm, date: e.target.value })} />
-            </div>
-            <div>
-              <label className="text-sm font-medium">নোট</label>
-              <Textarea value={paymentForm.notes}
-                onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
-                rows={2} placeholder="অতিরিক্ত তথ্য..." />
-            </div>
-            <div className="bg-accent/50 rounded-lg p-3 text-xs text-muted-foreground">
-              💡 এই পেমেন্ট স্বয়ংক্রিয়ভাবে একটি খরচ ট্র্যানজ্যাকশন তৈরি করবে এবং ওয়ালেট ব্যালেন্স আপডেট হবে।
-            </div>
+                <SelectContent>{PAYMENT_METHODS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+              </Select></div>
+            <div><label className="text-xs text-muted-foreground block mb-1">তারিখ</label>
+              <Input type="date" value={paymentForm.date} onChange={(e) => setPaymentForm({ ...paymentForm, date: e.target.value })} /></div>
+            <div><label className="text-xs text-muted-foreground block mb-1">বুকিং (ঐচ্ছিক)</label>
+              <select className="w-full bg-secondary border border-border rounded-md px-3 py-2 text-sm" value={paymentForm.booking_id} onChange={(e) => setPaymentForm({ ...paymentForm, booking_id: e.target.value })}>
+                <option value="">-- সব বুকিং --</option>
+                {bookings.map(b => <option key={b.id} value={b.id}>{b.tracking_id} — Due: {fmt(b.supplier_due)}</option>)}
+              </select></div>
+            {walletAccounts.length > 0 && (
+              <div><label className="text-xs text-muted-foreground block mb-1">ওয়ালেট</label>
+                <Select value={paymentForm.wallet_account_id} onValueChange={(v) => setPaymentForm({ ...paymentForm, wallet_account_id: v })}>
+                  <SelectTrigger><SelectValue placeholder="-- ওয়ালেট --" /></SelectTrigger>
+                  <SelectContent>{walletAccounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name} ({fmt(a.balance)})</SelectItem>)}</SelectContent>
+                </Select></div>
+            )}
+            <div><label className="text-xs text-muted-foreground block mb-1">নোট</label>
+              <Input value={paymentForm.notes} onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })} placeholder="নোট..." /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowPaymentForm(false)}>বাতিল</Button>
-            <Button onClick={handleRecordPayment} disabled={paymentLoading}>
-              {paymentLoading ? "প্রক্রিয়াকরণ..." : "রেকর্ড করুন"}
-            </Button>
+            <Button onClick={handleRecordPayment} disabled={paymentLoading}>{paymentLoading ? "সেভ হচ্ছে..." : "সেভ করুন"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
