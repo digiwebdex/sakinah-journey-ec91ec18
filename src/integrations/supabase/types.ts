@@ -1304,12 +1304,16 @@ export type Database = {
           booking_id: string | null
           category: string
           created_at: string
+          credit: number
           customer_id: string | null
           date: string
+          debit: number
           id: string
           note: string | null
           payment_method: string | null
           reference: string | null
+          source_id: string | null
+          source_type: string
           type: string
           user_id: string
         }
@@ -1318,12 +1322,16 @@ export type Database = {
           booking_id?: string | null
           category: string
           created_at?: string
+          credit?: number
           customer_id?: string | null
           date?: string
+          debit?: number
           id?: string
           note?: string | null
           payment_method?: string | null
           reference?: string | null
+          source_id?: string | null
+          source_type?: string
           type: string
           user_id: string
         }
@@ -1332,12 +1340,16 @@ export type Database = {
           booking_id?: string | null
           category?: string
           created_at?: string
+          credit?: number
           customer_id?: string | null
           date?: string
+          debit?: number
           id?: string
           note?: string | null
           payment_method?: string | null
           reference?: string | null
+          source_id?: string | null
+          source_type?: string
           type?: string
           user_id?: string
         }
