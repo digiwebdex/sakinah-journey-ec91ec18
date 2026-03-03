@@ -12,6 +12,7 @@ const TYPES = ["hajj", "umrah", "tour", "visa", "hotel", "transport", "ziyara"];
 const EMPTY_FORM = {
   name: "", type: "umrah", description: "", price: "", duration_days: "",
   image_url: "", start_date: "", expiry_date: "", services: "", is_active: true,
+  status: "active", show_on_website: true,
 };
 
 export default function AdminPackagesPage() {
@@ -50,7 +51,9 @@ export default function AdminPackagesPage() {
     image_url: f.image_url || null, start_date: f.start_date || null,
     expiry_date: f.expiry_date || null,
     services: f.services ? f.services.split(",").map(s => s.trim()).filter(Boolean) : [],
-    is_active: f.is_active,
+    is_active: f.status === "active",
+    status: f.status,
+    show_on_website: f.show_on_website,
   });
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -70,6 +73,8 @@ export default function AdminPackagesPage() {
       name: p.name, type: p.type, description: p.description || "", price: String(p.price),
       duration_days: p.duration_days ? String(p.duration_days) : "", image_url: p.image_url || "",
       start_date: p.start_date || "", expiry_date: p.expiry_date || "", services: svc, is_active: p.is_active,
+      status: p.status || (p.is_active ? "active" : "inactive"),
+      show_on_website: p.show_on_website !== false,
     });
     setShowForm(true);
   };
@@ -84,9 +89,14 @@ export default function AdminPackagesPage() {
   };
 
   const toggleActive = async (p: any) => {
-    const { error } = await supabase.from("packages").update({ is_active: !p.is_active }).eq("id", p.id);
+    const newStatus = p.status === "active" ? "inactive" : "active";
+    const { error } = await supabase.from("packages").update({ 
+      status: newStatus, 
+      is_active: newStatus === "active",
+      show_on_website: newStatus === "inactive" ? false : p.show_on_website,
+    } as any).eq("id", p.id);
     if (error) { toast.error(error.message); return; }
-    toast.success(p.is_active ? "প্যাকেজ নিষ্ক্রিয়" : "প্যাকেজ সক্রিয়");
+    toast.success(newStatus === "active" ? "প্যাকেজ সক্রিয়" : "প্যাকেজ নিষ্ক্রিয়");
     fetchPkgs();
   };
 
@@ -96,7 +106,8 @@ export default function AdminPackagesPage() {
       name: p.name + " (Copy)", type: p.type, description: p.description,
       price: p.price, duration_days: p.duration_days, image_url: p.image_url,
       start_date: p.start_date, expiry_date: p.expiry_date, services: svc, is_active: false,
-    });
+      status: "inactive", show_on_website: false,
+    } as any);
     if (error) { toast.error(error.message); return; }
     toast.success("প্যাকেজ ডুপ্লিকেট হয়েছে");
     fetchPkgs();
@@ -174,13 +185,28 @@ export default function AdminPackagesPage() {
             </label>
           )}
         </div>
-        <div className="sm:col-span-2 flex items-center gap-3">
-          <label className="text-xs text-muted-foreground">স্ট্যাটাস:</label>
-          <button type="button" onClick={() => setForm({ ...form, is_active: !form.is_active })}
-            className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md ${form.is_active ? "bg-emerald/10 text-emerald" : "bg-secondary text-muted-foreground"}`}>
-            {form.is_active ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
-            {form.is_active ? "সক্রিয়" : "নিষ্ক্রিয়"}
-          </button>
+        <div className="sm:col-span-2 flex items-center gap-6 flex-wrap">
+          <div className="flex items-center gap-3">
+            <label className="text-xs text-muted-foreground">সিস্টেম স্ট্যাটাস:</label>
+            <button type="button" onClick={() => setForm({ ...form, status: form.status === "active" ? "inactive" : "active", is_active: form.status !== "active" })}
+              className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md ${form.status === "active" ? "bg-emerald/10 text-emerald" : "bg-secondary text-muted-foreground"}`}>
+              {form.status === "active" ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
+              {form.status === "active" ? "Active" : "Inactive"}
+            </button>
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="text-xs text-muted-foreground">ওয়েবসাইটে দেখান:</label>
+            <button type="button" 
+              onClick={() => form.status === "active" && setForm({ ...form, show_on_website: !form.show_on_website })}
+              disabled={form.status !== "active"}
+              className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md ${
+                form.status !== "active" ? "bg-secondary text-muted-foreground opacity-50 cursor-not-allowed" :
+                form.show_on_website ? "bg-blue-500/10 text-blue-600" : "bg-secondary text-muted-foreground"
+              }`}>
+              {form.show_on_website && form.status === "active" ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
+              {form.show_on_website && form.status === "active" ? "Yes" : "No"}
+            </button>
+          </div>
         </div>
       </div>
       <div className="flex justify-end gap-3 pt-2">
@@ -215,8 +241,11 @@ export default function AdminPackagesPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-medium">{p.name}</p>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${p.is_active ? "bg-emerald/10 text-emerald" : "bg-destructive/10 text-destructive"}`}>
-                    {p.is_active ? "সক্রিয়" : "নিষ্ক্রিয়"}
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${(p.status || (p.is_active ? 'active' : 'inactive')) === 'active' ? "bg-emerald/10 text-emerald" : "bg-destructive/10 text-destructive"}`}>
+                    {(p.status || (p.is_active ? 'active' : 'inactive')) === 'active' ? "Active" : "Inactive"}
+                  </span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${p.show_on_website !== false ? "bg-blue-500/10 text-blue-600" : "bg-amber-500/10 text-amber-600"}`}>
+                    {p.show_on_website !== false ? "Visible" : "Hidden"}
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground capitalize mt-0.5">
@@ -241,7 +270,7 @@ export default function AdminPackagesPage() {
                     { label: "Edit", icon: <Edit2 className="h-3.5 w-3.5" />, onClick: () => openEdit(p), variant: "warning", hidden: isViewer },
                     { label: "Delete", icon: <Trash2 className="h-3.5 w-3.5" />, onClick: () => setDeleteId(p.id), variant: "destructive", hidden: isViewer, separator: true },
                     { label: "Duplicate", icon: <Copy className="h-3.5 w-3.5" />, onClick: () => handleDuplicate(p), variant: "purple", hidden: isViewer },
-                    { label: p.is_active ? "নিষ্ক্রিয় করুন" : "সক্রিয় করুন", icon: p.is_active ? <ToggleRight className="h-3.5 w-3.5" /> : <ToggleLeft className="h-3.5 w-3.5" />, onClick: () => toggleActive(p), variant: p.is_active ? "warning" : "success", hidden: isViewer },
+                    { label: (p.status || (p.is_active ? 'active' : 'inactive')) === 'active' ? "নিষ্ক্রিয় করুন" : "সক্রিয় করুন", icon: (p.status || (p.is_active ? 'active' : 'inactive')) === 'active' ? <ToggleRight className="h-3.5 w-3.5" /> : <ToggleLeft className="h-3.5 w-3.5" />, onClick: () => toggleActive(p), variant: (p.status || (p.is_active ? 'active' : 'inactive')) === 'active' ? "warning" : "success", hidden: isViewer },
                   ]}
                 />
               </div>
@@ -275,7 +304,8 @@ export default function AdminPackagesPage() {
                 <div><span className="text-muted-foreground text-xs block">মূল্য</span><span className="font-medium text-primary">৳{Number(viewPkg.price).toLocaleString()}</span></div>
                 <div><span className="text-muted-foreground text-xs block">সময়কাল</span><span className="font-medium">{viewPkg.duration_days ? `${viewPkg.duration_days} দিন` : "—"}</span></div>
                 <div><span className="text-muted-foreground text-xs block">শেষ তারিখ</span><span className="font-medium">{viewPkg.expiry_date || "—"}</span></div>
-                <div><span className="text-muted-foreground text-xs block">স্ট্যাটাস</span><span className={`font-medium ${viewPkg.is_active ? "text-emerald" : "text-destructive"}`}>{viewPkg.is_active ? "সক্রিয়" : "নিষ্ক্রিয়"}</span></div>
+                <div><span className="text-muted-foreground text-xs block">সিস্টেম স্ট্যাটাস</span><span className={`font-medium ${(viewPkg.status || (viewPkg.is_active ? 'active' : 'inactive')) === 'active' ? "text-emerald" : "text-destructive"}`}>{(viewPkg.status || (viewPkg.is_active ? 'active' : 'inactive')) === 'active' ? "Active" : "Inactive"}</span></div>
+                <div><span className="text-muted-foreground text-xs block">ওয়েবসাইট</span><span className={`font-medium ${viewPkg.show_on_website !== false ? "text-blue-600" : "text-amber-600"}`}>{viewPkg.show_on_website !== false ? "Visible" : "Hidden"}</span></div>
               </div>
               {viewPkg.description && <div><span className="text-muted-foreground text-xs block">বিবরণ</span><p>{viewPkg.description}</p></div>}
               {Array.isArray(viewPkg.services) && viewPkg.services.length > 0 && (

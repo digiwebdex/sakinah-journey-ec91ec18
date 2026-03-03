@@ -21,6 +21,7 @@ const PackagesSection = () => {
         .from("packages")
         .select("*")
         .eq("is_active", true)
+        .eq("show_on_website", true)
         .order("price", { ascending: true })
         .limit(6);
       setPackages(data || []);

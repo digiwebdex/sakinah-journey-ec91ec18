@@ -19,7 +19,7 @@ const Packages = () => {
 
   useEffect(() => {
     const fetchPackages = async () => {
-      const { data } = await supabase.from("packages").select("*").eq("is_active", true).order("price", { ascending: true });
+      const { data } = await supabase.from("packages").select("*").eq("is_active", true).eq("show_on_website", true).order("price", { ascending: true });
       setPackages(data || []);
       setLoading(false);
     };

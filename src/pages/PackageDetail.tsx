@@ -17,7 +17,7 @@ const PackageDetail = () => {
 
   useEffect(() => {
     const fetchPkg = async () => {
-      const { data } = await supabase.from("packages").select("*").eq("id", id).eq("is_active", true).single();
+      const { data } = await supabase.from("packages").select("*").eq("id", id).eq("is_active", true).eq("show_on_website", true).single();
       setPkg(data);
       setLoading(false);
     };

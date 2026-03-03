@@ -1011,7 +1011,9 @@ export type Database = {
           name: string
           price: number
           services: Json | null
+          show_on_website: boolean
           start_date: string | null
+          status: string
           type: string
           updated_at: string
         }
@@ -1027,7 +1029,9 @@ export type Database = {
           name: string
           price: number
           services?: Json | null
+          show_on_website?: boolean
           start_date?: string | null
+          status?: string
           type: string
           updated_at?: string
         }
@@ -1043,7 +1047,9 @@ export type Database = {
           name?: string
           price?: number
           services?: Json | null
+          show_on_website?: boolean
           start_date?: string | null
+          status?: string
           type?: string
           updated_at?: string
         }
