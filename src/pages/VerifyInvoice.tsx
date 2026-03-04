@@ -34,43 +34,54 @@ export default function VerifyInvoice() {
       setLoading(true);
       setNotFound(false);
 
-      // Resolve tracking ID: from URL param or query string
-      let trackingId = trackingFromQuery || "";
+      // Get tracking ID from query param or legacy invoice number
+      const trackingId = trackingFromQuery || "";
 
-      // If invoiceNumber is provided (e.g. INV-2026-XXXXX), find matching booking
-      if (invoiceNumber && !trackingId) {
-        // Search all bookings and match verification ID
-        const { data: bookings } = await supabase
-          .from("bookings")
-          .select("tracking_id")
-          .limit(500);
-
-        if (bookings) {
-          const match = bookings.find(
-            (b) => generateVerificationId(b.tracking_id) === invoiceNumber
-          );
-          if (match) trackingId = match.tracking_id;
-        }
-      }
-
-      if (!trackingId) {
+      if (!trackingId && !invoiceNumber) {
         setNotFound(true);
         setLoading(false);
         return;
       }
 
-      const { data, error } = await supabase
-        .from("bookings")
-        .select("tracking_id, total_amount, paid_amount, due_amount, status, created_at, num_travelers, guest_name, packages(name, type)")
-        .eq("tracking_id", trackingId.toUpperCase())
-        .single();
+      // If we have a direct tracking ID (new QR format), use edge function
+      if (trackingId) {
+        try {
+          const { data, error } = await supabase.functions.invoke("verify-invoice", {
+            body: { tracking_id: trackingId },
+          });
 
-      if (error || !data) {
-        setNotFound(true);
-      } else {
-        setBooking(data as unknown as VerifiedBooking);
+          if (error || !data?.booking) {
+            setNotFound(true);
+          } else {
+            setBooking(data.booking as VerifiedBooking);
+          }
+        } catch {
+          setNotFound(true);
+        }
+        setLoading(false);
+        return;
       }
-      setLoading(false);
+
+      // Legacy: invoiceNumber in URL path - try to find via edge function with all bookings
+      // This fallback handles old QR codes that used verification IDs
+      if (invoiceNumber) {
+        try {
+          // Try a direct lookup by treating invoiceNumber as tracking_id
+          const { data } = await supabase.functions.invoke("verify-invoice", {
+            body: { tracking_id: invoiceNumber },
+          });
+
+          if (data?.booking) {
+            setBooking(data.booking as VerifiedBooking);
+            setLoading(false);
+            return;
+          }
+        } catch {
+          // ignore
+        }
+        setNotFound(true);
+        setLoading(false);
+      }
     };
 
     verify();
@@ -116,7 +127,6 @@ export default function VerifyInvoice() {
 
         {!loading && booking && (
           <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-            {/* Verified Banner */}
             <div className="bg-green-50 border-b border-green-200 p-6 text-center">
               <CheckCircle className="h-14 w-14 text-green-600 mx-auto mb-3" />
               <h1 className="text-xl font-bold text-green-800">Verified Invoice</h1>
@@ -125,7 +135,6 @@ export default function VerifyInvoice() {
               </p>
             </div>
 
-            {/* Invoice Details */}
             <div className="p-6 space-y-4">
               <div className="flex items-center gap-2 mb-2">
                 <FileText className="h-5 w-5 text-gray-400" />
@@ -147,7 +156,6 @@ export default function VerifyInvoice() {
                 />
               </div>
 
-              {/* Financial Summary */}
               <div className="border-t border-gray-100 pt-4 mt-4 space-y-2">
                 <FinRow label="Total Amount" value={fmt(booking.total_amount)} bold />
                 <FinRow label="Paid Amount" value={fmt(booking.paid_amount)} className="text-green-600" />
@@ -160,7 +168,6 @@ export default function VerifyInvoice() {
               </div>
             </div>
 
-            {/* Footer */}
             <div className="bg-gray-50 border-t border-gray-100 px-6 py-4 text-center">
               <p className="text-xs text-gray-400">
                 RAHE KABA Tours & Travels — Hajj & Umrah Services
@@ -176,15 +183,7 @@ export default function VerifyInvoice() {
   );
 }
 
-function Detail({
-  label,
-  value,
-  valueClass = "",
-}: {
-  label: string;
-  value: string;
-  valueClass?: string;
-}) {
+function Detail({ label, value, valueClass = "" }: { label: string; value: string; valueClass?: string }) {
   return (
     <div>
       <p className="text-xs text-gray-400">{label}</p>
@@ -193,17 +192,7 @@ function Detail({
   );
 }
 
-function FinRow({
-  label,
-  value,
-  bold,
-  className = "",
-}: {
-  label: string;
-  value: string;
-  bold?: boolean;
-  className?: string;
-}) {
+function FinRow({ label, value, bold, className = "" }: { label: string; value: string; bold?: boolean; className?: string }) {
   return (
     <div className="flex justify-between text-sm">
       <span className={`text-gray-500 ${bold ? "font-semibold" : ""}`}>{label}</span>
