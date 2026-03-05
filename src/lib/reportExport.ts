@@ -10,7 +10,29 @@ interface ReportData {
   summary?: string[];
 }
 
-function addLogoToDoc(doc: jsPDF, y: number): number {
+let cachedLogoBase64: string | null = null;
+
+async function loadLogoBase64(): Promise<string | null> {
+  if (cachedLogoBase64) return cachedLogoBase64;
+  try {
+    const response = await fetch(logoImg);
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        cachedLogoBase64 = reader.result as string;
+        resolve(cachedLogoBase64);
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+function addLogoToDoc(doc: jsPDF, y: number, logoBase64: string | null): number {
+  if (!logoBase64) return y;
   const pageWidth = doc.internal.pageSize.getWidth();
   const logoW = 30;
   const logoH = 30;
@@ -21,7 +43,7 @@ function addLogoToDoc(doc: jsPDF, y: number): number {
   }
   y += 8;
   try {
-    doc.addImage(logoImg, "PNG", logoX, y, logoW, logoH);
+    doc.addImage(logoBase64, "PNG", logoX, y, logoW, logoH);
     y += logoH + 4;
   } catch { /* logo not available */ }
   return y;
@@ -51,7 +73,8 @@ export interface HajjiReportData {
   }[];
 }
 
-export function exportPDF({ title, columns, rows, summary }: ReportData) {
+export async function exportPDF({ title, columns, rows, summary }: ReportData) {
+  const logoBase64 = await loadLogoBase64();
   const doc = new jsPDF();
   doc.setFontSize(16);
   doc.text(title, 14, 18);
@@ -85,13 +108,12 @@ export function exportPDF({ title, columns, rows, summary }: ReportData) {
     y += 8 * summary.length + 10;
   }
 
-  // Add logo at the end
-  addLogoToDoc(doc, y);
-
+  addLogoToDoc(doc, y, logoBase64);
   doc.save(`${title.replace(/\s+/g, "_")}.pdf`);
 }
 
-export function exportHajjiPDF({ title, customers }: HajjiReportData) {
+export async function exportHajjiPDF({ title, customers }: HajjiReportData) {
+  const logoBase64 = await loadLogoBase64();
   const doc = new jsPDF({ orientation: "landscape" });
   const pageWidth = doc.internal.pageSize.getWidth();
 
@@ -106,13 +128,11 @@ export function exportHajjiPDF({ title, customers }: HajjiReportData) {
   const fmt = (n: number) => `BDT ${n.toLocaleString()}`;
 
   customers.forEach((c, idx) => {
-    // Check if we need a new page
     if (y > doc.internal.pageSize.getHeight() - 60) {
       doc.addPage();
       y = 20;
     }
 
-    // Customer header
     doc.setFillColor(40, 46, 56);
     doc.rect(14, y, pageWidth - 28, 10, "F");
     doc.setTextColor(255, 255, 255);
@@ -123,24 +143,18 @@ export function exportHajjiPDF({ title, customers }: HajjiReportData) {
     doc.setTextColor(0, 0, 0);
     y += 14;
 
-    // Customer summary
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
     doc.text(`Bookings: ${c.bookings} | Travelers: ${c.travelers} | Revenue: ${fmt(c.revenue)} | Due: ${fmt(c.due)} | Expenses: ${fmt(c.expenses)} | Profit: ${fmt(c.profit)}`, 18, y);
     y += 6;
 
-    // Booking details table
     if (c.bookingDetails.length > 0) {
       autoTable(doc, {
         startY: y,
         head: [["Tracking ID", "Package", "Date", "Total", "Paid", "Due", "Status"]],
         body: c.bookingDetails.map((b) => [
-          b.trackingId,
-          b.packageName,
-          b.date,
-          fmt(b.total),
-          fmt(b.paid),
-          fmt(b.due),
+          b.trackingId, b.packageName, b.date,
+          fmt(b.total), fmt(b.paid), fmt(b.due),
           b.status.charAt(0).toUpperCase() + b.status.slice(1),
         ]),
         styles: { fontSize: 7 },
@@ -154,19 +168,15 @@ export function exportHajjiPDF({ title, customers }: HajjiReportData) {
     }
   });
 
-  // Totals
   if (y > doc.internal.pageSize.getHeight() - 30) {
     doc.addPage();
     y = 20;
   }
   const totals = customers.reduce(
     (acc, c) => ({
-      bookings: acc.bookings + c.bookings,
-      travelers: acc.travelers + c.travelers,
-      revenue: acc.revenue + c.revenue,
-      due: acc.due + c.due,
-      expenses: acc.expenses + c.expenses,
-      profit: acc.profit + c.profit,
+      bookings: acc.bookings + c.bookings, travelers: acc.travelers + c.travelers,
+      revenue: acc.revenue + c.revenue, due: acc.due + c.due,
+      expenses: acc.expenses + c.expenses, profit: acc.profit + c.profit,
     }),
     { bookings: 0, travelers: 0, revenue: 0, due: 0, expenses: 0, profit: 0 }
   );
@@ -180,25 +190,19 @@ export function exportHajjiPDF({ title, customers }: HajjiReportData) {
   doc.setTextColor(0, 0, 0);
   y += 16;
 
-  // Add logo at the end
-  addLogoToDoc(doc, y);
-
+  addLogoToDoc(doc, y, logoBase64);
   doc.save(`${title.replace(/\s+/g, "_")}.pdf`);
 }
 
 export function exportHajjiExcel({ title, customers }: HajjiReportData) {
   const rows: (string | number)[][] = [];
-
-  // Summary header
   rows.push(["Customer", "Phone", "Passport", "Bookings", "Travelers", "Revenue", "Due", "Expenses", "Profit"]);
   customers.forEach((c) => {
     rows.push([c.name, c.phone, c.passport, c.bookings, c.travelers, c.revenue, c.due, c.expenses, c.profit]);
   });
-
   rows.push([]);
   rows.push(["=== BOOKING DETAILS ==="]);
   rows.push([]);
-
   customers.forEach((c) => {
     rows.push([`Customer: ${c.name} (${c.phone})`]);
     rows.push(["Tracking ID", "Package", "Date", "Total", "Paid", "Due", "Status"]);
@@ -207,11 +211,9 @@ export function exportHajjiExcel({ title, customers }: HajjiReportData) {
     });
     rows.push([]);
   });
-
   rows.push([]);
   rows.push(["Rahe Kaba Tours & Travels"]);
   rows.push(["Phone: +880 1601-505050 | Email: rahekaba.info@gmail.com"]);
-
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, title.slice(0, 31));
