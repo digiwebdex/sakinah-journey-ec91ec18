@@ -1,12 +1,30 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import logoImg from "@/assets/logo-nobg.png";
 
 interface ReportData {
   title: string;
   columns: string[];
   rows: (string | number)[][];
   summary?: string[];
+}
+
+function addLogoToDoc(doc: jsPDF, y: number): number {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const logoW = 30;
+  const logoH = 30;
+  const logoX = (pageWidth - logoW) / 2;
+  if (y + logoH + 10 > doc.internal.pageSize.getHeight()) {
+    doc.addPage();
+    y = 20;
+  }
+  y += 8;
+  try {
+    doc.addImage(logoImg, "PNG", logoX, y, logoW, logoH);
+    y += logoH + 4;
+  } catch { /* logo not available */ }
+  return y;
 }
 
 export interface HajjiReportData {
@@ -48,9 +66,10 @@ export function exportPDF({ title, columns, rows, summary }: ReportData) {
     headStyles: { fillColor: [40, 46, 56] },
   });
 
+  let y = (doc as any).lastAutoTable?.finalY + 10 || 50;
+
   // Summary footer
   if (summary && summary.length > 0) {
-    let y = (doc as any).lastAutoTable?.finalY + 10 || 50;
     if (y > doc.internal.pageSize.getHeight() - 40) { doc.addPage(); y = 20; }
     doc.setFillColor(40, 46, 56);
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -63,7 +82,11 @@ export function exportPDF({ title, columns, rows, summary }: ReportData) {
     });
     doc.setTextColor(0, 0, 0);
     doc.setFont("helvetica", "normal");
+    y += 8 * summary.length + 10;
   }
+
+  // Add logo at the end
+  addLogoToDoc(doc, y);
 
   doc.save(`${title.replace(/\s+/g, "_")}.pdf`);
 }
@@ -155,6 +178,10 @@ export function exportHajjiPDF({ title, customers }: HajjiReportData) {
   doc.setFont("helvetica", "bold");
   doc.text(`Grand Total — Customers: ${customers.length} | Bookings: ${totals.bookings} | Travelers: ${totals.travelers} | Revenue: ${fmt(totals.revenue)} | Due: ${fmt(totals.due)} | Profit: ${fmt(totals.profit)}`, 18, y + 8);
   doc.setTextColor(0, 0, 0);
+  y += 16;
+
+  // Add logo at the end
+  addLogoToDoc(doc, y);
 
   doc.save(`${title.replace(/\s+/g, "_")}.pdf`);
 }
@@ -181,6 +208,10 @@ export function exportHajjiExcel({ title, customers }: HajjiReportData) {
     rows.push([]);
   });
 
+  rows.push([]);
+  rows.push(["Rahe Kaba Tours & Travels"]);
+  rows.push(["Phone: +880 1601-505050 | Email: rahekaba.info@gmail.com"]);
+
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, title.slice(0, 31));
@@ -193,6 +224,9 @@ export function exportExcel({ title, columns, rows, summary }: ReportData) {
     wsData.push([]);
     summary.forEach(line => wsData.push([line]));
   }
+  wsData.push([]);
+  wsData.push(["Rahe Kaba Tours & Travels"]);
+  wsData.push(["Phone: +880 1601-505050 | Email: rahekaba.info@gmail.com"]);
   const ws = XLSX.utils.aoa_to_sheet(wsData);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, title.slice(0, 31));
