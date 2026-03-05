@@ -119,11 +119,15 @@ export default function AdminMoallemsPage() {
 
   useEffect(() => { setPage(1); }, [search]);
 
-  const getActions = (m: Moallem): ActionItem[] => [
-    { label: "দেখুন", icon: <Eye className="h-3.5 w-3.5" />, onClick: () => navigate(`/admin/moallems/${m.id}`) },
-    { label: "সম্পাদনা", icon: <Pencil className="h-3.5 w-3.5" />, onClick: () => startEdit(m), variant: "warning", hidden: isViewer },
-    { label: "মুছুন", icon: <Trash2 className="h-3.5 w-3.5" />, onClick: () => setDeleteId(m.id), variant: "destructive", hidden: isViewer, separator: true },
-  ];
+  const getActions = (m: Moallem): ActionItem[] => {
+    const stats = moallemStats[m.id] || { hajji: 0, received: 0, due: 0 };
+    return [
+      { label: "দেখুন", icon: <Eye className="h-3.5 w-3.5" />, onClick: () => navigate(`/admin/moallems/${m.id}`) },
+      { label: "PDF", icon: <FileDown className="h-3.5 w-3.5" />, onClick: () => exportPDF({ title: `Moallem - ${m.name}`, columns: ["Name", "Phone", "Pilgrim Count", "Contract Amount", "Total Paid", "Total Due"], rows: [[m.name, m.phone || "—", m.contracted_hajji || 0, m.contracted_amount || 0, stats.received, stats.due]], summary: [`Total Paid: ৳${stats.received.toLocaleString()}`, `Total Due: ৳${stats.due.toLocaleString()}`] }) },
+      { label: "সম্পাদনা", icon: <Pencil className="h-3.5 w-3.5" />, onClick: () => startEdit(m), variant: "warning", hidden: isViewer },
+      { label: "মুছুন", icon: <Trash2 className="h-3.5 w-3.5" />, onClick: () => setDeleteId(m.id), variant: "destructive", hidden: isViewer, separator: true },
+    ];
+  };
 
   // Summary KPIs
   const totals = useMemo(() => {

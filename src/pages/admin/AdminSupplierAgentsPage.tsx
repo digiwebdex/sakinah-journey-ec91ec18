@@ -125,11 +125,15 @@ export default function AdminSupplierAgentsPage() {
 
   useEffect(() => { setPage(1); }, [search]);
 
-  const getActions = (a: SupplierAgent): ActionItem[] => [
-    { label: "দেখুন", icon: <Eye className="h-3.5 w-3.5" />, onClick: () => navigate(`/admin/supplier-agents/${a.id}`) },
-    { label: "সম্পাদনা", icon: <Pencil className="h-3.5 w-3.5" />, onClick: () => startEdit(a), variant: "warning", hidden: isViewer },
-    { label: "মুছুন", icon: <Trash2 className="h-3.5 w-3.5" />, onClick: () => setDeleteId(a.id), variant: "destructive", hidden: isViewer, separator: true },
-  ];
+  const getActions = (a: SupplierAgent): ActionItem[] => {
+    const stats = getStats(a);
+    return [
+      { label: "দেখুন", icon: <Eye className="h-3.5 w-3.5" />, onClick: () => navigate(`/admin/supplier-agents/${a.id}`) },
+      { label: "PDF", icon: <FileDown className="h-3.5 w-3.5" />, onClick: () => exportPDF({ title: `Supplier - ${a.agent_name}`, columns: ["Name", "Phone", "Pilgrim Count", "Contract Amount", "Total Paid", "Total Due"], rows: [[a.agent_name, a.phone || "—", a.contracted_hajji || 0, stats.contractedAmount, stats.totalPaid, stats.totalDue]], summary: [`Total Paid: ৳${stats.totalPaid.toLocaleString()}`, `Total Due: ৳${stats.totalDue.toLocaleString()}`] }) },
+      { label: "সম্পাদনা", icon: <Pencil className="h-3.5 w-3.5" />, onClick: () => startEdit(a), variant: "warning", hidden: isViewer },
+      { label: "মুছুন", icon: <Trash2 className="h-3.5 w-3.5" />, onClick: () => setDeleteId(a.id), variant: "destructive", hidden: isViewer, separator: true },
+    ];
+  };
 
   const totals = useMemo(() => {
     let totalContracted = 0, totalPaid = 0, totalDue = 0;

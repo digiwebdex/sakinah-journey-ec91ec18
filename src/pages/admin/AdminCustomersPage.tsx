@@ -179,11 +179,15 @@ export default function AdminCustomersPage() {
 
   useEffect(() => { setPage(1); }, [search]);
 
-  const getActions = (c: any): ActionItem[] => [
-    { label: "দেখুন", icon: <Eye className="h-3.5 w-3.5" />, onClick: () => setSelectedCustomer(c) },
-    { label: "সম্পাদনা", icon: <Pencil className="h-3.5 w-3.5" />, onClick: () => startEdit(c), variant: "warning", hidden: isViewer },
-    { label: "মুছুন", icon: <Trash2 className="h-3.5 w-3.5" />, onClick: () => setDeleteId(c.id), variant: "destructive", hidden: isViewer, separator: true },
-  ];
+  const getActions = (c: any): ActionItem[] => {
+    const s = customerStats[c.user_id] || { totalAmount: 0, totalPaid: 0, totalDue: 0, travelers: 0 };
+    return [
+      { label: "দেখুন", icon: <Eye className="h-3.5 w-3.5" />, onClick: () => setSelectedCustomer(c) },
+      { label: "PDF", icon: <FileDown className="h-3.5 w-3.5" />, onClick: () => exportPDF({ title: `Customer - ${c.full_name || "Unknown"}`, columns: ["Name", "Phone", "Pilgrim Count", "Contract Amount", "Total Paid", "Total Due"], rows: [[c.full_name || "—", c.phone || "—", s.travelers, s.totalAmount, s.totalPaid, s.totalDue]], summary: [`Total Paid: ৳${s.totalPaid.toLocaleString()}`, `Total Due: ৳${s.totalDue.toLocaleString()}`] }) },
+      { label: "সম্পাদনা", icon: <Pencil className="h-3.5 w-3.5" />, onClick: () => startEdit(c), variant: "warning", hidden: isViewer },
+      { label: "মুছুন", icon: <Trash2 className="h-3.5 w-3.5" />, onClick: () => setDeleteId(c.id), variant: "destructive", hidden: isViewer, separator: true },
+    ];
+  };
 
   return (
     <div className="space-y-5">
