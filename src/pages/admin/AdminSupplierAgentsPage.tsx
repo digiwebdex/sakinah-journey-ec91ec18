@@ -30,7 +30,7 @@ interface SupplierAgent {
   created_at: string; updated_at: string;
 }
 
-const emptyForm = { agent_name: "", company_name: "", phone: "", address: "", notes: "", status: "active" };
+const emptyForm = { agent_name: "", company_name: "", phone: "", address: "", notes: "", status: "active", contract_date: "", contracted_hajji: "", contracted_amount: "" };
 
 export default function AdminSupplierAgentsPage() {
   const navigate = useNavigate();
@@ -81,6 +81,9 @@ export default function AdminSupplierAgentsPage() {
       agent_name: form.agent_name.trim(), company_name: form.company_name.trim() || null,
       phone: form.phone.trim() ? normalizePhone(form.phone) : null, address: form.address.trim() || null,
       notes: form.notes.trim() || null, status: form.status,
+      contract_date: form.contract_date || null,
+      contracted_hajji: form.contracted_hajji ? Number(form.contracted_hajji) : 0,
+      contracted_amount: form.contracted_amount ? Number(form.contracted_amount) : 0,
     };
     if (editId) {
       const { error } = await supabase.from("supplier_agents").update(payload).eq("id", editId);
@@ -95,7 +98,7 @@ export default function AdminSupplierAgentsPage() {
   };
 
   const startEdit = (a: SupplierAgent) => {
-    setForm({ agent_name: a.agent_name, company_name: a.company_name || "", phone: a.phone || "", address: a.address || "", notes: a.notes || "", status: a.status });
+    setForm({ agent_name: a.agent_name, company_name: a.company_name || "", phone: a.phone || "", address: a.address || "", notes: a.notes || "", status: a.status, contract_date: (a as any).contract_date || "", contracted_hajji: String((a as any).contracted_hajji || ""), contracted_amount: String((a as any).contracted_amount || "") });
     setEditId(a.id); setShowForm(true);
   };
 
@@ -259,6 +262,11 @@ export default function AdminSupplierAgentsPage() {
               {form.phone.trim() && getPhoneError(form.phone) && <p className="text-xs text-destructive mt-1">{getPhoneError(form.phone)}</p>}
             </div>
             <div><label className="text-sm font-medium">ঠিকানা</label><Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
+            <div><label className="text-sm font-medium">চুক্তির তারিখ</label><Input type="date" value={form.contract_date} onChange={e => setForm({ ...form, contract_date: e.target.value })} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-sm font-medium">চুক্তির হাজী সংখ্যা</label><Input type="number" min="0" value={form.contracted_hajji} onChange={e => setForm({ ...form, contracted_hajji: e.target.value })} placeholder="0" /></div>
+              <div><label className="text-sm font-medium">চুক্তিকৃত মোট টাকা</label><Input type="number" min="0" value={form.contracted_amount} onChange={e => setForm({ ...form, contracted_amount: e.target.value })} placeholder="0" /></div>
+            </div>
             <div>
               <label className="text-sm font-medium">স্ট্যাটাস</label>
               <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>

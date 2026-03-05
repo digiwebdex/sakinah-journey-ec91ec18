@@ -1291,6 +1291,9 @@ export type Database = {
           address: string | null
           agent_name: string
           company_name: string | null
+          contract_date: string | null
+          contracted_amount: number
+          contracted_hajji: number
           created_at: string
           id: string
           notes: string | null
@@ -1302,6 +1305,9 @@ export type Database = {
           address?: string | null
           agent_name: string
           company_name?: string | null
+          contract_date?: string | null
+          contracted_amount?: number
+          contracted_hajji?: number
           created_at?: string
           id?: string
           notes?: string | null
@@ -1313,6 +1319,9 @@ export type Database = {
           address?: string | null
           agent_name?: string
           company_name?: string | null
+          contract_date?: string | null
+          contracted_amount?: number
+          contracted_hajji?: number
           created_at?: string
           id?: string
           notes?: string | null
