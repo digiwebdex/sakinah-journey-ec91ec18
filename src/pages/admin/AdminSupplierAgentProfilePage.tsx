@@ -137,7 +137,8 @@ export default function AdminSupplierAgentProfilePage() {
       summary: {
         totalBookings: bookings.length,
         totalTravelers: bookings.reduce((s, b) => s + Number(b.num_travelers || 0), 0),
-        totalCost, totalPaid: totalAgentPaid,
+        contractedHajji: Number(agent.contracted_hajji || 0),
+        totalPaid: totalAgentPaid,
         totalDue: Math.max(0, Number(agent.contracted_amount || 0) - totalAgentPaid),
       },
     };
