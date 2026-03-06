@@ -45,10 +45,9 @@ export function addQrToDoc(
   const size = options?.size ?? 38;
   const position = options?.position ?? "bottom";
 
-  let x = options?.x ?? 10;  // Default to left side
-  let y = options?.y ?? 12;  // Default to top-left
+  let x = options?.x ?? pageWidth - size - 14;  // Default to right side
+  let y = options?.y ?? 12;  // Default to top
 
-  // Override position-specific coordinates
   if (position === "bottom") {
     x = pageWidth - 14 - size;
     y = pageHeight - size - 32;
@@ -56,7 +55,11 @@ export function addQrToDoc(
     x = pageWidth - 14 - size;
     y = 10;
   }
-  // position === "left" uses the defaults (x=10, y=12)
+  // position === "left" uses left side
+  if (position === "left") {
+    x = options?.x ?? 10;
+    y = options?.y ?? 12;
+  }
 
   try {
     // For left position, show minimal QR code without decorations
