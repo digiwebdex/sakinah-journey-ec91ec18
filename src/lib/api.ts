@@ -83,8 +83,8 @@ export const auth = {
     const data = await res.json();
     if (!res.ok) return { data: null, error: { message: data.error } };
     TokenManager.setTokens(data.access_token, data.refresh_token);
-    TokenManager.setUser(data.user);
-    return { data: { user: { id: data.user.id, email: data.user.email, ...data.user }, session: { access_token: data.access_token } }, error: null };
+    TokenManager.setUser({ ...data.user, roles: data.roles || [] });
+    return { data: { user: { id: data.user.id, email: data.user.email, ...data.user, roles: data.roles || [] }, session: { access_token: data.access_token } }, error: null };
   },
 
   async signUp({ email, password, options }: { email: string; password: string; options?: { data?: any } }) {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { auth as api } from "@/lib/api";
 import { toast } from "sonner";
 import logo from "@/assets/logo.jpg";
 import { Eye, EyeOff, Phone, Mail, Shield, CheckCircle2, XCircle } from "lucide-react";
