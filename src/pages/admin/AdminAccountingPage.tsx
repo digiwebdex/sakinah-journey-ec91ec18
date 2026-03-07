@@ -164,6 +164,21 @@ export default function AdminAccountingPage() {
   const totalExpenses = expenses.reduce((s: number, e: any) => s + Number(e.amount), 0);
   const netProfit = revenue - totalExpenses;
 
+  const today = new Date().toISOString().split("T")[0];
+  const dailyExpense = useMemo(() => expenses.filter((e: any) => e.date === today).reduce((s: number, e: any) => s + Number(e.amount), 0), [expenses, today]);
+  const [dailyIncome, setDailyIncome] = useState(0);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("payments").select("amount").eq("status", "completed").gte("paid_at", `${today}T00:00:00`).lte("paid_at", `${today}T23:59:59`);
+      const { data: mp } = await supabase.from("moallem_payments").select("amount").gte("date", today).lte("date", today);
+      setDailyIncome(
+        (data || []).reduce((s: number, p: any) => s + Number(p.amount), 0) +
+        (mp || []).reduce((s: number, p: any) => s + Number(p.amount), 0)
+      );
+    })();
+  }, [today]);
+
   const filtered = useMemo(() => {
     return expenses.filter((e: any) => {
       if (filterType !== "all" && e.expense_type !== filterType) return false;
@@ -234,6 +249,18 @@ export default function AdminAccountingPage() {
             else if (tab === "package") exportExcel({ title: "Package Profit Report", columns: ["Package", "Type", "Bookings", "Revenue", "Expenses", "Profit"], rows: packageProfit.map((p: any) => [p.package_name || "—", p.package_type || "—", Number(p.total_bookings || 0), Number(p.total_revenue || 0), Number(p.total_expenses || 0), Number(p.profit || 0)]) });
             else if (tab === "customer") exportExcel({ title: "Customer Profit Report", columns: ["Customer", "Phone", "Bookings", "Payments", "Expenses", "Profit"], rows: customerProfit.map((c: any) => [c.full_name || "—", c.phone || "—", Number(c.total_bookings || 0), Number(c.total_payments || 0), Number(c.total_expenses || 0), Number(c.profit || 0)]) });
           }} className="inline-flex items-center gap-1 text-xs bg-secondary px-3 py-1.5 rounded-md hover:bg-muted transition-colors"><FileSpreadsheet className="h-3.5 w-3.5" />Excel</button>
+        </div>
+      </div>
+
+      {/* Daily Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <div className="bg-card border border-emerald/30 rounded-lg p-4">
+          <p className="text-sm text-muted-foreground">আজকের আয় ({today})</p>
+          <p className="text-2xl font-heading font-bold text-emerald">{fmt(dailyIncome)}</p>
+        </div>
+        <div className="bg-card border border-destructive/30 rounded-lg p-4">
+          <p className="text-sm text-muted-foreground">আজকের খরচ ({today})</p>
+          <p className="text-2xl font-heading font-bold text-destructive">{fmt(dailyExpense)}</p>
         </div>
       </div>
 
