@@ -498,7 +498,7 @@ export default function AdminReportsPage() {
         {/* ── Global Filters ── */}
         <div className="flex items-center gap-2 py-3 flex-wrap">
           <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-          {activeTab !== "financial" && (
+          {activeTab !== "financial" && activeTab !== "daily" && (
             <div className="relative w-[200px]">
               <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
               <Input placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-8 h-9 text-sm" />
