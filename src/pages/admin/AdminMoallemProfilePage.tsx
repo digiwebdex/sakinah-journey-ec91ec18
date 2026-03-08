@@ -332,6 +332,81 @@ export default function AdminMoallemProfilePage() {
         </CardContent></Card>
       </div>
 
+      {/* Consolidated Financial Summary — সব গুলো এক স্ক্রীনে */}
+      <Card className="border-primary/20 bg-card">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2"><FileText className="h-4 w-4 text-primary" /> আর্থিক সারাংশ (Financial Summary)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left: Service Items Summary */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">সার্ভিস আইটেম</h4>
+              {moallemItems.length > 0 ? (
+                <div className="space-y-1.5">
+                  {moallemItems.map((item: any) => (
+                    <div key={item.id} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{item.description} ({Number(item.quantity)} x {fmt(Number(item.unit_price))})</span>
+                      <span className="font-medium">{fmt(Number(item.total_amount))}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between text-sm font-bold border-t border-border pt-2 mt-2">
+                    <span>মোট সার্ভিস</span>
+                    <span>{fmt(totalItemsBilled)}</span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">কোনো আইটেম নেই — চুক্তিকৃত টাকা: {fmt(totalSelling)}</p>
+              )}
+            </div>
+
+            {/* Right: Payment Breakdown by Method */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">পেমেন্ট ব্রেকডাউন</h4>
+              {moallemPayments.length > 0 ? (() => {
+                const byMethod: Record<string, number> = {};
+                moallemPayments.forEach((p: any) => {
+                  const key = (p.notes && p.notes.trim()) ? p.notes.trim() : (p.payment_method || "cash");
+                  byMethod[key] = (byMethod[key] || 0) + Number(p.amount || 0);
+                });
+                return (
+                  <div className="space-y-1.5">
+                    {Object.entries(byMethod).map(([method, amount]) => (
+                      <div key={method} className="flex justify-between text-sm">
+                        <span className="text-muted-foreground capitalize">{method}</span>
+                        <span className="font-medium text-emerald-500">{fmt(amount)}</span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between text-sm font-bold border-t border-border pt-2 mt-2">
+                      <span>মোট পরিশোধিত</span>
+                      <span className="text-emerald-500">{fmt(totalPaid)}</span>
+                    </div>
+                  </div>
+                );
+              })() : (
+                <p className="text-sm text-muted-foreground">কোনো পেমেন্ট নেই</p>
+              )}
+            </div>
+          </div>
+
+          {/* Bottom Summary Bar */}
+          <div className="mt-5 pt-4 border-t-2 border-primary/20 grid grid-cols-3 gap-4 text-center">
+            <div>
+              <p className="text-xs text-muted-foreground uppercase">Total Amount</p>
+              <p className="text-lg font-bold">{fmt(effectiveTotal)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase">Payment</p>
+              <p className="text-lg font-bold text-emerald-500">{fmt(totalPaid)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase">Due Amount</p>
+              <p className="text-lg font-bold text-destructive">{fmt(totalMoallemDue)}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Service Items */}
       <Card>
         <CardHeader className="pb-3">
