@@ -292,9 +292,36 @@ export async function generateSupplierPdf(data: SupplierPdfData, company: Compan
   doc.setTextColor(255);
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
-  doc.text(`Contracted Hajji: ${data.summary.contractedHajji} | Paid: ${fmt(data.summary.totalPaid)} | Due: ${fmt(data.summary.totalDue)}`, 18, y + 8);
+  doc.text(`Contracted Hajji: ${data.summary.contractedHajji} | Billed: ${fmt(data.summary.totalBilled)} | Paid: ${fmt(data.summary.totalPaid)} | Due: ${fmt(data.summary.totalDue)}`, 18, y + 8);
   doc.setTextColor(0);
   y += 18;
+
+  // Service Items
+  if (data.items && data.items.length > 0) {
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("SERVICE ITEMS", 14, y);
+    y += 4;
+    const itemsTotal = data.items.reduce((s, i) => s + i.total_amount, 0);
+    autoTable(doc, {
+      startY: y,
+      head: [["SL", "Description", "Qty", "Unit Price", "Total"]],
+      body: [
+        ...data.items.map((item, i) => [String(i + 1), item.description, String(item.quantity), fmt(item.unit_price), fmt(item.total_amount)]),
+        ["", "", "", "Grand Total", fmt(itemsTotal)],
+      ],
+      styles: { fontSize: 7 },
+      headStyles: { fillColor: [40, 46, 56] },
+      margin: { left: 14, right: 14 },
+      didParseCell: (hookData: any) => {
+        if (hookData.row.index === data.items!.length && hookData.section === 'body') {
+          hookData.cell.styles.fontStyle = 'bold';
+          hookData.cell.styles.fillColor = [245, 245, 245];
+        }
+      },
+    });
+    y = (doc as any).lastAutoTable?.finalY + 8 || y + 20;
+  }
 
   if (data.bookings.length > 0) {
     doc.setFontSize(10);
