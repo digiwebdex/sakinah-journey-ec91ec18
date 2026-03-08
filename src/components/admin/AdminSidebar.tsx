@@ -23,6 +23,7 @@ const menuItems = [
   { title: "Payments",        url: "/admin/payments",       icon: CreditCard,      roles: ["admin", "accountant", "viewer"] },
   { title: "Accounting",      url: "/admin/accounting",     icon: Calculator,      roles: ["admin", "viewer"] },
   { title: "Reports",         url: "/admin/reports",        icon: BarChart3,       roles: ["admin", "accountant", "viewer"] },
+  { title: "Calculator",      url: "/admin/calculator",     icon: Calculator,      roles: ["admin", "accountant", "booking", "viewer"] },
   { title: "Packages",        url: "/admin/packages",       icon: Package,         roles: ["admin", "viewer"] },
   { title: "CMS",             url: "/admin/cms",            icon: Pencil,          roles: ["admin", "cms"] },
   { title: "Settings",        url: "/admin/settings",       icon: Settings,        roles: ["admin"] },
