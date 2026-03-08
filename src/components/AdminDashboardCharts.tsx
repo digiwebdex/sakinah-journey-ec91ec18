@@ -27,6 +27,7 @@ interface Props {
   supplierAgents?: any[];
   supplierContracts?: any[];
   supplierContractPayments?: any[];
+  dailyCashbook?: any[];
   onMarkPaid: (id: string) => void;
 }
 
@@ -37,26 +38,114 @@ const AdminDashboardCharts = ({
   bookings, payments, expenses = [], accounts = [], financialSummary,
   moallemPayments = [], supplierPayments = [], commissionPayments = [],
   moallems = [], supplierAgents = [], supplierContracts = [], supplierContractPayments = [],
+  dailyCashbook = [],
   onMarkPaid
 }: Props) => {
   const navigate = useNavigate();
   const canSeeProfit = useCanSeeProfit();
   const [showDueCustomers, setShowDueCustomers] = useState(false);
 
-  // ── KPIs ──
-  const totalSales = bookings.reduce((s, b) => s + Number(b.total_amount || 0), 0);
-  const totalHajji = bookings.reduce((s, b) => s + Number(b.num_travelers || 0), 0);
-  const totalIncome = financialSummary ? Number(financialSummary.total_income) : payments.filter(p => p.status === "completed").reduce((s, p) => s + Number(p.amount), 0);
-  const totalExpensesPaid = financialSummary ? Number(financialSummary.total_expense) : expenses.reduce((s, e) => s + Number(e.amount), 0);
-  const netProfit = financialSummary ? Number(financialSummary.net_profit) : totalIncome - totalExpensesPaid;
-  const walletAccounts = accounts.filter(a => a.type === "asset");
-  const cashBank = walletAccounts.reduce((s, a) => s + Number(a.balance || 0), 0);
+  // ══════════════════════════════════════════════════════════
+  // ── DERIVED FINANCIAL CALCULATIONS (from source data) ────
+  // ══════════════════════════════════════════════════════════
 
-  // Receivable & Payable
-  const moallemDue = bookings.filter(b => b.moallem_id).reduce((s, b) => s + Number(b.moallem_due || 0), 0);
-  const customerDue = bookings.reduce((s, b) => s + Number(b.due_amount || 0), 0);
-  const supplierDue = bookings.reduce((s, b) => s + Number(b.supplier_due || 0), 0);
-  const commissionDue = bookings.reduce((s, b) => s + Number(b.commission_due || 0), 0);
+  const financials = useMemo(() => {
+    // ─── TOTAL SALES: Sum of all booking selling amounts ───
+    const totalSales = bookings.reduce((s, b) => s + Number(b.total_amount || 0), 0);
+    const totalHajji = bookings.reduce((s, b) => s + Number(b.num_travelers || 0), 0);
+
+    // ─── INCOME RECEIVED: All money that came IN ───
+    // 1. Customer payments (completed)
+    const customerPaymentsIn = payments
+      .filter(p => p.status === "completed")
+      .reduce((s, p) => s + Number(p.amount || 0), 0);
+
+    // 2. Moallem deposits (income from moallems)
+    const moallemDepositsIn = moallemPayments.reduce((s, p) => s + Number(p.amount || 0), 0);
+
+    // 3. Daily cashbook income entries
+    const cashbookIncome = dailyCashbook
+      .filter(e => e.type === "income")
+      .reduce((s, e) => s + Number(e.amount || 0), 0);
+
+    const totalIncomeReceived = customerPaymentsIn + moallemDepositsIn + cashbookIncome;
+
+    // ─── EXPENSES PAID: All money that went OUT ───
+    // 1. Direct expenses (expense table)
+    const directExpenses = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
+
+    // 2. Supplier agent payments
+    const supplierPaymentsOut = supplierPayments.reduce((s, p) => s + Number(p.amount || 0), 0);
+
+    // 3. Commission payments to moallems
+    const commissionPaymentsOut = commissionPayments.reduce((s, p) => s + Number(p.amount || 0), 0);
+
+    // 4. Supplier contract payments
+    const contractPaymentsOut = supplierContractPayments.reduce((s, p) => s + Number(p.amount || 0), 0);
+
+    // 5. Daily cashbook expense entries
+    const cashbookExpense = dailyCashbook
+      .filter(e => e.type === "expense")
+      .reduce((s, e) => s + Number(e.amount || 0), 0);
+
+    const totalExpensesPaid = directExpenses + supplierPaymentsOut + commissionPaymentsOut + contractPaymentsOut + cashbookExpense;
+
+    // ─── NET PROFIT: What remains as real profit ───
+    // Calculated from bookings: selling price - cost - commission - extra expenses
+    const bookingProfit = bookings.reduce((s, b) => {
+      const selling = Number(b.total_amount || 0);
+      const cost = Number(b.total_cost || 0);
+      const commission = Number(b.total_commission || 0);
+      const extra = Number(b.extra_expense || 0);
+      return s + (selling - cost - commission - extra);
+    }, 0);
+
+    // Subtract non-booking direct expenses (general office, etc.)
+    const generalExpenses = expenses
+      .filter(e => !e.booking_id)
+      .reduce((s, e) => s + Number(e.amount || 0), 0);
+
+    const netProfit = bookingProfit - generalExpenses;
+
+    // ─── CASH BALANCE: Sum of all wallet accounts ───
+    const walletAccounts = accounts.filter(a => a.type === "asset");
+    const cashBalance = walletAccounts.reduce((s, a) => s + Number(a.balance || 0), 0);
+
+    // ─── RECEIVABLE (money owed TO us) ───
+    // Moallem due: use moallems table (auto-synced by triggers)
+    const moallemDue = moallems.reduce((s, m) => s + Number(m.total_due || 0), 0);
+
+    // Customer due: from bookings
+    const customerDue = bookings.reduce((s, b) => s + Number(b.due_amount || 0), 0);
+
+    const totalReceivable = moallemDue + customerDue;
+
+    // ─── PAYABLE (money we owe TO others) ───
+    // Supplier due: from bookings + contract dues
+    const bookingSupplierDue = bookings.reduce((s, b) => s + Number(b.supplier_due || 0), 0);
+    const contractSupplierDue = supplierContracts.reduce((s, c) => s + Number(c.total_due || 0), 0);
+    const supplierDue = bookingSupplierDue + contractSupplierDue;
+
+    // Commission due: from bookings
+    const commissionDue = bookings.reduce((s, b) => s + Number(b.commission_due || 0), 0);
+
+    const totalPayable = supplierDue + commissionDue;
+
+    return {
+      totalSales,
+      totalHajji,
+      totalIncomeReceived,
+      totalExpensesPaid,
+      netProfit,
+      cashBalance,
+      moallemDue,
+      customerDue,
+      totalReceivable,
+      supplierDue,
+      commissionDue,
+      totalPayable,
+    };
+  }, [bookings, payments, expenses, accounts, moallemPayments, supplierPayments, commissionPayments, supplierContractPayments, supplierContracts, moallems, dailyCashbook]);
 
   // Customers with dues
   const dueCustomers = useMemo(() => {
@@ -84,7 +173,11 @@ const AdminDashboardCharts = ({
       const key = format(new Date(b.created_at), "MMM yy");
       if (months[key]) {
         months[key].revenue += Number(b.total_amount || 0);
-        months[key].profit += Number(b.profit_amount || 0);
+        const selling = Number(b.total_amount || 0);
+        const cost = Number(b.total_cost || 0);
+        const commission = Number(b.total_commission || 0);
+        const extra = Number(b.extra_expense || 0);
+        months[key].profit += (selling - cost - commission - extra);
       }
     });
     return Object.entries(months).map(([month, d]) => ({ month, ...d }));
@@ -96,20 +189,20 @@ const AdminDashboardCharts = ({
   // Build KPI cards dynamically based on role
   const kpiCards = useMemo(() => {
     const cards: { label: string; value: string | number; icon: any; color: string; onClick: () => void }[] = [
-      { label: "Total Sales", value: fmt(totalSales), icon: DollarSign, color: "text-primary", onClick: () => navigate("/admin/bookings") },
-      { label: "Income Received", value: fmt(totalIncome), icon: ArrowUpRight, color: "text-emerald", onClick: () => navigate("/admin/payments") },
+      { label: "Total Sales", value: fmt(financials.totalSales), icon: DollarSign, color: "text-primary", onClick: () => navigate("/admin/bookings") },
+      { label: "Income Received", value: fmt(financials.totalIncomeReceived), icon: ArrowUpRight, color: "text-emerald", onClick: () => navigate("/admin/payments") },
     ];
     if (canSeeProfit) {
-      cards.push({ label: "Net Profit", value: fmt(netProfit), icon: TrendingUp, color: netProfit >= 0 ? "text-emerald" : "text-destructive", onClick: () => navigate("/admin/accounting") });
+      cards.push({ label: "Net Profit", value: fmt(financials.netProfit), icon: TrendingUp, color: financials.netProfit >= 0 ? "text-emerald" : "text-destructive", onClick: () => navigate("/admin/accounting") });
     }
     cards.push(
-      { label: "Cash Balance", value: fmt(cashBank), icon: Wallet, color: "text-primary", onClick: () => navigate("/admin/accounting") },
+      { label: "Cash Balance", value: fmt(financials.cashBalance), icon: Wallet, color: financials.cashBalance >= 0 ? "text-primary" : "text-destructive", onClick: () => navigate("/admin/accounting") },
       { label: "Total Bookings", value: bookings.length, icon: Package, color: "text-foreground", onClick: () => navigate("/admin/bookings") },
-      { label: "Total Hajji", value: totalHajji, icon: Users, color: "text-foreground", onClick: () => navigate("/admin/customers") },
-      { label: "Customer Due", value: fmt(customerDue), icon: UserCheck, color: customerDue > 0 ? "text-yellow-500" : "text-emerald", onClick: () => setShowDueCustomers(true) },
+      { label: "Total Hajji", value: financials.totalHajji, icon: Users, color: "text-foreground", onClick: () => navigate("/admin/customers") },
+      { label: "Customer Due", value: fmt(financials.customerDue), icon: UserCheck, color: financials.customerDue > 0 ? "text-yellow-500" : "text-emerald", onClick: () => setShowDueCustomers(true) },
     );
     return cards;
-  }, [totalSales, totalIncome, netProfit, cashBank, bookings.length, totalHajji, customerDue, canSeeProfit, navigate]);
+  }, [financials, bookings.length, canSeeProfit, navigate]);
 
   return (
     <div className="space-y-5">
@@ -138,12 +231,12 @@ const AdminDashboardCharts = ({
           </h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between cursor-pointer hover:bg-secondary/30 rounded px-1 -mx-1 py-0.5 transition-colors" onClick={() => navigate("/admin/moallems")}>
-              <span className="text-muted-foreground">Moallem Due</span><span className="font-bold text-yellow-600">{fmt(moallemDue)}</span>
+              <span className="text-muted-foreground">Moallem Due</span><span className="font-bold text-yellow-600">{fmt(financials.moallemDue)}</span>
             </div>
             <div className="flex justify-between cursor-pointer hover:bg-secondary/30 rounded px-1 -mx-1 py-0.5 transition-colors" onClick={() => setShowDueCustomers(true)}>
-              <span className="text-muted-foreground">Customer Due</span><span className="font-bold text-yellow-600">{fmt(customerDue)}</span>
+              <span className="text-muted-foreground">Customer Due</span><span className="font-bold text-yellow-600">{fmt(financials.customerDue)}</span>
             </div>
-            <div className="border-t border-border pt-2 flex justify-between font-bold"><span>Total</span><span className="text-primary">{fmt(moallemDue + customerDue)}</span></div>
+            <div className="border-t border-border pt-2 flex justify-between font-bold"><span>Total</span><span className="text-primary">{fmt(financials.totalReceivable)}</span></div>
           </div>
         </div>
         <div className="bg-card border border-border rounded-xl p-4">
@@ -152,16 +245,16 @@ const AdminDashboardCharts = ({
           </h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between cursor-pointer hover:bg-secondary/30 rounded px-1 -mx-1 py-0.5 transition-colors" onClick={() => navigate("/admin/supplier-agents")}>
-              <span className="text-muted-foreground">Supplier Due</span><span className="font-bold text-destructive">{fmt(supplierDue)}</span>
+              <span className="text-muted-foreground">Supplier Due</span><span className="font-bold text-destructive">{fmt(financials.supplierDue)}</span>
             </div>
             {canSeeProfit && (
               <div className="flex justify-between cursor-pointer hover:bg-secondary/30 rounded px-1 -mx-1 py-0.5 transition-colors" onClick={() => navigate("/admin/moallems")}>
-                <span className="text-muted-foreground">Commission Due</span><span className="font-bold text-destructive">{fmt(commissionDue)}</span>
+                <span className="text-muted-foreground">Commission Due</span><span className="font-bold text-destructive">{fmt(financials.commissionDue)}</span>
               </div>
             )}
             <div className="border-t border-border pt-2 flex justify-between font-bold">
               <span>Total</span>
-              <span className="text-destructive">{fmt(supplierDue + (canSeeProfit ? commissionDue : 0))}</span>
+              <span className="text-destructive">{fmt(financials.supplierDue + (canSeeProfit ? financials.commissionDue : 0))}</span>
             </div>
           </div>
         </div>
@@ -253,7 +346,7 @@ const AdminDashboardCharts = ({
             <div className="space-y-2 mt-2">
               <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 flex items-center justify-between">
                 <span className="text-sm font-medium">Total Due</span>
-                <span className="text-lg font-bold text-destructive">{fmt(customerDue)}</span>
+                <span className="text-lg font-bold text-destructive">{fmt(financials.customerDue)}</span>
               </div>
               {dueCustomers.map((c, i) => (
                 <div key={i} className="bg-secondary/30 border border-border rounded-lg p-3">
