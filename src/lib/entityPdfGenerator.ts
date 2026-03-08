@@ -5,7 +5,7 @@ import QRCode from "qrcode";
 import { CompanyInfo } from "./invoiceGenerator";
 import { getSignatureData, SignatureData } from "./pdfSignature";
 import { generateTrackingQr, addQrToDoc, addPaymentWatermark, getWatermarkStatus } from "./pdfQrCode";
-import { registerBengaliFont } from "./pdfFontLoader";
+import { registerBengaliFont, addBengaliText } from "./pdfFontLoader";
 
 const GOLD = { r: 198, g: 165, b: 92 };
 const DARK = { r: 40, g: 46, b: 56 };
