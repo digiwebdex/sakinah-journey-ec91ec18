@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
@@ -17,9 +18,10 @@ import {
 } from "@/components/ui/table";
 import AdminActionMenu, { ActionItem } from "@/components/admin/AdminActionMenu";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Eye, Search, Truck, ChevronLeft, ChevronRight, FileDown, FileSpreadsheet } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, Search, Truck, ChevronLeft, ChevronRight, FileDown, FileSpreadsheet, Package, Wallet, CreditCard } from "lucide-react";
 import { exportPDF, exportExcel } from "@/lib/reportExport";
 import { normalizePhone, getPhoneError, handlePhoneChange } from "@/lib/phoneValidation";
+import { format } from "date-fns";
 
 const fmt = (n: number) => `৳${n.toLocaleString()}`;
 const PAGE_SIZE = 15;
@@ -40,6 +42,8 @@ export default function AdminSupplierAgentsPage() {
   const [agents, setAgents] = useState<SupplierAgent[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [allItems, setAllItems] = useState<any[]>([]);
+  const [allPaymentsDetailed, setAllPaymentsDetailed] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
@@ -49,12 +53,16 @@ export default function AdminSupplierAgentsPage() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [a, p] = await Promise.all([
+    const [a, p, itemsRes, paymentsDetailRes] = await Promise.all([
       supabase.from("supplier_agents").select("*").neq("status", "deleted").order("created_at", { ascending: false }),
       supabase.from("supplier_agent_payments").select("id, supplier_agent_id, amount"),
+      (supabase.from("supplier_agent_items" as any) as any).select("*").order("created_at", { ascending: true }),
+      supabase.from("supplier_agent_payments").select("*").order("date", { ascending: false }),
     ]);
     if (a.data) setAgents(a.data as SupplierAgent[]);
     if (p.data) setPayments(p.data);
+    setAllItems(itemsRes.data || []);
+    setAllPaymentsDetailed(paymentsDetailRes.data || []);
     setLoading(false);
   };
 
@@ -140,6 +148,33 @@ export default function AdminSupplierAgentsPage() {
     filtered.forEach(a => { const s = getStats(a); totalContracted += s.contractedAmount; totalPaid += s.totalPaid; totalDue += s.totalDue; });
     return { totalContracted, totalPaid, totalDue };
   }, [filtered, supplierStats]);
+
+  // Agent name lookup
+  const agentNameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    agents.forEach(a => { map[a.id] = a.agent_name; });
+    return map;
+  }, [agents]);
+
+  // Items with agent names
+  const itemsWithNames = useMemo(() => {
+    return allItems.map(item => ({
+      ...item,
+      agent_name: agentNameMap[item.supplier_agent_id] || "—",
+    }));
+  }, [allItems, agentNameMap]);
+
+  const itemsGrandTotal = useMemo(() => allItems.reduce((s: number, i: any) => s + Number(i.total_amount || 0), 0), [allItems]);
+
+  // Payments with agent names
+  const paymentsWithNames = useMemo(() => {
+    return allPaymentsDetailed.map(p => ({
+      ...p,
+      agent_name: agentNameMap[p.supplier_agent_id] || "—",
+    }));
+  }, [allPaymentsDetailed, agentNameMap]);
+
+  const paymentsGrandTotal = useMemo(() => allPaymentsDetailed.reduce((s: number, p: any) => s + Number(p.amount || 0), 0), [allPaymentsDetailed]);
 
   return (
     <div className="space-y-5">
@@ -255,6 +290,130 @@ export default function AdminSupplierAgentsPage() {
           )}
         </div>
       )}
+
+      {/* ===== সার্ভিস / আইটেম সারাংশ (সব এজেন্ট মিলিয়ে) ===== */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Package className="h-4 w-4 text-primary" /> সকল সার্ভিস / আইটেম ({itemsWithNames.length})
+            </CardTitle>
+            <span className="text-sm font-bold">মোট: {fmt(itemsGrandTotal)}</span>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {itemsWithNames.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">কোনো সার্ভিস আইটেম নেই</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/40">
+                    <TableHead className="w-10 text-center">SL</TableHead>
+                    <TableHead>বিবরণ</TableHead>
+                    <TableHead>এজেন্ট</TableHead>
+                    <TableHead className="text-right">সংখ্যা</TableHead>
+                    <TableHead className="text-right">দর (৳)</TableHead>
+                    <TableHead className="text-right">মোট (৳)</TableHead>
+                    <TableHead className="text-center">তারিখ</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {itemsWithNames.map((item: any, i: number) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="text-center text-muted-foreground text-xs">{i + 1}</TableCell>
+                      <TableCell className="font-medium">{item.description}</TableCell>
+                      <TableCell className="text-primary text-sm">{item.agent_name}</TableCell>
+                      <TableCell className="text-right">{item.quantity}</TableCell>
+                      <TableCell className="text-right">{fmt(item.unit_price)}</TableCell>
+                      <TableCell className="text-right font-bold">{fmt(item.total_amount)}</TableCell>
+                      <TableCell className="text-center text-xs text-muted-foreground">{item.created_at ? format(new Date(item.created_at), "dd MMM yyyy") : "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="bg-muted/60 font-bold">
+                    <TableCell colSpan={5} className="text-right">মোট =</TableCell>
+                    <TableCell className="text-right text-primary">{fmt(itemsGrandTotal)}</TableCell>
+                    <TableCell />
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ===== পেমেন্ট হিস্ট্রি (সব এজেন্ট মিলিয়ে) ===== */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Wallet className="h-4 w-4 text-primary" /> সকল পেমেন্ট হিস্ট্রি ({paymentsWithNames.length})
+            </CardTitle>
+            <span className="text-sm font-bold">মোট পরিশোধ: {fmt(paymentsGrandTotal)}</span>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {paymentsWithNames.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">কোনো পেমেন্ট নেই</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/40">
+                    <TableHead className="w-10 text-center">SL</TableHead>
+                    <TableHead>এজেন্ট নাম</TableHead>
+                    <TableHead className="text-center">তারিখ</TableHead>
+                    <TableHead className="text-right">পরিমাণ (৳)</TableHead>
+                    <TableHead className="text-center">পদ্ধতি</TableHead>
+                    <TableHead>নোট</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paymentsWithNames.map((p: any, i: number) => (
+                    <TableRow key={p.id}>
+                      <TableCell className="text-center text-muted-foreground text-xs">{i + 1}</TableCell>
+                      <TableCell className="font-medium text-primary">{p.agent_name}</TableCell>
+                      <TableCell className="text-center text-sm">{p.date ? format(new Date(p.date), "dd/MM/yyyy") : "—"}</TableCell>
+                      <TableCell className="text-right font-bold text-emerald-500">{fmt(p.amount)}</TableCell>
+                      <TableCell className="text-center capitalize text-xs">{p.payment_method || "—"}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{p.notes || "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="bg-muted/60 font-bold">
+                    <TableCell colSpan={3} className="text-right">মোট পরিশোধ =</TableCell>
+                    <TableCell className="text-right text-emerald-500">{fmt(paymentsGrandTotal)}</TableCell>
+                    <TableCell colSpan={2} />
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ===== সারসংক্ষেপ ===== */}
+      <Card className="border-primary/30">
+        <CardContent className="pt-4 pb-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+            <div>
+              <p className="text-xs text-muted-foreground uppercase">সার্ভিস মোট</p>
+              <p className="text-lg font-bold">{fmt(itemsGrandTotal)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase">মোট পরিশোধ</p>
+              <p className="text-lg font-bold text-emerald-500">{fmt(paymentsGrandTotal)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase">মোট বকেয়া</p>
+              <p className="text-lg font-bold text-destructive">{fmt(Math.max(0, itemsGrandTotal - paymentsGrandTotal))}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase">মোট এজেন্ট</p>
+              <p className="text-lg font-bold">{agents.length}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Create / Edit Dialog */}
       <Dialog open={showForm} onOpenChange={o => { if (!o) { setShowForm(false); setEditId(null); } }}>
