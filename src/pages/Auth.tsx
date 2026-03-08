@@ -252,47 +252,6 @@ const Auth = () => {
           </form>
         )}
 
-        {mode === "otp" && (
-          <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-            {!otpSent ? (
-              <>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">{t("auth.phoneNumber")}</label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
-                    <input type="tel" value={otpPhone} onChange={(e) => setOtpPhone(e.target.value)}
-                      className={`${inputClass} pl-10`} placeholder={t("auth.phonePlaceholder")} maxLength={15} />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">{t("auth.enterPhone")}</p>
-                </div>
-                <button onClick={handleSendOtp} disabled={loading}
-                  className="w-full bg-gradient-gold text-primary-foreground font-semibold py-3 rounded-md text-sm hover:opacity-90 transition-opacity shadow-gold disabled:opacity-50">
-                  {loading ? t("auth.sending") : t("auth.sendOtp")}
-                </button>
-              </>
-            ) : (
-              <>
-                <p className="text-sm text-center text-muted-foreground">
-                  {t("auth.otpSentTo")} <span className="text-primary font-medium">{otpPhone}</span>
-                </p>
-                <div>
-                  <input type="text" inputMode="numeric" maxLength={6} value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
-                    className={`${inputClass} text-center text-2xl tracking-[0.5em] font-mono`}
-                    placeholder="000000" />
-                </div>
-                <button onClick={handleVerifyOtp} disabled={loading || otpCode.length !== 6}
-                  className="w-full bg-gradient-gold text-primary-foreground font-semibold py-3 rounded-md text-sm hover:opacity-90 transition-opacity shadow-gold disabled:opacity-50">
-                  {loading ? t("auth.verifying") : t("auth.verifyLogin")}
-                </button>
-                <button onClick={() => { setOtpSent(false); setOtpCode(""); }}
-                  className="w-full text-sm text-muted-foreground hover:text-foreground">
-                  {t("auth.resendOrChange")}
-                </button>
-              </>
-            )}
-          </div>
-        )}
 
         {mode === "forgot" && (
           <form onSubmit={handleForgotPassword} className="bg-card border border-border rounded-xl p-6 space-y-4">
