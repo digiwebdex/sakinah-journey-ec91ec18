@@ -262,6 +262,7 @@ export interface SupplierPdfData {
 
 export async function generateSupplierPdf(data: SupplierPdfData, company: CompanyInfo) {
   const doc = new jsPDF();
+  await registerBengaliFont(doc);
   const [logoBase64, sig, companyQr] = await Promise.all([
     loadLogoBase64(),
     getSignatureData(),
