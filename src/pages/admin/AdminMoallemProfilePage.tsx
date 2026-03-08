@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, Users, FileText, CreditCard, TrendingDown,
   Phone, MapPin, CalendarDays, Hash, Plus, Wallet, Download,
+  Package, Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { generateMoallemPdf, getCompanyInfoForPdf, MoallemPdfData } from "@/lib/entityPdfGenerator";
@@ -33,11 +34,14 @@ export default function AdminMoallemProfilePage() {
   const [moallemPayments, setMoallemPayments] = useState<any[]>([]);
   const [commissionPayments, setCommissionPayments] = useState<any[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
+  const [moallemItems, setMoallemItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [pdfBookingFilter, setPdfBookingFilter] = useState<"due" | "all">("due");
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [showCommissionForm, setShowCommissionForm] = useState(false);
+  const [showItemForm, setShowItemForm] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [itemForm, setItemForm] = useState({ description: "", quantity: "1", unit_price: "0" });
 
   // Date filter
   const [dateFrom, setDateFrom] = useState("");
@@ -54,22 +58,51 @@ export default function AdminMoallemProfilePage() {
   const loadData = async () => {
     if (!id) return;
     setLoading(true);
-    const [mRes, bRes, mpRes, cpRes, accRes] = await Promise.all([
+    const [mRes, bRes, mpRes, cpRes, accRes, itemsRes] = await Promise.all([
       supabase.from("moallems").select("*").eq("id", id).maybeSingle(),
       supabase.from("bookings").select("*, packages(name, type, price)").eq("moallem_id", id).order("created_at", { ascending: false }),
       supabase.from("moallem_payments").select("*").eq("moallem_id", id).order("date", { ascending: false }),
       (supabase as any).from("moallem_commission_payments").select("*").eq("moallem_id", id).order("date", { ascending: false }),
       supabase.from("accounts").select("id, name, type, balance").order("name"),
+      (supabase as any).from("moallem_items").select("*").eq("moallem_id", id).order("created_at", { ascending: false }),
     ]);
     setMoallem(mRes.data);
     setBookings(bRes.data || []);
     setMoallemPayments(mpRes.data || []);
     setCommissionPayments(cpRes.data || []);
     setAccounts(accRes.data || []);
+    setMoallemItems(itemsRes.data || []);
     setLoading(false);
   };
 
   useEffect(() => { loadData(); }, [id]);
+
+  // Service Items CRUD
+  const handleAddItem = async () => {
+    const qty = parseFloat(itemForm.quantity) || 0;
+    const price = parseFloat(itemForm.unit_price) || 0;
+    if (!itemForm.description.trim()) { toast({ title: "বিবরণ দিন", variant: "destructive" }); return; }
+    if (qty <= 0 || price <= 0) { toast({ title: "সঠিক পরিমাণ ও মূল্য দিন", variant: "destructive" }); return; }
+    const { error } = await (supabase as any).from("moallem_items").insert({
+      moallem_id: id,
+      description: itemForm.description.trim(),
+      quantity: qty,
+      unit_price: price,
+      total_amount: qty * price,
+    });
+    if (error) { toast({ title: "ত্রুটি", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "আইটেম যোগ হয়েছে" });
+    setItemForm({ description: "", quantity: "1", unit_price: "0" });
+    setShowItemForm(false);
+    loadData();
+  };
+
+  const handleDeleteItem = async (itemId: string) => {
+    const { error } = await (supabase as any).from("moallem_items").delete().eq("id", itemId);
+    if (error) { toast({ title: "মুছতে ব্যর্থ", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "আইটেম মুছে ফেলা হয়েছে" });
+    loadData();
+  };
 
   const handleRecordPayment = async () => {
     const amount = parseFloat(paymentForm.amount);
@@ -148,8 +181,10 @@ export default function AdminMoallemProfilePage() {
   if (!moallem) return <div className="text-center py-20 text-muted-foreground">মোয়াল্লেম পাওয়া যায়নি</div>;
 
   const totalSelling = Number(moallem.contracted_amount || 0);
+  const totalItemsBilled = moallemItems.reduce((s: number, item: any) => s + Number(item.total_amount || 0), 0);
+  const effectiveTotal = totalItemsBilled > 0 ? totalItemsBilled : totalSelling;
   const totalPaid = moallemPayments.reduce((s, p) => s + Number(p.amount || 0), 0);
-  const totalMoallemDue = Math.max(0, totalSelling - totalPaid);
+  const totalMoallemDue = Math.max(0, effectiveTotal - totalPaid);
 
   // Filter payments by date
   const filterByDate = (items: any[]) => {
@@ -271,13 +306,20 @@ export default function AdminMoallemProfilePage() {
         </div>
       </CardContent></Card>
 
-      {/* KPIs - Clean 3 cards */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* KPIs - 4 cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card><CardContent className="pt-4 pb-4 text-center">
           <CreditCard className="h-5 w-5 text-primary mx-auto mb-1" />
           <p className="text-lg font-bold">{fmt(totalSelling)}</p>
           <p className="text-[10px] text-muted-foreground uppercase">চুক্তিকৃত টাকা</p>
         </CardContent></Card>
+        {totalItemsBilled > 0 && (
+          <Card><CardContent className="pt-4 pb-4 text-center">
+            <Package className="h-5 w-5 text-primary mx-auto mb-1" />
+            <p className="text-lg font-bold">{fmt(totalItemsBilled)}</p>
+            <p className="text-[10px] text-muted-foreground uppercase">সার্ভিস আইটেম মোট</p>
+          </CardContent></Card>
+        )}
         <Card><CardContent className="pt-4 pb-4 text-center">
           <Wallet className="h-5 w-5 text-emerald-500 mx-auto mb-1" />
           <p className="text-lg font-bold text-emerald-500">{fmt(totalPaid)}</p>
@@ -289,6 +331,56 @@ export default function AdminMoallemProfilePage() {
           <p className="text-[10px] text-muted-foreground uppercase">মোট বকেয়া</p>
         </CardContent></Card>
       </div>
+
+      {/* Service Items */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2"><Package className="h-4 w-4 text-primary" /> সার্ভিস আইটেম ({moallemItems.length})</CardTitle>
+            {!isViewer && (
+              <Button size="sm" variant="outline" onClick={() => setShowItemForm(true)}><Plus className="h-4 w-4 mr-1" /> আইটেম যোগ</Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {moallemItems.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">কোনো সার্ভিস আইটেম নেই</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><tr className="border-b border-border text-left text-muted-foreground text-xs">
+                  <th className="pb-2 pr-3">বিবরণ</th><th className="pb-2 pr-3 text-right">পরিমাণ</th><th className="pb-2 pr-3 text-right">একক মূল্য</th><th className="pb-2 pr-3 text-right">মোট</th>
+                  {!isViewer && <th className="pb-2 w-10"></th>}
+                </tr></thead>
+                <tbody>
+                  {moallemItems.map((item: any) => (
+                    <tr key={item.id} className="border-b border-border/30">
+                      <td className="py-2 pr-3">{item.description}</td>
+                      <td className="py-2 pr-3 text-right">{Number(item.quantity)}</td>
+                      <td className="py-2 pr-3 text-right">{fmt(Number(item.unit_price))}</td>
+                      <td className="py-2 pr-3 text-right font-bold">{fmt(Number(item.total_amount))}</td>
+                      {!isViewer && (
+                        <td className="py-2">
+                          <button onClick={() => handleDeleteItem(item.id)} className="text-destructive hover:text-destructive/80 p-1">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t border-border">
+                    <td colSpan={3} className="py-2 pr-3 text-right font-semibold text-xs text-muted-foreground uppercase">মোট</td>
+                    <td className="py-2 pr-3 text-right font-bold text-foreground">{fmt(totalItemsBilled)}</td>
+                    {!isViewer && <td></td>}
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Date Filter */}
       <div className="flex items-center gap-3 flex-wrap">
@@ -395,6 +487,31 @@ export default function AdminMoallemProfilePage() {
 
       {renderPaymentDialog("মোয়াল্লেম পেমেন্ট রেকর্ড", showPaymentForm, setShowPaymentForm, paymentForm, setPaymentForm, handleRecordPayment)}
       {renderPaymentDialog("কমিশন পরিশোধ রেকর্ড", showCommissionForm, setShowCommissionForm, commissionForm, setCommissionForm, handleRecordCommission)}
+
+      {/* Add Service Item Dialog */}
+      <Dialog open={showItemForm} onOpenChange={setShowItemForm}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>সার্ভিস আইটেম যোগ করুন</DialogTitle><DialogDescription>মোয়াল্লেম কী কী সার্ভিস দিয়েছে তা লিখুন</DialogDescription></DialogHeader>
+          <div className="space-y-3">
+            <div><label className="text-xs text-muted-foreground block mb-1">বিবরণ *</label>
+              <Input value={itemForm.description} onChange={(e) => setItemForm({ ...itemForm, description: e.target.value })} placeholder="যেমন: উমরাহ ভিসা, টিকেট..." /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-xs text-muted-foreground block mb-1">পরিমাণ</label>
+                <Input type="number" min={1} value={itemForm.quantity} onChange={(e) => setItemForm({ ...itemForm, quantity: e.target.value })} /></div>
+              <div><label className="text-xs text-muted-foreground block mb-1">একক মূল্য (৳)</label>
+                <Input type="number" min={0} value={itemForm.unit_price} onChange={(e) => setItemForm({ ...itemForm, unit_price: e.target.value })} /></div>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-3 text-sm">
+              <span className="text-muted-foreground">মোট: </span>
+              <span className="font-bold">{fmt((parseFloat(itemForm.quantity) || 0) * (parseFloat(itemForm.unit_price) || 0))}</span>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowItemForm(false)}>বাতিল</Button>
+            <Button onClick={handleAddItem}>যোগ করুন</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

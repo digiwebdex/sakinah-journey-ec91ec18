@@ -1171,3 +1171,16 @@ CREATE TABLE IF NOT EXISTS daily_cashbook (
 
 CREATE INDEX IF NOT EXISTS idx_daily_cashbook_date ON daily_cashbook(date);
 CREATE INDEX IF NOT EXISTS idx_daily_cashbook_type ON daily_cashbook(type);
+
+-- Moallem service items
+CREATE TABLE IF NOT EXISTS moallem_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  moallem_id UUID NOT NULL REFERENCES moallems(id) ON DELETE CASCADE,
+  description TEXT NOT NULL,
+  quantity NUMERIC NOT NULL DEFAULT 1,
+  unit_price NUMERIC NOT NULL DEFAULT 0,
+  total_amount NUMERIC NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_moallem_items_moallem_id ON moallem_items(moallem_id);

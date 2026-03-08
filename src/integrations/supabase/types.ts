@@ -805,6 +805,44 @@ export type Database = {
           },
         ]
       }
+      moallem_items: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          moallem_id: string
+          quantity: number
+          total_amount: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          moallem_id: string
+          quantity?: number
+          total_amount?: number
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          moallem_id?: string
+          quantity?: number
+          total_amount?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "moallem_items_moallem_id_fkey"
+            columns: ["moallem_id"]
+            isOneToOne: false
+            referencedRelation: "moallems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       moallem_payments: {
         Row: {
           amount: number

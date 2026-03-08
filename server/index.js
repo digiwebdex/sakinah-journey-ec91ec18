@@ -141,6 +141,7 @@ app.use('/api/accounts', createCrudRoutes('accounts', { adminOnly: true }));
 app.use('/api/moallems', createCrudRoutes('moallems', { adminOnly: true }));
 app.use('/api/moallem-payments', createCrudRoutes('moallem_payments', { adminOnly: true }));
 app.use('/api/moallem-commission-payments', createCrudRoutes('moallem_commission_payments', { adminOnly: true }));
+app.use('/api/moallem-items', createCrudRoutes('moallem_items', { adminOnly: true }));
 app.use('/api/supplier-agents', createCrudRoutes('supplier_agents', { adminOnly: true }));
 app.use('/api/supplier-agent-payments', createCrudRoutes('supplier_agent_payments', { adminOnly: true }));
 app.use('/api/supplier-contracts', createCrudRoutes('supplier_contracts', { adminOnly: true }));

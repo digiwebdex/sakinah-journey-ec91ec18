@@ -133,7 +133,7 @@ export default function AdminMoallemsPage() {
   const totals = useMemo(() => {
     let hajji = 0, received = 0, due = 0, contractedHajji = 0, contractedAmount = 0;
     Object.values(moallemStats).forEach(s => { hajji += s.hajji; received += s.received; due += s.due; });
-    moallems.forEach(m => { contractedHajji += (m.contracted_hajji || 0); contractedAmount += (m.contracted_amount || 0); });
+    moallems.forEach(m => { contractedHajji += Number(m.contracted_hajji || 0); contractedAmount += Number(m.contracted_amount || 0); });
     return { hajji, received, due, contractedHajji, contractedAmount };
   }, [moallemStats, moallems]);
 
