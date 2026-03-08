@@ -5,6 +5,7 @@ import { Plus, X, Edit2, Trash2, Save, Filter, TrendingUp, TrendingDown, BarChar
 import { exportPDF, exportExcel } from "@/lib/reportExport";
 import { useIsViewer, useCanModifyFinancials } from "@/components/admin/AdminLayout";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import DailyCashbook from "@/components/admin/DailyCashbook";
 
 const inputClass = "w-full bg-secondary border border-border rounded-md px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40";
 
@@ -44,6 +45,7 @@ const EMPTY_FORM = {
 };
 
 const TABS = [
+  { key: "cashbook", label: "দৈনিক ক্যাশবুক" },
   { key: "expenses", label: "Expenses" },
   { key: "booking", label: "Booking Profit" },
   { key: "package", label: "Package Profit" },
@@ -55,7 +57,7 @@ const fmt = (n: number) => `৳${Number(n || 0).toLocaleString()}`;
 export default function AdminAccountingPage() {
   const isViewer = useIsViewer();
   const canModify = useCanModifyFinancials();
-  const [tab, setTab] = useState("expenses");
+  const [tab, setTab] = useState("cashbook");
   const [expenses, setExpenses] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -289,6 +291,9 @@ export default function AdminAccountingPage() {
           </button>
         ))}
       </div>
+
+      {/* ============ DAILY CASHBOOK TAB ============ */}
+      {tab === "cashbook" && <DailyCashbook />}
 
       {/* ============ EXPENSES TAB ============ */}
       {tab === "expenses" && (

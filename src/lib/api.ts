@@ -193,6 +193,7 @@ const tableUrlMap: Record<string, string> = {
   user_roles: '/user-roles',
   financial_summary: '/financial-summary',
   otp_codes: '/otp-codes',
+  daily_cashbook: '/daily-cashbook',
 };
 
 // =============================================

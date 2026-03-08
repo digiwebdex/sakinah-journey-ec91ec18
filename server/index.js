@@ -154,6 +154,7 @@ app.use('/api/company-settings', createCrudRoutes('company_settings', { adminOnl
 app.use('/api/cms-versions', createCrudRoutes('cms_versions', { adminOnly: true }));
 app.use('/api/user-roles', createCrudRoutes('user_roles', { adminOnly: true }));
 app.use('/api/financial-summary', createCrudRoutes('financial_summary', { adminOnly: true }));
+app.use('/api/daily-cashbook', createCrudRoutes('daily_cashbook', { adminOnly: true }));
 
 // =============================================
 // SPECIAL ROUTES

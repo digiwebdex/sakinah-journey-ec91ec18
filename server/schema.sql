@@ -1151,3 +1151,23 @@ CREATE INDEX IF NOT EXISTS idx_user_roles_user_id ON user_roles(user_id);
 CREATE INDEX IF NOT EXISTS idx_moallem_payments_moallem_id ON moallem_payments(moallem_id);
 CREATE INDEX IF NOT EXISTS idx_supplier_agent_payments_supplier_id ON supplier_agent_payments(supplier_agent_id);
 CREATE INDEX IF NOT EXISTS idx_site_content_section_key ON site_content(section_key);
+
+-- =============================================
+-- DAILY CASHBOOK TABLE
+-- =============================================
+CREATE TABLE IF NOT EXISTS daily_cashbook (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
+  type TEXT NOT NULL CHECK (type IN ('income', 'expense')),
+  description TEXT NOT NULL,
+  amount NUMERIC NOT NULL CHECK (amount > 0),
+  category TEXT NOT NULL DEFAULT 'other',
+  wallet_account_id UUID REFERENCES accounts(id),
+  payment_method TEXT DEFAULT 'cash',
+  notes TEXT,
+  created_by UUID,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_daily_cashbook_date ON daily_cashbook(date);
+CREATE INDEX IF NOT EXISTS idx_daily_cashbook_type ON daily_cashbook(type);
