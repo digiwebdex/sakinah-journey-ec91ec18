@@ -177,11 +177,13 @@ export default function AdminMoallemProfilePage() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
+      const serviceLabel = SERVICE_TYPES.find(s => s.value === commissionForm.service_type)?.label || "";
+      const combinedNotes = [serviceLabel, commissionForm.notes.trim()].filter(Boolean).join(" — ");
       const { error } = await (supabase as any).from("moallem_commission_payments").insert({
         moallem_id: id, amount,
         payment_method: commissionForm.payment_method,
         date: commissionForm.date,
-        notes: commissionForm.notes.trim() || null,
+        notes: combinedNotes || null,
         wallet_account_id: commissionForm.wallet_account_id || null,
         booking_id: commissionForm.booking_id || null,
         recorded_by: session.user.id,
