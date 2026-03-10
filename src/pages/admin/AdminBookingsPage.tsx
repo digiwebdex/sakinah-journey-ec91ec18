@@ -188,7 +188,10 @@ export default function AdminBookingsPage() {
   const fetchBookings = () =>
     supabase.from("bookings").select("*, packages(name, type, duration_days, price), moallems(name, phone)")
       .order("created_at", { ascending: false })
-      .then(({ data }) => setBookings(data || []));
+      .then(({ data, error }) => {
+        if (error) console.error("fetchBookings error:", error);
+        setBookings(data || []);
+      });
 
   const fetchAllPayments = () =>
     supabase.from("payments").select("id, booking_id, amount, paid_at, payment_method, status")
