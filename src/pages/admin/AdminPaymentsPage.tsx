@@ -23,6 +23,18 @@ const PAYMENT_METHODS = [
 
 type PaymentType = "customer" | "moallem" | "supplier";
 
+const SERVICE_TYPES = [
+  { value: "", label: "-- সার্ভিস বাছাই করুন --" },
+  { value: "visa", label: "ভিসা (Visa)" },
+  { value: "ticket", label: "টিকেট (Ticket)" },
+  { value: "hajj", label: "হজ্জ (Hajj)" },
+  { value: "umrah", label: "উমরাহ (Umrah)" },
+  { value: "hotel", label: "হোটেল (Hotel)" },
+  { value: "transport", label: "পরিবহন (Transport)" },
+  { value: "food", label: "খাবার (Food)" },
+  { value: "other", label: "অন্যান্য (Other)" },
+];
+
 export default function AdminPaymentsPage() {
   const isViewer = useIsViewer();
   const canModify = useCanModifyFinancials();
