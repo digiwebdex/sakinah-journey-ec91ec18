@@ -100,11 +100,13 @@ export default function AdminSupplierAgentProfilePage() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
+      const serviceLabel = SERVICE_TYPES.find(s => s.value === paymentForm.service_type)?.label || "";
+      const combinedNotes = [serviceLabel, paymentForm.notes.trim()].filter(Boolean).join(" — ");
       const { error: apErr } = await supabase.from("supplier_agent_payments").insert({
         supplier_agent_id: id, amount,
         payment_method: paymentForm.payment_method,
         date: paymentForm.date,
-        notes: paymentForm.notes.trim() || null,
+        notes: combinedNotes || null,
         wallet_account_id: paymentForm.wallet_account_id || null,
         booking_id: paymentForm.booking_id || null,
         recorded_by: session.user.id,
