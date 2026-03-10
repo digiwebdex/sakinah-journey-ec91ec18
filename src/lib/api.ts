@@ -221,7 +221,10 @@ class QueryBuilder {
 
   select(fields: string = '*') {
     this.selectFields = fields;
-    this.method = 'GET';
+    // Only set to GET if no other method (POST/PATCH/DELETE) has been set
+    if (this.method === 'GET' || (!this.body && this.method !== 'DELETE')) {
+      this.method = 'GET';
+    }
     return this;
   }
 

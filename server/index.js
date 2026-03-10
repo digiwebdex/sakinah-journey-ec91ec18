@@ -48,7 +48,7 @@ const createCrudRoutes = (tableName, options = {}) => {
       Object.entries(filters).forEach(([key, value]) => {
         if (value === undefined || value === '') return;
 
-        const opMatch = key.match(/^(.*)_(neq|gt|gte|lt|lte|ilike|in|is|not_is)$/);
+        const opMatch = key.match(/^(.+?)_(not_is|neq|gt|gte|lt|lte|ilike|in|is)$/);
         const column = opMatch ? opMatch[1] : key;
         const operator = opMatch ? opMatch[2] : 'eq';
         if (!validColumn(column)) return;
