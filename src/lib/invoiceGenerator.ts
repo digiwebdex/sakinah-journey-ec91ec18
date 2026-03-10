@@ -775,7 +775,7 @@ export async function generateReceipt(
       ["Payment Date", fmtDate(payment.paid_at)],
       ["Payment Method", (payment.payment_method || "Manual").charAt(0).toUpperCase() + (payment.payment_method || "manual").slice(1)],
     ],
-    styles: { fontSize: 8, cellPadding: 3, font: "NotoSansBengali" },
+    styles: { fontSize: 8, cellPadding: 3, font: "helvetica" },
     headStyles: { fillColor: [DARK.r, DARK.g, DARK.b], textColor: [255, 255, 255], fontSize: 7.5 },
     columnStyles: { 0: { fontStyle: "bold", cellWidth: 50 } },
     margin: { left: 14, right: 14 },
