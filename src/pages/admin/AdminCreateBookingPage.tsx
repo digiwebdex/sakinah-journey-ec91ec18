@@ -240,7 +240,7 @@ export default function AdminCreateBookingPage() {
                 <option value="">-- Select Package --</option>
                 {packages.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} ({p.type}) — ৳{Number(p.price).toLocaleString()}
+                    {p.name} ({p.type}) — BDT {Number(p.price).toLocaleString()}
                   </option>
                 ))}
               </select>
