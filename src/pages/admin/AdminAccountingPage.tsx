@@ -398,7 +398,7 @@ export default function AdminAccountingPage() {
           <div className="flex flex-wrap gap-3 mb-4 items-center">
             <Filter className="h-4 w-4 text-muted-foreground" />
             <select className={inputClass + " w-auto"} value={filterType} onChange={(e) => setFilterType(e.target.value)}>
-              <option value="all">সকল ধরন</option>
+              <option value="all">All Types</option>
               {EXPENSE_TYPES.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
             </select>
             <select className={inputClass + " w-auto"} value={filterAssign} onChange={(e) => setFilterAssign(e.target.value)}>
