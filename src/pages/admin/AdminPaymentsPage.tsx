@@ -1076,7 +1076,7 @@ export default function AdminPaymentsPage() {
       <Dialog open={showEditModal} onOpenChange={(o) => { if (!o) { setShowEditModal(false); setEditingId(null); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-heading">{editType === "moallem" ? "মোয়াল্লেম পেমেন্ট সম্পাদনা" : "সাপ্লায়ার পেমেন্ট সম্পাদনা"}</DialogTitle>
+            <DialogTitle className="font-heading">{editType === "moallem" ? "Edit Moallem Payment" : "Edit Supplier Payment"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div>
