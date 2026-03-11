@@ -393,6 +393,7 @@ export async function generateSupplierPdf(data: SupplierPdfData, company: Compan
           hookData.cell.styles.fillColor = [245, 245, 245];
         }
       },
+      didDrawCell: bengaliCellHook,
     });
     y = (doc as any).lastAutoTable?.finalY + 8 || y + 20;
   }
