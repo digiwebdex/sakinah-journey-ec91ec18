@@ -328,7 +328,7 @@ export default function AdminAccountingPage() {
   return (
     <div>
       <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
-        <h2 className="font-heading text-xl font-bold">হিসাব ও মুনাফা</h2>
+        <h2 className="font-heading text-xl font-bold">Accounting & Profit</h2>
         <div className="flex items-center gap-2">
           {canModify && tab === "expenses" && (
             <button onClick={() => setShowForm(true)} className="inline-flex items-center gap-1.5 text-sm bg-gradient-gold text-primary-foreground font-semibold px-4 py-2 rounded-md hover:opacity-90 transition-opacity shadow-gold">
