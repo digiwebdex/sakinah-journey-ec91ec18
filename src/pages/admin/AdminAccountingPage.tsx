@@ -653,7 +653,7 @@ export default function AdminAccountingPage() {
       <Dialog open={!!viewExpense} onOpenChange={(o) => { if (!o) setViewExpense(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-heading">খরচের বিবরণ</DialogTitle>
+            <DialogTitle className="font-heading">Expense Details</DialogTitle>
           </DialogHeader>
           {viewExpense && (
             <div className="space-y-4 text-sm">
