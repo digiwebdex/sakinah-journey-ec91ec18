@@ -811,11 +811,11 @@ export default function AdminPaymentsPage() {
             {/* Moallem selection */}
             {paymentType === "moallem" && (
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">মোয়াল্লেম নির্বাচন *</label>
+                <label className="text-xs text-muted-foreground block mb-1">Select Moallem *</label>
                 <select className={inputClass} value={addForm.moallem_id} onChange={(e) => handleMoallemChange(e.target.value)}>
-                  <option value="">-- মোয়াল্লেম বাছাই করুন --</option>
+                  <option value="">-- Select Moallem --</option>
                   {moallems.map((m) => (
-                    <option key={m.id} value={m.id}>{m.name}{m.phone ? ` (${m.phone})` : ""} — বকেয়া: {fmt(Number(m.total_due || 0))}</option>
+                    <option key={m.id} value={m.id}>{m.name}{m.phone ? ` (${m.phone})` : ""} — Due: {fmt(Number(m.total_due || 0))}</option>
                   ))}
                 </select>
               </div>
