@@ -525,9 +525,9 @@ export default function AdminBookingsPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground block mb-1">Profit (৳)</label>
+                   <label className="text-xs text-muted-foreground block mb-1">Profit (BDT)</label>
                   <div className={`${inputClass} bg-muted/50 font-bold ${editProfit >= 0 ? "text-emerald" : "text-destructive"}`}>
-                    ৳{editProfit.toLocaleString()}
+                    BDT {editProfit.toLocaleString()}
                   </div>
                 </div>
               </div>
