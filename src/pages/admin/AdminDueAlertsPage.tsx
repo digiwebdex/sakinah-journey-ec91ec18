@@ -138,7 +138,7 @@ export default function AdminDueAlertsPage() {
     const profile = getProfile(p);
     const name = profile?.full_name || "Customer";
     const trackingId = p.bookings?.tracking_id || "N/A";
-    return `Dear ${name}, your installment #${p.installment_number || 1} of ৳${Number(p.amount).toLocaleString()} for booking ${trackingId} is due on ${format(new Date(p.due_date), "dd MMM yyyy")}. Please make your payment at the earliest. Thank you!`;
+    return `Dear ${name}, your installment #${p.installment_number || 1} of BDT ${Number(p.amount).toLocaleString()} for booking ${trackingId} is due on ${format(new Date(p.due_date), "dd MMM yyyy")}. Please make your payment at the earliest. Thank you!`;
   };
 
   const sendWhatsApp = (p: PaymentRow) => {
@@ -210,7 +210,7 @@ export default function AdminDueAlertsPage() {
         <TableCell>{getName(p)}</TableCell>
         <TableCell className="text-xs">{getPhone(p)}</TableCell>
         <TableCell className="text-center">{p.installment_number || "—"}</TableCell>
-        <TableCell className="font-medium">৳{Number(p.amount).toLocaleString()}</TableCell>
+        <TableCell className="font-medium">BDT {Number(p.amount).toLocaleString()}</TableCell>
         <TableCell>{dueDate ? format(dueDate, "dd MMM yyyy") : "No date set"}</TableCell>
         <TableCell>
           {type === "booking_due" ? (
@@ -273,7 +273,7 @@ export default function AdminDueAlertsPage() {
           <Card className="mb-4">
             <CardContent className="py-4 flex gap-6">
               <div><span className="text-sm text-muted-foreground">Bookings with Dues</span><p className="text-2xl font-bold text-destructive">{bookingDues.length + overdue.length}</p></div>
-              <div><span className="text-sm text-muted-foreground">Total Outstanding</span><p className="text-2xl font-bold">৳{(bookingDueTotal + overdueTotal).toLocaleString()}</p></div>
+              <div><span className="text-sm text-muted-foreground">Total Outstanding</span><p className="text-2xl font-bold">BDT {(bookingDueTotal + overdueTotal).toLocaleString()}</p></div>
             </CardContent>
           </Card>
           {(bookingDues.length + overdue.length) === 0 ? (
@@ -301,7 +301,7 @@ export default function AdminDueAlertsPage() {
           <Card className="mb-4">
             <CardContent className="py-4 flex gap-6">
               <div><span className="text-sm text-muted-foreground">Overdue Payments</span><p className="text-2xl font-bold text-destructive">{overdue.length}</p></div>
-              <div><span className="text-sm text-muted-foreground">Total Amount</span><p className="text-2xl font-bold">৳{overdueTotal.toLocaleString()}</p></div>
+              <div><span className="text-sm text-muted-foreground">Total Amount</span><p className="text-2xl font-bold">BDT {overdueTotal.toLocaleString()}</p></div>
             </CardContent>
           </Card>
           {overdue.length === 0 ? (
@@ -326,7 +326,7 @@ export default function AdminDueAlertsPage() {
           <Card className="mb-4">
             <CardContent className="py-4 flex gap-6">
               <div><span className="text-sm text-muted-foreground">Upcoming (30 days)</span><p className="text-2xl font-bold text-primary">{upcoming.length}</p></div>
-              <div><span className="text-sm text-muted-foreground">Total Amount</span><p className="text-2xl font-bold">৳{upcomingTotal.toLocaleString()}</p></div>
+              <div><span className="text-sm text-muted-foreground">Total Amount</span><p className="text-2xl font-bold">BDT {upcomingTotal.toLocaleString()}</p></div>
             </CardContent>
           </Card>
           {upcoming.length === 0 ? (

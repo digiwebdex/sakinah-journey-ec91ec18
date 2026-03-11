@@ -240,24 +240,24 @@ export default function AdminCreateBookingPage() {
                 <option value="">-- Select Package --</option>
                 {packages.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} ({p.type}) — ৳{Number(p.price).toLocaleString()}
+                    {p.name} ({p.type}) — BDT {Number(p.price).toLocaleString()}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">Selling Price (৳)</label>
+              <label className="text-xs text-muted-foreground block mb-1">Selling Price (BDT)</label>
               <input className={inputClass} type="number" min={0} value={form.selling_price_per_person}
                 onChange={(e) => setForm(f => ({ ...f, selling_price_per_person: Math.max(0, parseFloat(e.target.value) || 0) }))} />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">Discount (৳)</label>
+              <label className="text-xs text-muted-foreground block mb-1">Discount (BDT)</label>
               <input className={inputClass} type="number" min={0} value={form.discount}
                 onChange={(e) => setForm(f => ({ ...f, discount: Math.max(0, parseFloat(e.target.value) || 0) }))} />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">Final Price (৳)</label>
-              <div className={`${inputClass} bg-muted/50 font-bold text-foreground`}>৳{individualFinalPrice.toLocaleString()}</div>
+              <label className="text-xs text-muted-foreground block mb-1">Final Price (BDT)</label>
+              <div className={`${inputClass} bg-muted/50 font-bold text-foreground`}>BDT {individualFinalPrice.toLocaleString()}</div>
             </div>
           </div>
         </div>
@@ -300,22 +300,22 @@ export default function AdminCreateBookingPage() {
                   <label className="text-xs text-muted-foreground block mb-1">Package</label>
                   <select className={inputClass} value={m.package_id} onChange={(e) => updateMember(m.id, "package_id", e.target.value)}>
                     <option value="">-- Package --</option>
-                    {packages.map(p => <option key={p.id} value={p.id}>{p.name} — ৳{Number(p.price).toLocaleString()}</option>)}
+                    {packages.map(p => <option key={p.id} value={p.id}>{p.name} — BDT {Number(p.price).toLocaleString()}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground block mb-1">Selling Price (৳)</label>
+                  <label className="text-xs text-muted-foreground block mb-1">Selling Price (BDT)</label>
                   <input className={inputClass} type="number" min={0} value={m.selling_price}
                     onChange={(e) => updateMember(m.id, "selling_price", Math.max(0, parseFloat(e.target.value) || 0))} />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground block mb-1">Discount (৳)</label>
+                  <label className="text-xs text-muted-foreground block mb-1">Discount (BDT)</label>
                   <input className={inputClass} type="number" min={0} value={m.discount}
                     onChange={(e) => updateMember(m.id, "discount", Math.max(0, parseFloat(e.target.value) || 0))} />
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground block mb-1">Final Price</label>
-                  <div className={`${inputClass} bg-muted/30 font-bold`}>৳{Math.max(0, m.selling_price - m.discount).toLocaleString()}</div>
+                  <div className={`${inputClass} bg-muted/30 font-bold`}>BDT {Math.max(0, m.selling_price - m.discount).toLocaleString()}</div>
                 </div>
               </div>
             </div>
@@ -324,7 +324,7 @@ export default function AdminCreateBookingPage() {
           {members.length > 0 && (
             <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-sm">
               <span className="text-muted-foreground">Total Selling:</span>{" "}
-              <span className="font-bold text-foreground">৳{familyTotal.toLocaleString()}</span>
+              <span className="font-bold text-foreground">BDT {familyTotal.toLocaleString()}</span>
               <span className="text-muted-foreground ml-3">({members.length} members)</span>
             </div>
           )}
@@ -345,7 +345,7 @@ export default function AdminCreateBookingPage() {
             </select>
           </div>
           <div>
-            <label className="text-xs text-muted-foreground block mb-1">Paid Amount (৳)</label>
+            <label className="text-xs text-muted-foreground block mb-1">Paid Amount (BDT)</label>
             <input className={inputClass} type="number" min={0} max={totalSellingPrice} value={form.paid_amount}
               onChange={(e) => setForm(f => ({ ...f, paid_amount: Math.max(0, parseFloat(e.target.value) || 0) }))} />
           </div>
@@ -379,11 +379,11 @@ export default function AdminCreateBookingPage() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Total Selling</p>
-            <p className="font-heading font-bold text-foreground">৳{totalSellingPrice.toLocaleString()}</p>
+            <p className="font-heading font-bold text-foreground">BDT {totalSellingPrice.toLocaleString()}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Due</p>
-            <p className={`font-heading font-bold ${dueAmount > 0 ? "text-destructive" : "text-foreground"}`}>৳{dueAmount.toLocaleString()}</p>
+            <p className={`font-heading font-bold ${dueAmount > 0 ? "text-destructive" : "text-foreground"}`}>BDT {dueAmount.toLocaleString()}</p>
           </div>
         </div>
       </div>

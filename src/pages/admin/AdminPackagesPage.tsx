@@ -34,8 +34,8 @@ export default function AdminPackagesPage() {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) { toast.error("শুধুমাত্র ইমেজ ফাইল আপলোড করুন"); return; }
-    if (file.size > 5 * 1024 * 1024) { toast.error("ফাইল সাইজ ৫MB এর বেশি হতে পারবে না"); return; }
+    if (!file.type.startsWith("image/")) { toast.error("Please upload an image file only"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("File size must be under 5MB"); return; }
     setUploading(true);
     const path = `packages/${Date.now()}-${file.name}`;
     const { error } = await supabase.storage.from("hotel-images").upload(path, file, { upsert: true });
@@ -58,11 +58,11 @@ export default function AdminPackagesPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim()) { toast.error("প্যাকেজের নাম আবশ্যক"); return; }
-    if (!form.price || parseFloat(form.price) <= 0) { toast.error("সঠিক মূল্য দিন"); return; }
+    if (!form.name.trim()) { toast.error("Package name is required"); return; }
+    if (!form.price || parseFloat(form.price) <= 0) { toast.error("Please enter a valid price"); return; }
     const { error } = await supabase.from("packages").insert(buildPayload(form));
     if (error) { toast.error(error.message); return; }
-    toast.success("প্যাকেজ তৈরি হয়েছে");
+    toast.success("Package created");
     setShowForm(false); setForm({ ...EMPTY_FORM }); fetchPkgs();
   };
 
@@ -84,7 +84,7 @@ export default function AdminPackagesPage() {
     if (!editingId) return;
     const { error } = await supabase.from("packages").update(buildPayload(form)).eq("id", editingId);
     if (error) { toast.error(error.message); return; }
-    toast.success("প্যাকেজ আপডেট হয়েছে");
+    toast.success("Package updated");
     setShowForm(false); setEditingId(null); setForm({ ...EMPTY_FORM }); fetchPkgs();
   };
 
@@ -96,7 +96,7 @@ export default function AdminPackagesPage() {
       show_on_website: newStatus === "inactive" ? false : p.show_on_website,
     } as any).eq("id", p.id);
     if (error) { toast.error(error.message); return; }
-    toast.success(newStatus === "active" ? "প্যাকেজ সক্রিয়" : "প্যাকেজ নিষ্ক্রিয়");
+    toast.success(newStatus === "active" ? "Package activated" : "Package deactivated");
     fetchPkgs();
   };
 
@@ -109,7 +109,7 @@ export default function AdminPackagesPage() {
       status: "inactive", show_on_website: false,
     } as any);
     if (error) { toast.error(error.message); return; }
-    toast.success("প্যাকেজ ডুপ্লিকেট হয়েছে");
+    toast.success("Package duplicated");
     fetchPkgs();
   };
 
@@ -117,7 +117,7 @@ export default function AdminPackagesPage() {
     if (!deleteId) return;
     const { error } = await supabase.from("packages").delete().eq("id", deleteId);
     if (error) { toast.error(error.message); return; }
-    toast.success("প্যাকেজ মুছে ফেলা হয়েছে");
+    toast.success("Package deleted");
     setDeleteId(null); fetchPkgs();
   };
 
@@ -127,48 +127,48 @@ export default function AdminPackagesPage() {
     <form onSubmit={editingId ? handleSave : handleCreate} className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="sm:col-span-2">
-          <label className="text-xs text-muted-foreground block mb-1">প্যাকেজের নাম *</label>
-          <input className={inputClass} placeholder="প্যাকেজের নাম" required value={form.name}
+          <label className="text-xs text-muted-foreground block mb-1">Package Name *</label>
+          <input className={inputClass} placeholder="Package name" required value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })} maxLength={200} />
         </div>
         <div>
-          <label className="text-xs text-muted-foreground block mb-1">ধরন *</label>
+          <label className="text-xs text-muted-foreground block mb-1">Type *</label>
           <select className={inputClass} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
             {TYPES.map((t) => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
           </select>
         </div>
         <div>
-          <label className="text-xs text-muted-foreground block mb-1">মূল্য (৳) *</label>
+          <label className="text-xs text-muted-foreground block mb-1">Price (BDT) *</label>
           <input className={inputClass} placeholder="0" type="number" step="0.01" min="1" required value={form.price}
             onChange={(e) => setForm({ ...form, price: e.target.value })} />
         </div>
         <div>
-          <label className="text-xs text-muted-foreground block mb-1">সময়কাল (দিন)</label>
-          <input className={inputClass} placeholder="দিন সংখ্যা" type="number" min="1" value={form.duration_days}
+          <label className="text-xs text-muted-foreground block mb-1">Duration (Days)</label>
+          <input className={inputClass} placeholder="Number of days" type="number" min="1" value={form.duration_days}
             onChange={(e) => setForm({ ...form, duration_days: e.target.value })} />
         </div>
         <div>
-          <label className="text-xs text-muted-foreground block mb-1">শুরুর তারিখ</label>
+          <label className="text-xs text-muted-foreground block mb-1">Start Date</label>
           <input className={inputClass} type="date" value={form.start_date}
             onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
         </div>
         <div>
-          <label className="text-xs text-muted-foreground block mb-1">শেষ তারিখ</label>
+          <label className="text-xs text-muted-foreground block mb-1">End Date</label>
           <input className={inputClass} type="date" value={form.expiry_date}
             onChange={(e) => setForm({ ...form, expiry_date: e.target.value })} />
         </div>
         <div className="sm:col-span-2">
-          <label className="text-xs text-muted-foreground block mb-1">সেবাসমূহ (কমা দিয়ে আলাদা করুন)</label>
-          <input className={inputClass} placeholder="ভিসা, হোটেল, পরিবহন, খাবার, গাইড"
+          <label className="text-xs text-muted-foreground block mb-1">Services (comma-separated)</label>
+          <input className={inputClass} placeholder="Visa, Hotel, Transport, Food, Guide"
             value={form.services} onChange={(e) => setForm({ ...form, services: e.target.value })} />
         </div>
         <div className="sm:col-span-2">
-          <label className="text-xs text-muted-foreground block mb-1">বিবরণ</label>
-          <textarea className={`${inputClass} resize-none`} placeholder="প্যাকেজের বিস্তারিত..." rows={3}
+          <label className="text-xs text-muted-foreground block mb-1">Description</label>
+          <textarea className={`${inputClass} resize-none`} placeholder="Package details..." rows={3}
             value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} maxLength={1000} />
         </div>
         <div className="sm:col-span-2">
-          <label className="text-xs text-muted-foreground block mb-1">ছবি</label>
+          <label className="text-xs text-muted-foreground block mb-1">Image</label>
           {form.image_url ? (
             <div className="relative w-full h-40 rounded-lg overflow-hidden border border-border">
               <img src={form.image_url} alt="Preview" className="w-full h-full object-cover" />
@@ -180,14 +180,14 @@ export default function AdminPackagesPage() {
           ) : (
             <label className={`${inputClass} flex items-center justify-center gap-2 cursor-pointer h-24 border-dashed`}>
               {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              <span>{uploading ? "আপলোড হচ্ছে..." : "ছবি আপলোড করুন"}</span>
+              <span>{uploading ? "Uploading..." : "Upload Image"}</span>
               <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
             </label>
           )}
         </div>
         <div className="sm:col-span-2 flex items-center gap-6 flex-wrap">
           <div className="flex items-center gap-3">
-            <label className="text-xs text-muted-foreground">সিস্টেম স্ট্যাটাস:</label>
+            <label className="text-xs text-muted-foreground">System Status:</label>
             <button type="button" onClick={() => setForm({ ...form, status: form.status === "active" ? "inactive" : "active", is_active: form.status !== "active" })}
               className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md ${form.status === "active" ? "bg-emerald/10 text-emerald" : "bg-secondary text-muted-foreground"}`}>
               {form.status === "active" ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
@@ -195,7 +195,7 @@ export default function AdminPackagesPage() {
             </button>
           </div>
           <div className="flex items-center gap-3">
-            <label className="text-xs text-muted-foreground">ওয়েবসাইটে দেখান:</label>
+            <label className="text-xs text-muted-foreground">Show on Website:</label>
             <button type="button" 
               onClick={() => form.status === "active" && setForm({ ...form, show_on_website: !form.show_on_website })}
               disabled={form.status !== "active"}
@@ -210,10 +210,10 @@ export default function AdminPackagesPage() {
         </div>
       </div>
       <div className="flex justify-end gap-3 pt-2">
-        <button type="button" onClick={closeModal} className="text-sm px-4 py-2 rounded-md bg-secondary">বাতিল</button>
+        <button type="button" onClick={closeModal} className="text-sm px-4 py-2 rounded-md bg-secondary">Cancel</button>
         <button type="submit"
           className="text-sm px-4 py-2 rounded-md bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90 transition-opacity shadow-gold flex items-center gap-2">
-          <Save className="h-4 w-4" /> {editingId ? "আপডেট করুন" : "তৈরি করুন"}
+          <Save className="h-4 w-4" /> {editingId ? "Update" : "Create"}
         </button>
       </div>
     </form>
@@ -222,11 +222,11 @@ export default function AdminPackagesPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="font-heading text-xl font-bold">প্যাকেজ ব্যবস্থাপনা</h2>
+        <h2 className="font-heading text-xl font-bold">Package Management</h2>
         {!isViewer && (
           <button onClick={() => { setEditingId(null); setForm({ ...EMPTY_FORM }); setShowForm(true); }}
             className="bg-gradient-gold text-primary-foreground text-sm font-semibold px-4 py-2 rounded-md flex items-center gap-2 hover:opacity-90 transition-opacity shadow-gold">
-            <Plus className="h-4 w-4" /> নতুন প্যাকেজ
+            <Plus className="h-4 w-4" /> New Package
           </button>
         )}
       </div>
@@ -249,9 +249,9 @@ export default function AdminPackagesPage() {
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground capitalize mt-0.5">
-                  {p.type} • {p.duration_days ? `${p.duration_days} দিন` : "—"}
-                  {p.start_date && ` • শুরু: ${p.start_date}`}
-                  {p.expiry_date && ` • শেষ: ${p.expiry_date}`}
+                  {p.type} • {p.duration_days ? `${p.duration_days} days` : "—"}
+                  {p.start_date && ` • Start: ${p.start_date}`}
+                  {p.expiry_date && ` • End: ${p.expiry_date}`}
                 </p>
                 {Array.isArray(p.services) && p.services.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1.5">
@@ -262,7 +262,7 @@ export default function AdminPackagesPage() {
                 )}
               </div>
               <div className="flex items-center gap-3 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                <p className="font-heading font-bold text-primary">৳{Number(p.price).toLocaleString()}</p>
+                <p className="font-heading font-bold text-primary">BDT {Number(p.price).toLocaleString()}</p>
                 <AdminActionMenu
                   inlineCount={2}
                   actions={[
@@ -270,21 +270,21 @@ export default function AdminPackagesPage() {
                     { label: "Edit", icon: <Edit2 className="h-3.5 w-3.5" />, onClick: () => openEdit(p), variant: "warning", hidden: isViewer },
                     { label: "Delete", icon: <Trash2 className="h-3.5 w-3.5" />, onClick: () => setDeleteId(p.id), variant: "destructive", hidden: isViewer, separator: true },
                     { label: "Duplicate", icon: <Copy className="h-3.5 w-3.5" />, onClick: () => handleDuplicate(p), variant: "purple", hidden: isViewer },
-                    { label: (p.status || (p.is_active ? 'active' : 'inactive')) === 'active' ? "নিষ্ক্রিয় করুন" : "সক্রিয় করুন", icon: (p.status || (p.is_active ? 'active' : 'inactive')) === 'active' ? <ToggleRight className="h-3.5 w-3.5" /> : <ToggleLeft className="h-3.5 w-3.5" />, onClick: () => toggleActive(p), variant: (p.status || (p.is_active ? 'active' : 'inactive')) === 'active' ? "warning" : "success", hidden: isViewer },
+                    { label: (p.status || (p.is_active ? 'active' : 'inactive')) === 'active' ? "Deactivate" : "Activate", icon: (p.status || (p.is_active ? 'active' : 'inactive')) === 'active' ? <ToggleRight className="h-3.5 w-3.5" /> : <ToggleLeft className="h-3.5 w-3.5" />, onClick: () => toggleActive(p), variant: (p.status || (p.is_active ? 'active' : 'inactive')) === 'active' ? "warning" : "success", hidden: isViewer },
                   ]}
                 />
               </div>
             </div>
           </div>
         ))}
-        {packages.length === 0 && <p className="text-center text-muted-foreground py-12">কোনো প্যাকেজ পাওয়া যায়নি।</p>}
+        {packages.length === 0 && <p className="text-center text-muted-foreground py-12">No packages found.</p>}
       </div>
 
       {/* Create/Edit Modal */}
       <Dialog open={showForm} onOpenChange={(o) => { if (!o) closeModal(); }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-heading">{editingId ? "প্যাকেজ সম্পাদনা" : "নতুন প্যাকেজ তৈরি করুন"}</DialogTitle>
+            <DialogTitle className="font-heading">{editingId ? "Edit Package" : "Create New Package"}</DialogTitle>
           </DialogHeader>
           {renderForm()}
         </DialogContent>
@@ -300,16 +300,16 @@ export default function AdminPackagesPage() {
             <div className="space-y-3 text-sm">
               {viewPkg.image_url && <img src={viewPkg.image_url} alt={viewPkg.name} className="w-full h-48 rounded-lg object-cover" />}
               <div className="grid grid-cols-2 gap-3">
-                <div><span className="text-muted-foreground text-xs block">ধরন</span><span className="font-medium capitalize">{viewPkg.type}</span></div>
-                <div><span className="text-muted-foreground text-xs block">মূল্য</span><span className="font-medium text-primary">৳{Number(viewPkg.price).toLocaleString()}</span></div>
-                <div><span className="text-muted-foreground text-xs block">সময়কাল</span><span className="font-medium">{viewPkg.duration_days ? `${viewPkg.duration_days} দিন` : "—"}</span></div>
-                <div><span className="text-muted-foreground text-xs block">শেষ তারিখ</span><span className="font-medium">{viewPkg.expiry_date || "—"}</span></div>
-                <div><span className="text-muted-foreground text-xs block">সিস্টেম স্ট্যাটাস</span><span className={`font-medium ${(viewPkg.status || (viewPkg.is_active ? 'active' : 'inactive')) === 'active' ? "text-emerald" : "text-destructive"}`}>{(viewPkg.status || (viewPkg.is_active ? 'active' : 'inactive')) === 'active' ? "Active" : "Inactive"}</span></div>
-                <div><span className="text-muted-foreground text-xs block">ওয়েবসাইট</span><span className={`font-medium ${viewPkg.show_on_website !== false ? "text-blue-600" : "text-amber-600"}`}>{viewPkg.show_on_website !== false ? "Visible" : "Hidden"}</span></div>
+                <div><span className="text-muted-foreground text-xs block">Type</span><span className="font-medium capitalize">{viewPkg.type}</span></div>
+                <div><span className="text-muted-foreground text-xs block">Price</span><span className="font-medium text-primary">BDT {Number(viewPkg.price).toLocaleString()}</span></div>
+                <div><span className="text-muted-foreground text-xs block">Duration</span><span className="font-medium">{viewPkg.duration_days ? `${viewPkg.duration_days} days` : "—"}</span></div>
+                <div><span className="text-muted-foreground text-xs block">End Date</span><span className="font-medium">{viewPkg.expiry_date || "—"}</span></div>
+                <div><span className="text-muted-foreground text-xs block">System Status</span><span className={`font-medium ${(viewPkg.status || (viewPkg.is_active ? 'active' : 'inactive')) === 'active' ? "text-emerald" : "text-destructive"}`}>{(viewPkg.status || (viewPkg.is_active ? 'active' : 'inactive')) === 'active' ? "Active" : "Inactive"}</span></div>
+                <div><span className="text-muted-foreground text-xs block">Website</span><span className={`font-medium ${viewPkg.show_on_website !== false ? "text-blue-600" : "text-amber-600"}`}>{viewPkg.show_on_website !== false ? "Visible" : "Hidden"}</span></div>
               </div>
-              {viewPkg.description && <div><span className="text-muted-foreground text-xs block">বিবরণ</span><p>{viewPkg.description}</p></div>}
+              {viewPkg.description && <div><span className="text-muted-foreground text-xs block">Description</span><p>{viewPkg.description}</p></div>}
               {Array.isArray(viewPkg.services) && viewPkg.services.length > 0 && (
-                <div><span className="text-muted-foreground text-xs block mb-1">সেবাসমূহ</span>
+                <div><span className="text-muted-foreground text-xs block mb-1">Services</span>
                   <div className="flex flex-wrap gap-1">{viewPkg.services.map((s: string, i: number) => <span key={i} className="text-xs bg-secondary px-2 py-0.5 rounded">{s}</span>)}</div>
                 </div>
               )}
@@ -322,11 +322,11 @@ export default function AdminPackagesPage() {
       {deleteId && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setDeleteId(null)}>
           <div className="bg-card border border-border rounded-xl p-6 max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-heading font-bold text-lg mb-2">প্যাকেজ মুছবেন?</h3>
-            <p className="text-sm text-muted-foreground mb-4">এই প্যাকেজ ব্যবহার করে কোনো বিদ্যমান বুকিং প্রভাবিত হবে না।</p>
+            <h3 className="font-heading font-bold text-lg mb-2">Delete Package?</h3>
+            <p className="text-sm text-muted-foreground mb-4">Existing bookings using this package will not be affected.</p>
             <div className="flex gap-3 justify-end">
-              <button onClick={() => setDeleteId(null)} className="text-sm px-4 py-2 rounded-md bg-secondary">বাতিল</button>
-              <button onClick={confirmDelete} className="text-sm px-4 py-2 rounded-md bg-destructive text-destructive-foreground">মুছুন</button>
+              <button onClick={() => setDeleteId(null)} className="text-sm px-4 py-2 rounded-md bg-secondary">Cancel</button>
+              <button onClick={confirmDelete} className="text-sm px-4 py-2 rounded-md bg-destructive text-destructive-foreground">Delete</button>
             </div>
           </div>
         </div>

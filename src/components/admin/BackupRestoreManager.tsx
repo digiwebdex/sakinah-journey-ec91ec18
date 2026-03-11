@@ -28,7 +28,7 @@ export default function BackupRestoreManager() {
     const { data, error } = await supabase.storage.from("site-backups").list("", {
       sortBy: { column: "created_at", order: "desc" },
     });
-    if (error) { toast.error("ব্যাকআপ লোড ব্যর্থ"); console.error(error); }
+    if (error) { toast.error("Failed to load backups"); console.error(error); }
     else setBackups((data || []).filter(f => f.name.endsWith(".json")) as BackupFile[]);
     setLoading(false);
   };
@@ -48,10 +48,10 @@ export default function BackupRestoreManager() {
       if (data?.error) throw new Error(data.error);
 
       setProgress(100);
-      toast.success(`ব্যাকআপ সফল! ${data.stats?.length || 0} টেবিল সংরক্ষিত`);
+      toast.success(`Backup successful! ${data.stats?.length || 0} tables saved`);
       fetchBackups();
     } catch (e: any) {
-      toast.error(`ব্যাকআপ ব্যর্থ: ${e.message}`);
+      toast.error(`Backup failed: ${e.message}`);
     } finally {
       setCreating(false);
       setTimeout(() => setProgress(0), 1500);
@@ -74,9 +74,9 @@ export default function BackupRestoreManager() {
 
       setProgress(100);
       const restored = data.results?.filter((r: any) => r.status === "restored").length || 0;
-      toast.success(`রিস্টোর সফল! ${restored} টেবিল পুনরুদ্ধার করা হয়েছে`);
+      toast.success(`Restore successful! ${restored} tables restored`);
     } catch (e: any) {
-      toast.error(`রিস্টোর ব্যর্থ: ${e.message}`);
+      toast.error(`Restore failed: ${e.message}`);
     } finally {
       setRestoring(null);
       setTimeout(() => setProgress(0), 1500);
@@ -85,14 +85,14 @@ export default function BackupRestoreManager() {
 
   const deleteBackup = async (fileName: string) => {
     const { error } = await supabase.storage.from("site-backups").remove([fileName]);
-    if (error) { toast.error("ডিলিট ব্যর্থ"); return; }
-    toast.success("ব্যাকআপ ডিলিট হয়েছে");
+    if (error) { toast.error("Delete failed"); return; }
+    toast.success("Backup deleted");
     fetchBackups();
   };
 
   const downloadBackup = async (fileName: string) => {
     const { data, error } = await supabase.storage.from("site-backups").download(fileName);
-    if (error || !data) { toast.error("ডাউনলোড ব্যর্থ"); return; }
+    if (error || !data) { toast.error("Download failed"); return; }
     const url = URL.createObjectURL(data);
     const a = document.createElement("a");
     a.href = url;
@@ -109,7 +109,7 @@ export default function BackupRestoreManager() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleString("bn-BD", {
+    return new Date(dateStr).toLocaleString("en-GB", {
       year: "numeric", month: "short", day: "numeric",
       hour: "2-digit", minute: "2-digit",
     });
@@ -121,17 +121,17 @@ export default function BackupRestoreManager() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Database className="h-5 w-5 text-primary" />
-          <h3 className="font-heading text-lg font-bold">ব্যাকআপ ও রিস্টোর</h3>
+          <h3 className="font-heading text-lg font-bold">Backup & Restore</h3>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={fetchBackups} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} /> রিফ্রেশ
+            <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} /> Refresh
           </Button>
           <Button size="sm" onClick={createBackup} disabled={creating}>
             {creating ? (
-              <><RefreshCw className="h-4 w-4 mr-1 animate-spin" /> ব্যাকআপ চলছে...</>
+              <><RefreshCw className="h-4 w-4 mr-1 animate-spin" /> Creating Backup...</>
             ) : (
-              <><Shield className="h-4 w-4 mr-1" /> নতুন ব্যাকআপ</>
+              <><Shield className="h-4 w-4 mr-1" /> New Backup</>
             )}
           </Button>
         </div>
@@ -142,7 +142,7 @@ export default function BackupRestoreManager() {
         <div className="space-y-1">
           <Progress value={progress} className="h-2" />
           <p className="text-xs text-muted-foreground text-center">
-            {creating ? "ব্যাকআপ তৈরি হচ্ছে..." : restoring ? "রিস্টোর চলছে..." : "সম্পন্ন!"}
+            {creating ? "Creating backup..." : restoring ? "Restoring..." : "Complete!"}
           </p>
         </div>
       )}
@@ -150,15 +150,15 @@ export default function BackupRestoreManager() {
       {/* Warning */}
       <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 flex items-start gap-2 text-sm text-destructive">
         <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-        <p><strong>সতর্কতা:</strong> "Full Restore" সমস্ত ডেটা মুছে নতুন করে ব্যাকআপ থেকে লোড করবে। "Merge" শুধুমাত্র নতুন/আপডেট ডেটা যোগ করবে।</p>
+        <p><strong>Warning:</strong> "Full Restore" will delete all current data and reload from backup. "Merge" will only add/update data without deleting existing records.</p>
       </div>
 
       {/* Backup List */}
       <div className="space-y-2">
         {backups.length === 0 && !loading && (
-          <p className="text-center text-muted-foreground py-12">কোনো ব্যাকআপ নেই। উপরে "নতুন ব্যাকআপ" বাটনে ক্লিক করুন।</p>
+          <p className="text-center text-muted-foreground py-12">No backups found. Click "New Backup" above to create one.</p>
         )}
-        {loading && <p className="text-center text-muted-foreground py-8">লোড হচ্ছে...</p>}
+        {loading && <p className="text-center text-muted-foreground py-8">Loading...</p>}
 
         {backups.map((b) => (
           <div key={b.name} className="bg-card border border-border rounded-lg p-4">
@@ -172,7 +172,7 @@ export default function BackupRestoreManager() {
               <div className="flex items-center gap-2 shrink-0 flex-wrap">
                 {/* Download */}
                 <Button variant="outline" size="sm" onClick={() => downloadBackup(b.name)}>
-                  <Download className="h-3.5 w-3.5 mr-1" /> ডাউনলোড
+                  <Download className="h-3.5 w-3.5 mr-1" /> Download
                 </Button>
 
                 {/* Merge Restore */}
@@ -184,15 +184,15 @@ export default function BackupRestoreManager() {
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Merge রিস্টোর নিশ্চিত করুন</AlertDialogTitle>
+                      <AlertDialogTitle>Confirm Merge Restore</AlertDialogTitle>
                       <AlertDialogDescription>
-                        এটি বিদ্যমান ডেটার সাথে ব্যাকআপের ডেটা মার্জ করবে। কোনো ডেটা মুছে যাবে না, শুধু আপডেট/যোগ হবে।
+                        This will merge the backup data with existing data. No data will be deleted, only updated/added.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>বাতিল</AlertDialogCancel>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction onClick={() => restoreBackup(b.name, "merge")}>
-                        Merge রিস্টোর
+                        Merge Restore
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -207,18 +207,18 @@ export default function BackupRestoreManager() {
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>⚠️ Full Restore নিশ্চিত করুন</AlertDialogTitle>
+                      <AlertDialogTitle>⚠️ Confirm Full Restore</AlertDialogTitle>
                       <AlertDialogDescription>
-                        <strong className="text-destructive">এটি সমস্ত বর্তমান ডেটা মুছে ফেলবে</strong> এবং ব্যাকআপ থেকে নতুন করে লোড করবে। এই কাজটি undo করা যাবে না!
+                        <strong className="text-destructive">This will delete all current data</strong> and reload from the backup. This action cannot be undone!
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>বাতিল</AlertDialogCancel>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         onClick={() => restoreBackup(b.name, "full")}
                       >
-                        হ্যাঁ, Full Restore করুন
+                        Yes, Full Restore
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -233,18 +233,18 @@ export default function BackupRestoreManager() {
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>ব্যাকআপ ডিলিট করুন</AlertDialogTitle>
+                      <AlertDialogTitle>Delete Backup</AlertDialogTitle>
                       <AlertDialogDescription>
-                        "{b.name}" ব্যাকআপটি স্থায়ীভাবে মুছে ফেলা হবে।
+                        The backup "{b.name}" will be permanently deleted.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>বাতিল</AlertDialogCancel>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         onClick={() => deleteBackup(b.name)}
                       >
-                        ডিলিট
+                        Delete
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>

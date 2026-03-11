@@ -108,7 +108,7 @@ export default function AdminSettingsPage() {
       {currentRole === "admin" && (
         <section>
           <h2 className="font-heading text-xl font-bold flex items-center gap-2 mb-4">
-            <Database className="h-5 w-5 text-primary" /> ব্যাকআপ ও রিস্টোর
+            <Database className="h-5 w-5 text-primary" /> Backup & Restore
           </h2>
           <div className="bg-card border border-border rounded-lg p-5">
             <BackupRestoreManager />
