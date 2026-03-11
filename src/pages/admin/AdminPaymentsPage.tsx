@@ -707,6 +707,7 @@ export default function AdminPaymentsPage() {
                     </td>
                     <td className="py-3 pr-4 font-medium">{fmt(p._amount)}</td>
                     <td className="py-3 pr-4 capitalize text-xs">{p.payment_method || "—"}{p.transaction_id ? <span className="block text-muted-foreground">TxID: {p.transaction_id}</span> : ""}</td>
+                    <td className="py-3 pr-4 text-xs">{pServiceLabel || "—"}</td>
                     <td className="py-3 pr-4 text-xs">
                       {p._type === "customer"
                         ? (p.paid_at ? new Date(p.paid_at).toLocaleDateString() : p.due_date ? new Date(p.due_date).toLocaleDateString() : "—")
