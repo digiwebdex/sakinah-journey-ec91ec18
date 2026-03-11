@@ -273,7 +273,7 @@ export default function AdminDueAlertsPage() {
           <Card className="mb-4">
             <CardContent className="py-4 flex gap-6">
               <div><span className="text-sm text-muted-foreground">Bookings with Dues</span><p className="text-2xl font-bold text-destructive">{bookingDues.length + overdue.length}</p></div>
-              <div><span className="text-sm text-muted-foreground">Total Outstanding</span><p className="text-2xl font-bold">৳{(bookingDueTotal + overdueTotal).toLocaleString()}</p></div>
+              <div><span className="text-sm text-muted-foreground">Total Outstanding</span><p className="text-2xl font-bold">BDT {(bookingDueTotal + overdueTotal).toLocaleString()}</p></div>
             </CardContent>
           </Card>
           {(bookingDues.length + overdue.length) === 0 ? (
