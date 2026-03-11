@@ -383,7 +383,7 @@ export default function AdminCreateBookingPage() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Due</p>
-            <p className={`font-heading font-bold ${dueAmount > 0 ? "text-destructive" : "text-foreground"}`}>৳{dueAmount.toLocaleString()}</p>
+            <p className={`font-heading font-bold ${dueAmount > 0 ? "text-destructive" : "text-foreground"}`}>BDT {dueAmount.toLocaleString()}</p>
           </div>
         </div>
       </div>

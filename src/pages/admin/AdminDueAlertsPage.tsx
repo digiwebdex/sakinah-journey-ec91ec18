@@ -326,7 +326,7 @@ export default function AdminDueAlertsPage() {
           <Card className="mb-4">
             <CardContent className="py-4 flex gap-6">
               <div><span className="text-sm text-muted-foreground">Upcoming (30 days)</span><p className="text-2xl font-bold text-primary">{upcoming.length}</p></div>
-              <div><span className="text-sm text-muted-foreground">Total Amount</span><p className="text-2xl font-bold">৳{upcomingTotal.toLocaleString()}</p></div>
+              <div><span className="text-sm text-muted-foreground">Total Amount</span><p className="text-2xl font-bold">BDT {upcomingTotal.toLocaleString()}</p></div>
             </CardContent>
           </Card>
           {upcoming.length === 0 ? (
