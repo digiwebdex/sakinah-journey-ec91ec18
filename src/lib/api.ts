@@ -384,7 +384,17 @@ class QueryBuilder {
       if (this.method === 'DELETE') {
         const idFilter = this.filters.find(f => f.startsWith('id='));
         const id = idFilter ? idFilter.split('=')[1] : '';
-        const res = await apiFetch(`${path}/${id}`, { method: 'DELETE' });
+        let deletePath: string;
+        if (id) {
+          // Delete by ID: DELETE /api/table/:id
+          deletePath = `${path}/${id}`;
+        } else if (this.filters.length) {
+          // Bulk delete by filter: DELETE /api/table?filter=value
+          deletePath = `${path}?${this.filters.join('&')}`;
+        } else {
+          return { data: null, error: { message: 'Delete requires an id or filter' } };
+        }
+        const res = await apiFetch(deletePath, { method: 'DELETE' });
         if (!res.ok) {
           const err = await res.json();
           return { data: null, error: { message: err.error } };
