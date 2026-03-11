@@ -510,8 +510,8 @@ export default function AdminBookingsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground block mb-1">Total Selling (৳)</label>
-                  <div className={`${inputClass} bg-muted/50 font-bold`}>৳{editTotalSelling.toLocaleString()}</div>
+                   <label className="text-xs text-muted-foreground block mb-1">Total Selling (BDT)</label>
+                  <div className={`${inputClass} bg-muted/50 font-bold`}>BDT {editTotalSelling.toLocaleString()}</div>
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground block mb-1">Paid (৳)</label>
