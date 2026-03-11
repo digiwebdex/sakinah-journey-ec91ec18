@@ -940,7 +940,7 @@ export default function AdminPaymentsPage() {
                   <span className="text-xs">Upload receipt (Image/PDF, max 5MB)</span>
                   <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => {
                     const f = e.target.files?.[0];
-                    if (f && f.size > 5 * 1024 * 1024) { toast.error("ফাইল 5MB এর কম হতে হবে"); return; }
+                    if (f && f.size > 5 * 1024 * 1024) { toast.error("File must be less than 5MB"); return; }
                     if (f) setReceiptFile(f);
                     e.target.value = "";
                   }} />
