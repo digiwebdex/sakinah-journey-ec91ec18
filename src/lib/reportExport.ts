@@ -234,8 +234,8 @@ export async function exportPDF({ title, columns, rows, summary }: ReportData) {
     head: [columns],
     body: formattedRows,
     startY: y,
-    styles: { fontSize: 7.5, cellPadding: 2.5, font: "helvetica" },
-    headStyles: { fillColor: [DARK.r, DARK.g, DARK.b], font: "helvetica", fontStyle: "bold", fontSize: 7.5 },
+    styles: { fontSize: 7.5, cellPadding: 2.5, font: "NotoSansBengali" },
+    headStyles: { fillColor: [DARK.r, DARK.g, DARK.b], font: "NotoSansBengali", fontStyle: "bold", fontSize: 7.5 },
     alternateRowStyles: { fillColor: [250, 249, 247] },
     margin: { left: 14, right: 14 },
   });
