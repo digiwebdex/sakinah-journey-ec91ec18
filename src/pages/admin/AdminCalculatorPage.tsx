@@ -3,6 +3,10 @@ import { Calculator, Plus, Trash2, FileDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import logoImg from "@/assets/logo-nobg.png";
+import { toast } from "sonner";
 
 interface CostItem {
   id: string;
@@ -49,6 +53,188 @@ export default function AdminCalculatorPage() {
   const totalProfit = profitPerPerson * totalHajji;
   const totalRevenue = sellingPricePerPerson * totalHajji;
 
+  const handleDownloadPdf = async () => {
+    try {
+      const doc = new jsPDF("p", "mm", "a4");
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 14;
+      let y = 15;
+
+      // Logo
+      try {
+        doc.addImage(logoImg, "PNG", margin, y, 18, 18);
+      } catch {}
+
+      // Header
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.text("Group Cost Calculator", margin + 22, y + 7);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100);
+      doc.text("Rahe Kaba Travels & Tours", margin + 22, y + 13);
+      doc.text(`Generated: ${new Date().toLocaleDateString("en-GB")}`, pageWidth - margin, y + 7, { align: "right" });
+      doc.setTextColor(0);
+
+      y += 24;
+      doc.setDrawColor(200);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 6;
+
+      // Group Info
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text("Group Information", margin, y);
+      y += 6;
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+
+      const infoData = [
+        ["Group Name", groupName || "-"],
+        ["Date", groupDate || "-"],
+        ["Total Pilgrims", String(totalHajji)],
+      ];
+      (autoTable as any)(doc, {
+        startY: y,
+        head: [["Field", "Value"]],
+        body: infoData,
+        theme: "grid",
+        margin: { left: margin, right: margin },
+        headStyles: { fillColor: [30, 58, 95], fontSize: 8 },
+        bodyStyles: { fontSize: 9 },
+        columnStyles: { 0: { cellWidth: 45, fontStyle: "bold" } },
+      });
+      y = (doc as any).lastAutoTable.finalY + 8;
+
+      // Cost Breakdown
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text("Per Person Cost Breakdown", margin, y);
+      y += 4;
+
+      const activeItems = items.filter(i => i.description || i.unitPrice > 0);
+      const costRows = activeItems.map((item, idx) => [
+        String(idx + 1),
+        item.description || "-",
+        fmt(Number(item.unitPrice || 0)),
+        fmt(Number(item.unitPrice || 0) * totalHajji),
+      ]);
+      costRows.push(["", "Total Cost Per Person", fmt(costPerPerson), fmt(totalCost)]);
+
+      (autoTable as any)(doc, {
+        startY: y,
+        head: [["#", "Description", "Unit Price (BDT)", `Total (${totalHajji} pax)`]],
+        body: costRows,
+        theme: "grid",
+        margin: { left: margin, right: margin },
+        headStyles: { fillColor: [30, 58, 95], fontSize: 8 },
+        bodyStyles: { fontSize: 9 },
+        columnStyles: {
+          0: { cellWidth: 10 },
+          2: { halign: "right" },
+          3: { halign: "right" },
+        },
+        didParseCell: (data: any) => {
+          if (data.section === "body" && data.row.index === costRows.length - 1) {
+            data.cell.styles.fontStyle = "bold";
+            data.cell.styles.fillColor = [240, 240, 240];
+            data.cell.styles.textColor = [200, 50, 50];
+          }
+        },
+      });
+      y = (doc as any).lastAutoTable.finalY + 8;
+
+      // Check page space
+      if (y > 220) {
+        doc.addPage();
+        y = 15;
+      }
+
+      // Summary
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Final Summary — ${groupName}`, margin, y);
+      y += 4;
+
+      const summaryRows = [
+        ["Total Pilgrims", String(totalHajji)],
+        ["Cost Per Person", fmt(costPerPerson)],
+        ["Selling Price Per Person", fmt(sellingPricePerPerson)],
+        ["Profit Per Person", fmt(profitPerPerson)],
+        ["", ""],
+        [`Total Cost (${totalHajji} × ${fmt(costPerPerson)})`, fmt(totalCost)],
+        [`Total Revenue (${totalHajji} × ${fmt(sellingPricePerPerson)})`, fmt(totalRevenue)],
+        [`Total Profit (${totalHajji} × ${fmt(profitPerPerson)})`, fmt(totalProfit)],
+      ];
+
+      (autoTable as any)(doc, {
+        startY: y,
+        body: summaryRows,
+        theme: "grid",
+        margin: { left: margin, right: margin },
+        bodyStyles: { fontSize: 9 },
+        columnStyles: {
+          0: { fontStyle: "bold", cellWidth: 90 },
+          1: { halign: "right" },
+        },
+        didParseCell: (data: any) => {
+          if (data.section === "body") {
+            const rowIdx = data.row.index;
+            // Profit row
+            if (rowIdx === 3 || rowIdx === 7) {
+              data.cell.styles.fontStyle = "bold";
+              if (data.column.index === 1) {
+                data.cell.styles.textColor = totalProfit >= 0 ? [34, 139, 34] : [200, 50, 50];
+              }
+            }
+            // Total profit row highlight
+            if (rowIdx === 7) {
+              data.cell.styles.fillColor = [240, 255, 240];
+              data.cell.styles.fontSize = 10;
+            }
+            // Cost rows red
+            if ((rowIdx === 1 || rowIdx === 5) && data.column.index === 1) {
+              data.cell.styles.textColor = [200, 50, 50];
+            }
+            // Revenue rows blue
+            if ((rowIdx === 2 || rowIdx === 6) && data.column.index === 1) {
+              data.cell.styles.textColor = [30, 58, 138];
+            }
+          }
+        },
+      });
+      y = (doc as any).lastAutoTable.finalY + 6;
+
+      // Profit banner
+      if (totalProfit > 0 && y < 260) {
+        doc.setFillColor(34, 139, 34);
+        doc.roundedRect(margin, y, pageWidth - margin * 2, 14, 3, 3, "F");
+        doc.setFontSize(8);
+        doc.setTextColor(255);
+        doc.setFont("helvetica", "normal");
+        doc.text("Alhamdulillah — Total Profit", pageWidth / 2, y + 5, { align: "center" });
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text(fmt(totalProfit), pageWidth / 2, y + 12, { align: "center" });
+        doc.setTextColor(0);
+      }
+
+      // Footer
+      const footerY = doc.internal.pageSize.getHeight() - 10;
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(140);
+      doc.text("This is an estimate only. Actual costs may vary. | Rahe Kaba Travels & Tours", pageWidth / 2, footerY, { align: "center" });
+
+      const safeName = groupName.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "-") || "Calculator";
+      doc.save(`${safeName}-Cost-Report.pdf`);
+      toast.success("PDF downloaded successfully!");
+    } catch (err) {
+      console.error("PDF generation error:", err);
+      toast.error("Failed to generate PDF");
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -57,6 +243,9 @@ export default function AdminCalculatorPage() {
           <Calculator className="h-5 w-5 text-primary" />
           Group Cost Calculator
         </h1>
+        <Button size="sm" variant="outline" onClick={handleDownloadPdf}>
+          <FileDown className="h-4 w-4 mr-1" /> Download PDF
+        </Button>
       </div>
 
       {/* Group Info */}
