@@ -321,7 +321,6 @@ export default function AdminSupplierAgentProfilePage() {
                         <td className="py-2 pr-3"><Badge variant="outline" className="text-[10px]">{category}</Badge></td>
                         <td className="py-2 pr-3 font-bold text-emerald-500">{fmt(p.amount)}</td>
                         <td className="py-2 pr-3 capitalize">{p.payment_method}</td>
-                        <td className="py-2 pr-3 text-xs font-mono text-primary">{p.booking_id ? bookings.find(b => b.id === p.booking_id)?.tracking_id || "—" : "General"}</td>
                         <td className="py-2 pr-3 text-xs text-muted-foreground">{cleanNotes}</td>
                         {!isViewer && (
                           <td className="py-2">
