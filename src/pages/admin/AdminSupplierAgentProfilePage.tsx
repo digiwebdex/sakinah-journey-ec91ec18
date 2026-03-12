@@ -348,9 +348,9 @@ export default function AdminSupplierAgentProfilePage() {
                 </tr></thead>
                 <tbody>
                   {filteredPayments.map((p: any) => {
-                    const serviceMatch = SERVICE_TYPES.find(s => s.value && p.notes?.startsWith(s.label));
-                    const category = serviceMatch?.label || "—";
-                    const cleanNotes = serviceMatch ? (p.notes?.replace(serviceMatch.label, "").replace(/^\s*—\s*/, "").trim() || "—") : (p.notes || "—");
+                    const parsed = splitPaymentNotes(p.notes);
+                    const category = parsed.service || "—";
+                    const cleanNotes = parsed.notes || "—";
                     return (
                       <tr key={p.id} className="border-b border-border/30">
                         <td className="py-2 pr-3 text-xs">{format(new Date(p.date), "dd MMM yyyy")}</td>
