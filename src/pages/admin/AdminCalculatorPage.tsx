@@ -236,7 +236,7 @@ export default function AdminCalculatorPage() {
       doc.setTextColor(140);
       doc.text("This is an estimate only. Actual costs may vary. | Rahe Kaba Travels & Tours", pageWidth / 2, footerY, { align: "center" });
 
-      const safeName = groupName.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "-") || "Calculator";
+      const safeName = (groupName || "Calculator").replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "-") || "Calculator";
       doc.save(`${safeName}-Cost-Report.pdf`);
       toast.success("PDF downloaded successfully!");
     } catch (err) {
