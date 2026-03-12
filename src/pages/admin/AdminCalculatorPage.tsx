@@ -29,9 +29,9 @@ const DEFAULT_ITEMS: CostItem[] = [
 const fmt = (n: number) => `BDT ${n.toLocaleString("en-IN")}`;
 
 export default function AdminCalculatorPage() {
-  const [groupName, setGroupName] = useState("March Umrah Group");
+  const [groupName, setGroupName] = useState("");
   const [groupDate, setGroupDate] = useState("");
-  const [totalHajji, setTotalHajji] = useState(68);
+  const [totalHajji, setTotalHajji] = useState(0);
   const [sellingPricePerPerson, setSellingPricePerPerson] = useState(0);
   const [items, setItems] = useState<CostItem[]>(DEFAULT_ITEMS);
 
@@ -243,9 +243,6 @@ export default function AdminCalculatorPage() {
           <Calculator className="h-5 w-5 text-primary" />
           Group Cost Calculator
         </h1>
-        <Button size="sm" variant="outline" onClick={handleDownloadPdf}>
-          <FileDown className="h-4 w-4 mr-1" /> Download PDF
-        </Button>
       </div>
 
       {/* Group Info */}
@@ -392,6 +389,15 @@ export default function AdminCalculatorPage() {
           </p>
         )}
       </div>
+
+      {/* PDF Download - only show when data is filled */}
+      {(costPerPerson > 0 || sellingPricePerPerson > 0) && (
+        <div className="flex justify-center">
+          <Button size="lg" onClick={handleDownloadPdf} className="gap-2">
+            <FileDown className="h-5 w-5" /> Download PDF Report
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
