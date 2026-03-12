@@ -182,9 +182,13 @@ export default function AdminMoallemProfilePage() {
   const handleSavePaymentEdit = async () => {
     if (!editPaymentId) return;
     const table = editPaymentType === "commission" ? "moallem_commission_payments" : "moallem_payments";
+    const serviceLabel = SERVICE_TYPES.find(s => s.value === editPaymentForm.service_type)?.label || "";
+    const combinedNotes = [serviceLabel, editPaymentForm.notes.trim()].filter(Boolean).join(" — ");
     const { error } = await (supabase as any).from(table).update({
       amount: parseFloat(editPaymentForm.amount), payment_method: editPaymentForm.payment_method,
-      date: editPaymentForm.date || undefined, notes: editPaymentForm.notes || null,
+      date: editPaymentForm.date || undefined, notes: combinedNotes || null,
+      booking_id: editPaymentForm.booking_id || null,
+      wallet_account_id: editPaymentForm.wallet_account_id || null,
     }).eq("id", editPaymentId);
     if (error) { toast({ title: "Update failed", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Payment updated successfully" });
