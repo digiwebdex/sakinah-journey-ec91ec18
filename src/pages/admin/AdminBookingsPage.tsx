@@ -456,16 +456,43 @@ export default function AdminBookingsPage() {
   const handleDownloadInvoice = async (b: any) => {
     setGeneratingId(b.id);
     try {
-      const { data: payments } = await supabase.from("payments").select("*").eq("booking_id", b.id).order("installment_number", { ascending: true });
-      const company = await getCompanyInfoForPdf();
+      const [paymentsRes, bookingRes, company] = await Promise.all([
+        supabase.from("payments").select("*").eq("booking_id", b.id).order("installment_number", { ascending: true }),
+        supabase
+          .from("bookings")
+          .select("*, packages(name, type, duration_days, start_date), booking_members(full_name, passport_number, selling_price, discount, final_price, package_id, packages(name))")
+          .eq("id", b.id)
+          .maybeSingle(),
+        getCompanyInfoForPdf(),
+      ]);
+
+      const invoiceBooking = bookingRes.data
+        ? { ...bookingRes.data, packages: bookingRes.data.packages || b.packages }
+        : b;
+
+      const memberRows = ((bookingRes.data as any)?.booking_members || []) as any[];
+      const travelerCount = Number(invoiceBooking.num_travelers || 0);
+
       await generateInvoice(
-        { ...b, booking_type: normalizeBookingType(b.booking_type), packages: b.packages },
-        { full_name: b.guest_name, phone: b.guest_phone, passport_number: b.guest_passport, address: b.guest_address, email: b.guest_email },
-        (payments || []) as InvoicePayment[],
-        company
+        { ...invoiceBooking, booking_type: normalizeBookingType(invoiceBooking.booking_type) },
+        {
+          full_name: invoiceBooking.guest_name,
+          phone: invoiceBooking.guest_phone,
+          passport_number: invoiceBooking.guest_passport,
+          address: invoiceBooking.guest_address,
+          email: invoiceBooking.guest_email,
+        },
+        (paymentsRes.data || []) as InvoicePayment[],
+        company,
+        {
+          members: memberRows,
+          forceFamily: isFamilyBooking(invoiceBooking.booking_type, memberRows.length) || travelerCount > 1,
+        }
       );
       toast.success("Invoice downloaded");
-    } catch { toast.error("Failed to generate invoice"); }
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to generate invoice");
+    }
     setGeneratingId(null);
   };
 
