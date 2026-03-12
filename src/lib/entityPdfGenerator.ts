@@ -316,7 +316,7 @@ export async function generateSupplierPdf(data: SupplierPdfData, company: Compan
         ...data.items.map((item, i) => [String(i + 1), item.description, String(item.quantity), fmt(item.unit_price), fmt(item.total_amount)]),
         ["", "", "", "Grand Total", fmt(itemsTotal)],
       ],
-      styles: { fontSize: 7, font: "NotoSansBengali" },
+      styles: { fontSize: 7, font: "helvetica" },
       headStyles: { fillColor: [40, 46, 56] },
       margin: { left: 14, right: 14 },
       didParseCell: (hookData: any) => {
