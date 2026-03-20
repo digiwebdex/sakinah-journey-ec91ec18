@@ -133,7 +133,7 @@ const AdminDashboardCharts = ({
               <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{k.label}</p>
               <k.icon className={`h-4 w-4 ${k.color}`} />
             </div>
-            <p className={`text-lg font-heading font-bold ${k.color}`}>{k.value}</p>
+            <p className={`text-lg font-body font-bold tabular-nums ${k.color}`}>{k.value}</p>
           </div>
         ))}
       </div>
