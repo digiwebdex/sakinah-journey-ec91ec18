@@ -58,7 +58,7 @@ const TestimonialsSection = forwardRef<HTMLElement>(function TestimonialsSection
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.15 }}
-              className="bg-card border border-border rounded-xl p-6 relative"
+              className="bg-card border border-border rounded-xl p-6 relative shadow-soft"
             >
               <Quote className="h-8 w-8 text-primary/20 absolute top-4 right-4" />
               <div className="flex gap-1 mb-3">

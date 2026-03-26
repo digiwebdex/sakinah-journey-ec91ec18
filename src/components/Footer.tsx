@@ -28,7 +28,7 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="bg-background border-t border-border py-16">
+    <footer className="bg-charcoal text-white py-16">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           <div className="md:col-span-1">
@@ -39,23 +39,23 @@ const Footer = () => {
                 <span className="block text-xs tracking-[0.2em] text-muted-foreground uppercase">{tagline}</span>
               </div>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+            <p className="text-sm text-white/60 leading-relaxed">{description}</p>
           </div>
 
           <div>
-            <h4 className="font-heading font-semibold mb-4 text-primary">{t("footer.quickLinks")}</h4>
-            <ul className="space-y-2.5 text-sm text-muted-foreground">
+            <h4 className="font-heading font-semibold mb-4 text-gold-light">{t("footer.quickLinks")}</h4>
+            <ul className="space-y-2.5 text-sm text-white/60">
               {quickLinks.map((l) => (
                 <li key={l.href}>
-                  <a href={l.href} className="hover:text-primary transition-colors">{l.label}</a>
+                  <a href={l.href} className="hover:text-gold-light transition-colors">{l.label}</a>
                 </li>
               ))}
             </ul>
           </div>
 
           <div>
-            <h4 className="font-heading font-semibold mb-4 text-primary">{t("footer.services")}</h4>
-            <ul className="space-y-2.5 text-sm text-muted-foreground">
+            <h4 className="font-heading font-semibold mb-4 text-gold-light">{t("footer.services")}</h4>
+            <ul className="space-y-2.5 text-sm text-white/60">
               {servicesList.map((s: string) => (
                 <li key={s}><span>{s}</span></li>
               ))}
@@ -63,23 +63,23 @@ const Footer = () => {
           </div>
 
           <div>
-            <h4 className="font-heading font-semibold mb-4 text-primary">{t("footer.contact")}</h4>
-            <ul className="space-y-3 text-sm text-muted-foreground">
-              <li className="flex items-center gap-2"><Phone className="h-4 w-4 text-primary" /> {phone}</li>
-              <li className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary" /> {email}</li>
-              <li className="flex items-start gap-2"><MapPin className="h-4 w-4 text-primary mt-0.5" /> <span className="whitespace-pre-line">{address}</span></li>
+            <h4 className="font-heading font-semibold mb-4 text-gold-light">{t("footer.contact")}</h4>
+            <ul className="space-y-3 text-sm text-white/60">
+              <li className="flex items-center gap-2"><Phone className="h-4 w-4 text-gold-light" /> {phone}</li>
+              <li className="flex items-center gap-2"><Mail className="h-4 w-4 text-gold-light" /> {email}</li>
+              <li className="flex items-start gap-2"><MapPin className="h-4 w-4 text-gold-light mt-0.5" /> <span className="whitespace-pre-line">{address}</span></li>
               <li>
-                <a href="https://www.facebook.com/people/Rahe-Kaba-Tours-And-Travels/61559942585503/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-primary transition-colors">
-                  <Facebook className="h-4 w-4 text-primary" /> Facebook
+                <a href="https://www.facebook.com/people/Rahe-Kaba-Tours-And-Travels/61559942585503/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-gold-light transition-colors">
+                  <Facebook className="h-4 w-4 text-gold-light" /> Facebook
                 </a>
               </li>
             </ul>
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-border text-center text-sm text-muted-foreground">
+        <div className="mt-12 pt-8 border-t border-white/10 text-center text-sm text-white/50">
           <p>© {new Date().getFullYear()} {companyName} {tagline}. {t("footer.allRights")}</p>
-          <p className="mt-2 text-xs text-muted-foreground/70">{t("footer.designBy")} <a href={devUrl} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">{devName}</a></p>
+          <p className="mt-2 text-xs text-white/30">{t("footer.designBy")} <a href={devUrl} target="_blank" rel="noopener noreferrer" className="hover:text-gold-light transition-colors">{devName}</a></p>
         </div>
       </div>
     </footer>

@@ -37,8 +37,8 @@ const HeroSection = () => {
       </motion.div>
 
       {/* Overlays */}
-      <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/35 to-transparent" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,hsl(var(--background)/0.3)_100%)]" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a2e]/85 via-[#1a1a2e]/40 to-transparent" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(26,26,46,0.3)_100%)]" />
 
       {/* Top gold accent */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-gold" />
@@ -54,10 +54,10 @@ const HeroSection = () => {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 bg-primary/10 backdrop-blur-xl border border-primary/20 rounded-full px-5 py-2 mb-10"
+          className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full px-5 py-2 mb-10"
         >
-          <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-          <span className="text-primary text-xs font-semibold tracking-[0.2em] uppercase">{badge}</span>
+          <span className="w-2 h-2 rounded-full bg-gold-light animate-pulse" />
+          <span className="text-gold-light text-xs font-semibold tracking-[0.2em] uppercase">{badge}</span>
         </motion.div>
 
         {/* Quranic Verse Block */}
@@ -79,7 +79,7 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-relaxed mb-6"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-relaxed mb-6"
             dir="rtl"
             style={{ fontFamily: "'Amiri', 'Noto Naskh Arabic', serif" }}
           >
@@ -101,7 +101,7 @@ const HeroSection = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.7 }}
-            className="text-sm sm:text-base text-muted-foreground mt-3 tracking-wide"
+            className="text-sm sm:text-base text-white/70 mt-3 tracking-wide"
           >
             — (সূরা আল-বাকারা: ১৯৬)
           </motion.p>
@@ -123,14 +123,14 @@ const HeroSection = () => {
         >
           <a
             href="#packages"
-            className="group bg-gradient-gold text-primary-foreground font-semibold px-8 py-4 rounded-xl text-sm hover:shadow-gold hover:scale-[1.02] transition-all duration-300 inline-flex items-center gap-2"
+            className="group bg-gradient-gold text-white font-semibold px-8 py-4 rounded-xl text-sm hover:shadow-gold hover:scale-[1.02] transition-all duration-300 inline-flex items-center gap-2"
           >
             {ctaPrimary}
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </a>
           <a
             href="#contact"
-            className="border border-primary/30 text-foreground font-semibold px-8 py-4 rounded-xl text-sm hover:bg-primary/10 hover:border-primary/50 backdrop-blur-sm transition-all duration-300 inline-flex items-center"
+            className="border border-white/30 text-white font-semibold px-8 py-4 rounded-xl text-sm hover:bg-white/10 hover:border-white/50 backdrop-blur-sm transition-all duration-300 inline-flex items-center"
           >
             {ctaSecondary}
           </a>
@@ -142,7 +142,7 @@ const HeroSection = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 1 }}
         >
-          <div className="bg-card/40 backdrop-blur-2xl border border-primary/10 rounded-2xl p-5 sm:p-6 grid grid-cols-2 md:grid-cols-4 gap-5 sm:gap-8 max-w-4xl mx-auto">
+          <div className="bg-white/10 backdrop-blur-2xl border border-white/15 rounded-2xl p-5 sm:p-6 grid grid-cols-2 md:grid-cols-4 gap-5 sm:gap-8 max-w-4xl mx-auto">
             {stats.map((stat: any, i: number) => {
               const IconComp = defaultIcons[i % defaultIcons.length];
               return (
@@ -153,12 +153,12 @@ const HeroSection = () => {
                   transition={{ duration: 0.5, delay: 1.1 + i * 0.1 }}
                   className={`flex items-center gap-3 ${i < stats.length - 1 ? "md:border-r md:border-primary/10" : ""} md:pr-4`}
                 >
-                  <div className="w-11 h-11 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center flex-shrink-0">
-                    <IconComp className="h-4.5 w-4.5 text-primary" />
+                  <div className="w-11 h-11 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center flex-shrink-0">
+                    <IconComp className="h-4.5 w-4.5 text-gold-light" />
                   </div>
                   <div>
-                    <p className="text-xl sm:text-2xl font-heading font-bold text-foreground leading-none">{stat.value}</p>
-                    <p className="text-[11px] text-muted-foreground mt-1">{stat.label}</p>
+                    <p className="text-xl sm:text-2xl font-heading font-bold text-white leading-none">{stat.value}</p>
+                    <p className="text-[11px] text-white/60 mt-1">{stat.label}</p>
                   </div>
                 </motion.div>
               );

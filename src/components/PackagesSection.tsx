@@ -33,7 +33,7 @@ const PackagesSection = () => {
   if (loading || packages.length === 0) return null;
 
   return (
-    <section id="packages" className="py-24 bg-card">
+    <section id="packages" className="py-24 bg-secondary/50">
       <div className="container mx-auto px-4">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
           <span className="text-primary text-sm font-medium tracking-[0.3em] uppercase">{t("packages.label")}</span>
@@ -51,7 +51,7 @@ const PackagesSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              className="relative rounded-xl overflow-hidden border border-border bg-background flex flex-col hover:border-primary/40 hover:shadow-gold transition-all group"
+              className="relative rounded-xl overflow-hidden border border-border bg-card flex flex-col hover:border-primary/40 hover:shadow-luxury transition-all group"
             >
               <div className="h-48 overflow-hidden">
                 <img
