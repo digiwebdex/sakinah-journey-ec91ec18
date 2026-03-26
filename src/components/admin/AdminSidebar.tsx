@@ -23,6 +23,9 @@ const mainMenuItems = [
   { title: "Moallems",        url: "/admin/moallems",       icon: UserCheck,       roles: ["admin", "accountant", "booking", "viewer"] },
   { title: "Supplier Agents", url: "/admin/supplier-agents", icon: Truck,          roles: ["admin", "accountant", "viewer"] },
   { title: "Packages",        url: "/admin/packages",       icon: Package,         roles: ["admin", "viewer"] },
+  { title: "Air Tickets",     url: "/admin/packages?type=air_ticket", icon: Plane,   roles: ["admin", "viewer"] },
+  { title: "Visa Services",   url: "/admin/packages?type=visa",      icon: FileCheck, roles: ["admin", "viewer"] },
+  { title: "Tours",           url: "/admin/packages?type=tour",      icon: Map,     roles: ["admin", "viewer"] },
   { title: "Hotels",          url: "/admin/hotels",         icon: Hotel,           roles: ["admin", "viewer"] },
 ];
 
