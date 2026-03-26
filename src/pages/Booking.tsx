@@ -378,28 +378,44 @@ const Booking = () => {
                       <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                         <CreditCard className="h-5 w-5 text-primary" /> {t("booking.paymentMethod") || "পেমেন্ট মাধ্যম"}
                       </h2>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {paymentMethods.map((method: any) => (
-                          <button
-                            type="button"
-                            key={method.id}
-                            onClick={() => setSelectedPaymentMethod(method.id)}
-                            className={`flex flex-col items-center gap-2 p-4 rounded-lg border transition-all text-center ${
-                              selectedPaymentMethod === method.id
-                                ? "border-primary bg-primary/5 ring-1 ring-primary/30"
-                                : "border-border hover:border-primary/40"
-                            }`}
-                          >
-                            <span className="text-2xl">{method.icon || "💳"}</span>
-                            <span className="text-sm font-medium">{method.name_bn || method.name}</span>
-                            {method.charge_percent > 0 && (
-                              <span className="text-[10px] text-muted-foreground">চার্জ: {method.charge_percent}%</span>
-                            )}
-                            {selectedPaymentMethod === method.id && (
-                              <Check className="h-4 w-4 text-primary" />
-                            )}
-                          </button>
-                        ))}
+                      <div className="space-y-3">
+                        {paymentMethods.map((method: any) => {
+                          const isSelected = selectedPaymentMethod === method.id;
+                          const categoryLabel = method.category === 'mfs' ? 'Mobile' : method.category === 'cod' ? 'Office' : method.category === 'bank' ? 'Bank' : method.category === 'card' ? 'Card' : method.category === 'gateway' ? 'Online' : '';
+                          const categoryColor = method.category === 'mfs' ? 'bg-emerald-100 text-emerald-700' : method.category === 'cod' ? 'bg-green-100 text-green-700' : method.category === 'bank' ? 'bg-blue-100 text-blue-700' : method.category === 'card' ? 'bg-purple-100 text-purple-700' : 'bg-orange-100 text-orange-700';
+                          return (
+                            <button
+                              type="button"
+                              key={method.id}
+                              onClick={() => setSelectedPaymentMethod(method.id)}
+                              className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${
+                                isSelected
+                                  ? "border-primary bg-primary/5 shadow-md"
+                                  : "border-border hover:border-primary/40 hover:shadow-sm"
+                              }`}
+                            >
+                              <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center text-2xl shrink-0">
+                                {method.icon || "💳"}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-foreground">{method.name}</span>
+                                  {categoryLabel && (
+                                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${categoryColor}`}>{categoryLabel}</span>
+                                  )}
+                                </div>
+                                <p className="text-sm text-muted-foreground truncate">
+                                  {method.instructions_bn || method.instructions || `Pay with ${method.name}`}
+                                </p>
+                              </div>
+                              {isSelected && (
+                                <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shrink-0">
+                                  <Check className="h-3.5 w-3.5 text-primary-foreground" />
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
                       </div>
                       {selectedPaymentMethod && (() => {
                         const m = paymentMethods.find((pm: any) => pm.id === selectedPaymentMethod);
