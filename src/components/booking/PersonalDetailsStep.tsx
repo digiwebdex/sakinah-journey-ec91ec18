@@ -6,6 +6,7 @@ interface PersonalInfo {
   phone: string;
   passportNumber: string;
   address: string;
+  email?: string;
 }
 
 interface Props {
@@ -24,18 +25,18 @@ const PersonalDetailsStep = ({ info, onChange }: Props) => {
   return (
     <div className="bg-card border border-border rounded-xl p-6 space-y-4">
       <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
-        <User className="h-5 w-5 text-primary" /> {t("booking.personalDetails") || "ব্যক্তিগত তথ্য"}
+        <User className="h-5 w-5 text-primary" /> {t("booking.personalDetails")}
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="text-sm text-muted-foreground mb-1 block">
-            {t("booking.fullName") || "পূর্ণ নাম"} <span className="text-destructive">*</span>
+            {t("booking.fullName")} <span className="text-destructive">*</span>
           </label>
           <input
             type="text"
             required
             maxLength={100}
-            placeholder={t("booking.fullNamePlaceholder") || "আপনার পূর্ণ নাম লিখুন"}
+            placeholder={t("booking.fullNamePlaceholder")}
             value={info.fullName}
             onChange={(e) => update("fullName", e.target.value)}
             className={inputClass}
@@ -43,7 +44,7 @@ const PersonalDetailsStep = ({ info, onChange }: Props) => {
         </div>
         <div>
           <label className="text-sm text-muted-foreground mb-1 block">
-            {t("booking.phoneNumber") || "ফোন নম্বর"} <span className="text-destructive">*</span>
+            {t("booking.phoneNumber")} <span className="text-destructive">*</span>
           </label>
           <input
             type="tel"
@@ -57,13 +58,13 @@ const PersonalDetailsStep = ({ info, onChange }: Props) => {
         </div>
         <div>
           <label className="text-sm text-muted-foreground mb-1 block">
-            {t("booking.passportOptional") || "পাসপোর্ট নম্বর (ঐচ্ছিক)"}
+            {t("booking.passportOptional")}
           </label>
           <input
             type="text"
             required={false}
             maxLength={20}
-            placeholder={t("booking.passportPlaceholder") || "পাসপোর্ট নম্বর"}
+            placeholder={t("booking.passportPlaceholder")}
             value={info.passportNumber}
             onChange={(e) => update("passportNumber", e.target.value)}
             className={inputClass}
@@ -71,17 +72,30 @@ const PersonalDetailsStep = ({ info, onChange }: Props) => {
         </div>
         <div>
           <label className="text-sm text-muted-foreground mb-1 block">
-            {t("booking.address") || "ঠিকানা"}
+            {t("booking.address")}
           </label>
           <input
             type="text"
             maxLength={200}
-            placeholder={t("booking.addressPlaceholder") || "আপনার ঠিকানা"}
+            placeholder={t("booking.addressPlaceholder")}
             value={info.address}
             onChange={(e) => update("address", e.target.value)}
             className={inputClass}
           />
         </div>
+      </div>
+      <div className="border-t border-border pt-4">
+        <label className="text-sm text-muted-foreground mb-1 block">
+          {t("booking.email")}
+        </label>
+        <input
+          type="email"
+          maxLength={100}
+          placeholder="your@email.com"
+          value={info.email || ""}
+          onChange={(e) => update("email", e.target.value)}
+          className={inputClass}
+        />
       </div>
     </div>
   );
