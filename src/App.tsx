@@ -52,6 +52,7 @@ const AdminReceivablesPage = lazy(() => import("./pages/admin/AdminReceivablesPa
 const AdminRefundsPage = lazy(() => import("./pages/admin/AdminRefundsPage"));
 const AdminAnalyticsPage = lazy(() => import("./pages/admin/AdminAnalyticsPage"));
 const AdminSeoPage = lazy(() => import("./pages/admin/AdminSeoPage"));
+const AdminPaymentMethodsPage = lazy(() => import("./pages/admin/AdminPaymentMethodsPage"));
 
 const queryClient = new QueryClient();
 
@@ -113,6 +114,7 @@ const App = () => (
               <Route path="analytics" element={<AdminAnalyticsPage />} />
               <Route path="cms" element={<AdminCmsPage />} />
               <Route path="seo" element={<AdminSeoPage />} />
+              <Route path="payment-methods" element={<AdminPaymentMethodsPage />} />
               <Route path="settings" element={<AdminSettingsPage />} />
             </Route>
 
