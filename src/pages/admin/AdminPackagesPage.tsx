@@ -247,11 +247,11 @@ export default function AdminPackagesPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="font-heading text-xl font-bold">Package Management</h2>
+        <h2 className="font-heading text-xl font-bold">{pageTitle}</h2>
         {!isViewer && (
-          <button onClick={() => { setEditingId(null); setForm({ ...EMPTY_FORM }); setShowForm(true); }}
+          <button onClick={() => { setEditingId(null); setForm({ ...EMPTY_FORM, type: urlType && TYPES.includes(urlType) ? urlType : "umrah" }); setShowForm(true); }}
             className="bg-gradient-gold text-primary-foreground text-sm font-semibold px-4 py-2 rounded-md flex items-center gap-2 hover:opacity-90 transition-opacity shadow-gold">
-            <Plus className="h-4 w-4" /> New Package
+            <Plus className="h-4 w-4" /> {urlType ? `New ${TYPE_DISPLAY[urlType] || "Package"}` : "New Package"}
           </button>
         )}
       </div>
