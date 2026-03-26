@@ -18,6 +18,9 @@ const EMPTY_FORM = {
 
 export default function AdminPackagesPage() {
   const isViewer = useIsViewer();
+  const [searchParams] = useSearchParams();
+  const urlType = searchParams.get("type");
+
   const [packages, setPackages] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -29,14 +32,16 @@ export default function AdminPackagesPage() {
   const [uploading, setUploading] = useState(false);
   const [viewPkg, setViewPkg] = useState<any>(null);
 
-  const [searchParams] = useSearchParams();
-  const urlType = searchParams.get("type");
   const [typeFilter, setTypeFilter] = useState(urlType || "all");
 
   // Sync with URL param changes (sidebar navigation)
   useEffect(() => {
-    if (urlType) setTypeFilter(urlType);
-    else setTypeFilter("all");
+    if (urlType) {
+      setTypeFilter(urlType);
+      setForm(f => ({ ...f, type: TYPES.includes(urlType) ? urlType : f.type }));
+    } else {
+      setTypeFilter("all");
+    }
   }, [urlType]);
 
   const fetchPkgs = () => supabase.from("packages").select("*").order("created_at", { ascending: false }).then(({ data }) => setPackages(data || []));
