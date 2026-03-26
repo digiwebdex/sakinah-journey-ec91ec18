@@ -44,6 +44,7 @@ const toolsMenuItems = [
   
   { title: "Notifications",   url: "/admin/notifications",  icon: Bell,            roles: ["admin"] },
   { title: "CMS",             url: "/admin/cms",            icon: Pencil,          roles: ["admin", "cms"] },
+  { title: "SEO",             url: "/admin/seo",            icon: Search,          roles: ["admin"] },
   { title: "Settings",        url: "/admin/settings",       icon: Settings,        roles: ["admin"] },
 ];
 

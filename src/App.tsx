@@ -104,6 +104,7 @@ const App = () => (
               <Route path="refunds" element={<AdminRefundsPage />} />
               <Route path="analytics" element={<AdminAnalyticsPage />} />
               <Route path="cms" element={<AdminCmsPage />} />
+              <Route path="seo" element={<AdminSeoPage />} />
               <Route path="settings" element={<AdminSettingsPage />} />
             </Route>
 
