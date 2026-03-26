@@ -45,36 +45,45 @@ export function useUpdateSiteContent() {
       const { data: { session } } = await supabase.auth.getSession();
       const userId = session?.user?.id || null;
 
-      // Save version history before updating
-      const { data: current } = await supabase
+      // Check if row exists
+      const { data: existing } = await supabase
         .from("site_content" as any)
-        .select("content")
+        .select("id, content")
         .eq("section_key", sectionKey)
         .maybeSingle();
 
-      if ((current as any)?.content) {
+      // Save version history if there's existing content
+      if ((existing as any)?.content && Object.keys((existing as any).content).length > 0) {
         await supabase.from("cms_versions" as any).insert({
           section_key: sectionKey,
-          content: (current as any).content,
+          content: (existing as any).content,
           updated_by: userId,
           note: `Auto-saved before update`,
         } as any);
       }
 
-      // Update the content
-      const { error } = await supabase
-        .from("site_content" as any)
-        .update({ content, updated_by: userId } as any)
-        .eq("section_key", sectionKey);
-      if (error) throw error;
+      if ((existing as any)?.id) {
+        // Update existing row by ID
+        const { error } = await supabase
+          .from("site_content" as any)
+          .update({ content, updated_by: userId } as any)
+          .eq("id", (existing as any).id);
+        if (error) throw error;
+      } else {
+        // Insert new row
+        const { error } = await supabase
+          .from("site_content" as any)
+          .insert({ section_key: sectionKey, content, updated_by: userId } as any);
+        if (error) throw error;
+      }
     },
     onSuccess: (_, { sectionKey }) => {
       queryClient.invalidateQueries({ queryKey: ["site_content"] });
       queryClient.invalidateQueries({ queryKey: ["cms_versions"] });
-      toast.success(`${sectionKey} content updated`);
+      toast.success(`${sectionKey} কন্টেন্ট আপডেট হয়েছে`);
     },
     onError: (error: any) => {
-      toast.error(error.message || "Failed to update content");
+      toast.error(error.message || "কন্টেন্ট আপডেট করতে ব্যর্থ");
     },
   });
 }
