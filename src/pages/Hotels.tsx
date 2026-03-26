@@ -39,6 +39,16 @@ const Hotels = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Hotels - মক্কা ও মদিনা হোটেল"
+        description="মক্কা ও মদিনায় হারামের কাছে মানসম্মত হোটেল বুকিং। Quality hotel bookings near Haram in Makkah & Madinah."
+        canonicalUrl="/hotels"
+        keywords="Makkah hotel, Madinah hotel, মক্কা হোটেল, মদিনা হোটেল, Haram hotel"
+        jsonLd={breadcrumbJsonLd([
+          { name: "Home", url: "/" },
+          { name: "Hotels", url: "/hotels" },
+        ])}
+      />
       <Navbar />
       <div className="pt-24 pb-16">
         <div className="container mx-auto px-4">
