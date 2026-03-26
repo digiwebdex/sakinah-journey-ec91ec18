@@ -83,16 +83,33 @@ export default function InvoicePage() {
   const handleDownloadInvoice = async () => {
     if (!booking || !customer) return;
 
-    const { data: detailedBooking } = await supabase
-      .from("bookings")
-      .select("*, packages(name, type, duration_days, start_date, price), booking_members(full_name, passport_number, selling_price, discount, final_price, package_id, packages(name))")
-      .eq("id", booking.id)
-      .maybeSingle();
+    // Fetch members and package separately since VPS API doesn't support nested selects
+    const [membersRes] = await Promise.all([
+      supabase.from("booking_members").select("*").eq("booking_id", booking.id).order("created_at", { ascending: true }),
+    ]);
 
-    const invoiceBooking = detailedBooking
-      ? { ...booking, ...detailedBooking, packages: detailedBooking.packages || booking.packages }
-      : booking;
-    const memberRows = ((detailedBooking as any)?.booking_members || []) as any[];
+    const invoiceBooking = { ...booking };
+
+    // Ensure package info is present
+    if (!invoiceBooking.packages && invoiceBooking.package_id) {
+      const { data: pkgData } = await supabase.from("packages").select("name, type, duration_days, start_date, price").eq("id", invoiceBooking.package_id).maybeSingle();
+      if (pkgData) invoiceBooking.packages = pkgData;
+    }
+
+    const memberRows = (membersRes.data || []) as any[];
+
+    // Resolve package names for members
+    const memberPkgIds = memberRows.filter((m: any) => m.package_id && !m.packages).map((m: any) => m.package_id);
+    if (memberPkgIds.length > 0) {
+      const uniqueIds = Array.from(new Set(memberPkgIds));
+      const { data: pkgs } = await supabase.from("packages").select("id, name").in("id", uniqueIds);
+      const pkgMap: Record<string, string> = {};
+      (pkgs || []).forEach((p: any) => { pkgMap[p.id] = p.name; });
+      memberRows.forEach((m: any) => {
+        if (m.package_id && pkgMap[m.package_id]) m.packages = { name: pkgMap[m.package_id] };
+      });
+    }
+
     const isFamily = String(invoiceBooking.booking_type || "").toLowerCase().includes("family")
       || Number(invoiceBooking.num_travelers || 0) > 1
       || memberRows.length > 0;
