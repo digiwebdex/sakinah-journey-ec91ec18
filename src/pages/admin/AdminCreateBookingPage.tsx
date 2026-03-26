@@ -269,6 +269,11 @@ export default function AdminCreateBookingPage() {
         });
       }
 
+      // Upload documents if any selected
+      if (booking) {
+        await uploadDocuments(booking.id, selectedCustomerId || session.user.id);
+      }
+
       toast.success(`Booking created! Tracking ID: ${booking?.tracking_id}`);
       navigate("/admin/bookings");
     } catch (err: any) {
