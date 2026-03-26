@@ -354,7 +354,13 @@ const AdminCmsEditor = () => {
       <div className="text-center py-12 space-y-3">
         <p className="text-destructive font-medium">কন্টেন্ট লোড করা যায়নি</p>
         <p className="text-muted-foreground text-sm">সার্ভার সংযোগ চেক করুন এবং পুনরায় চেষ্টা করুন।</p>
-        <button onClick={() => window.location.reload()} className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm">পুনরায় চেষ্টা করুন</button>
+        <div className="flex justify-center gap-2">
+          <button onClick={() => window.location.reload()} className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm">পুনরায় চেষ্টা করুন</button>
+          <button onClick={() => {
+            setEditState({});
+            // Allow editing even without loaded data - sections will save as new
+          }} className="bg-secondary text-foreground border border-border px-4 py-2 rounded-md text-sm">নতুন কন্টেন্ট তৈরি করুন</button>
+        </div>
       </div>
     );
   }
