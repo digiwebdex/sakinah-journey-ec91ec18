@@ -403,7 +403,7 @@ app.use('/api/booking-members', createCrudRoutes('booking_members', { adminOnly:
 app.use('/api/booking-documents', createCrudRoutes('booking_documents'));
 app.use('/api/hotel-bookings', createCrudRoutes('hotel_bookings'));
 app.use('/api/notification-logs', createCrudRoutes('notification_logs', { adminOnly: true }));
-app.use('/api/notification-settings', createCrudRoutes('notification_settings', { adminOnly: true }));
+app.use('/api/notification-settings', createCrudRoutes('notification_settings', { adminOnly: true, orderBy: 'event_key ASC' }));
 app.use('/api/company-settings', createCrudRoutes('company_settings', { adminOnly: true }));
 app.use('/api/cms-versions', createCrudRoutes('cms_versions', { adminOnly: true }));
 app.use('/api/user-roles', createCrudRoutes('user_roles', { adminOnly: true }));
