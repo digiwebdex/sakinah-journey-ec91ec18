@@ -1,6 +1,7 @@
 # Troubleshooting Guide — RAHE KABA Tours & Travels
 
-> Common issues and their solutions
+> Common issues, solutions, and diagnostic commands
+> **Last Updated:** March 26, 2026
 
 ---
 
@@ -16,20 +17,35 @@ cd /var/www/rahe-kaba-journeys-72ccca69
 npm run build
 pm2 restart rahekaba-api
 ```
-
 Then hard refresh: `Ctrl + Shift + R`
+
+### Build fails with "failed to resolve import"
+
+**Cause:** New npm package not installed on VPS
+
+**Fix:**
+```bash
+npm install <package-name>
+npm run build
+pm2 restart rahekaba-api
+```
+
+**Example (react-helmet-async):**
+```bash
+npm install react-helmet-async && npm run build && pm2 restart rahekaba-api
+```
 
 ### "Failed to load notification settings"
 
 **Cause:** Missing notification_settings records in DB
 
-**Fix:** The settings page now creates default entries if none exist. Clear browser cache and reload.
+**Fix:** Settings page creates default entries on load. Clear browser cache and reload.
 
 ### Language not switching
 
 **Cause:** localStorage cached old language preference
 
-**Fix:** Clear browser localStorage or use incognito mode:
+**Fix:**
 ```javascript
 localStorage.removeItem('rk_language');
 ```
@@ -39,9 +55,34 @@ localStorage.removeItem('rk_language');
 **Cause:** JWT token expired or server/.env misconfigured
 
 **Fix:**
-1. Check server is running: `pm2 status`
-2. Check server logs: `pm2 logs rahekaba-api`
+1. Check server: `pm2 status`
+2. Check logs: `pm2 logs rahekaba-api --lines 50`
 3. Verify `server/.env` has correct `JWT_SECRET` and `DATABASE_URL`
+
+### CMS content not showing
+
+**Cause:** Missing site_content records in database
+
+**Fix:**
+```bash
+psql -U digiwebdex -d rahekaba -p 5433 -h 127.0.0.1 -c "
+INSERT INTO site_content (section_key, content)
+SELECT key, '{}'::jsonb
+FROM unnest(ARRAY['hero','navbar','services','about','packages','testimonials','facilities','gallery','guideline','video_guide','contact','whatsapp','footer']) AS key
+WHERE NOT EXISTS (SELECT 1 FROM site_content WHERE section_key = key);
+"
+```
+
+### SEO meta tags not updating
+
+**Cause:** Browser cache or react-helmet-async not installed
+
+**Fix:**
+```bash
+npm install react-helmet-async
+npm run build && pm2 restart rahekaba-api
+```
+Then hard refresh and check page source (`Ctrl+U`)
 
 ---
 
@@ -53,13 +94,8 @@ localStorage.removeItem('rk_language');
 
 **Fix:**
 ```bash
-# Check logs
 pm2 logs rahekaba-api --lines 50
-
-# Check database
-psql -U rahekaba_user -d rahekaba -c "SELECT 1;"
-
-# Restart
+psql -U digiwebdex -d rahekaba -p 5433 -h 127.0.0.1 -c "SELECT 1;"
 pm2 restart rahekaba-api
 ```
 
@@ -69,7 +105,7 @@ pm2 restart rahekaba-api
 
 **Fix:**
 ```bash
-psql -U rahekaba_user -d rahekaba -f server/schema.sql
+psql -U digiwebdex -d rahekaba -p 5433 -h 127.0.0.1 -f server/schema.sql
 ```
 
 ### File upload fails
@@ -82,6 +118,17 @@ mkdir -p /var/www/rahe-kaba-journeys-72ccca69/server/uploads
 chmod 755 /var/www/rahe-kaba-journeys-72ccca69/server/uploads
 ```
 
+### API CORS error
+
+**Cause:** `FRONTEND_URL` in server/.env doesn't match the requesting origin
+
+**Fix:**
+```bash
+nano server/.env
+# Update FRONTEND_URL to match your domain
+pm2 restart rahekaba-api
+```
+
 ---
 
 ## Database Issues
@@ -89,21 +136,31 @@ chmod 755 /var/www/rahe-kaba-journeys-72ccca69/server/uploads
 ### Cannot connect to PostgreSQL
 
 ```bash
-# Check if running
-systemctl status postgresql
+# Check Docker container
+docker ps | grep postgres
 
-# Start if stopped
-systemctl start postgresql
+# If container stopped
+docker start <container-name>
 
-# Check connection
-psql -U rahekaba_user -d rahekaba -c "SELECT 1;"
+# Check port
+netstat -tlnp | grep 5433
+
+# Test connection
+psql -U digiwebdex -d rahekaba -p 5433 -h 127.0.0.1 -c "SELECT 1;"
+```
+
+### Wrong database password
+
+```bash
+# Check DATABASE_URL in server/.env
+cat server/.env | grep DATABASE_URL
+# Password with special characters: use them as-is (no URL encoding) when prompted
 ```
 
 ### Slow queries
 
 ```bash
-# Check table sizes
-psql -U rahekaba_user -d rahekaba -c "
+psql -U digiwebdex -d rahekaba -p 5433 -h 127.0.0.1 -c "
   SELECT relname, n_tup_ins, n_tup_upd, n_tup_del
   FROM pg_stat_user_tables
   ORDER BY n_tup_ins DESC;
@@ -117,7 +174,6 @@ psql -U rahekaba_user -d rahekaba -c "
 ### `git pull` fails with merge conflicts
 
 ```bash
-# Stash local changes
 git stash
 git pull origin main
 git stash pop
@@ -137,15 +193,77 @@ export NODE_OPTIONS="--max-old-space-size=4096"
 npm run build
 ```
 
+### .env overwritten after git pull
+
+```bash
+# Re-protect .env
+git update-index --skip-worktree .env
+# Restore from backup or re-create
+nano .env
+```
+
+### PM2 process not starting after reboot
+
+```bash
+pm2 resurrect
+# If that fails:
+cd /var/www/rahe-kaba-journeys-72ccca69
+pm2 start server/index.js --name rahekaba-api
+pm2 save
+```
+
 ---
 
 ## Common Errors & Solutions
 
 | Error | Cause | Solution |
 |-------|-------|----------|
-| `ECONNREFUSED 5432` | PostgreSQL not running | `systemctl start postgresql` |
-| `invalid input syntax for type uuid` | Malformed UUID in request | Check request parameters |
+| `ECONNREFUSED 5433` | PostgreSQL not running | `docker start <container>` |
+| `invalid input syntax for type uuid` | Malformed UUID | Check request parameters |
 | `permission denied for table` | Wrong DB user | Check DATABASE_URL credentials |
-| `CORS error` | FRONTEND_URL not matching | Update `server/.env` FRONTEND_URL |
-| `413 Payload Too Large` | File too big | Max 5MB, update Nginx `client_max_body_size` |
-| `.env overwritten after git pull` | File not protected | Run `git update-index --skip-worktree .env` |
+| `CORS error` | FRONTEND_URL mismatch | Update `server/.env` FRONTEND_URL |
+| `413 Payload Too Large` | File > 5MB | Resize file or update Nginx `client_max_body_size` |
+| `.env overwritten` | File not protected | `git update-index --skip-worktree .env` |
+| `Cannot find module` | Package not installed | `npm install` on VPS |
+| `EADDRINUSE 3001` | Port already in use | `lsof -i :3001` and kill process |
+| `jwt malformed` | Invalid/expired token | Clear localStorage, re-login |
+| `No such container` | Wrong Docker container name | `docker ps -a` to find correct name |
+
+---
+
+## Diagnostic Commands Cheatsheet
+
+```bash
+# API health
+curl -s http://localhost:3001/api/packages | head -c 200
+
+# PM2 status
+pm2 status
+
+# PM2 logs
+pm2 logs rahekaba-api --lines 50
+
+# Database check
+psql -U digiwebdex -d rahekaba -p 5433 -h 127.0.0.1 -c "SELECT count(*) FROM bookings;"
+
+# Disk space
+df -h
+
+# Memory
+free -h
+
+# Node processes
+ps aux | grep node
+
+# Port usage
+netstat -tlnp | grep -E '3001|5433|80|443'
+
+# Docker containers
+docker ps
+
+# Nginx test
+nginx -t
+
+# SSL check
+certbot certificates
+```

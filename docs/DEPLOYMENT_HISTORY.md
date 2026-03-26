@@ -1,6 +1,7 @@
 # Deployment History — RAHE KABA Tours & Travels
 
-> Complete deployment timeline and server operations history
+> Complete deployment timeline, server operations, and infrastructure changes
+> **Last Updated:** March 26, 2026
 
 ---
 
@@ -8,86 +9,140 @@
 
 | Field | Value |
 |-------|-------|
-| **VPS Provider** | Dedicated Server |
-| **Server IP** | srv1468666 |
+| **VPS Provider** | Hostinger Dedicated Server |
+| **Server Hostname** | srv1468666 |
 | **OS** | Ubuntu/Debian |
 | **Project Path** | `/var/www/rahe-kaba-journeys-72ccca69` |
-| **PM2 Process** | `rahekaba-api` |
-| **Repository** | https://github.com/digiwebdex/rahe-kaba-journeys-f977239d |
+| **PM2 Process** | `rahekaba-api` (ID: 24) |
+| **Repository** | https://github.com/digiwebdex/rahe-kaba-journeys-44e58262 |
 | **Branch** | `main` |
+| **Domain** | rahekabatravels.com |
+| **API Port** | 3001 |
+| **DB Port** | 5433 (Docker PostgreSQL) |
+| **DB User** | digiwebdex |
+| **DB Name** | rahekaba |
 
 ---
 
 ## Deployment Timeline
 
-### Phase 1: Initial Setup (Project Creation)
+### Phase 1: Initial Setup (February 2026, Week 1)
 
 - **Architecture:** React/Vite frontend + Supabase backend (Lovable Cloud)
 - **Features:** Basic landing page, package listing, authentication
-- **Database:** Supabase-hosted PostgreSQL
+- **Database:** Supabase-hosted PostgreSQL (Lovable Cloud)
+- **Hosting:** Lovable preview/published URLs
 
-### Phase 2: VPS Migration
+### Phase 2: Feature Development (February 2026, Weeks 2-4)
 
-- **Change:** Migrated from Supabase to self-hosted PostgreSQL + Express backend
-- **Server:** Node.js/Express API on VPS with PM2
-- **Database:** Self-hosted PostgreSQL with custom schema (`server/schema.sql`)
-- **Files Created:**
-  - `server/index.js` — Main API server
-  - `server/config/database.js` — PostgreSQL connection pool
-  - `server/middleware/auth.js` — JWT authentication
-  - `server/routes/auth.js` — Auth endpoints
-  - `server/schema.sql` — Complete database schema
-  - `server/migrate-from-supabase.js` — Data migration script
-  - `server/.env` — Backend environment variables
-
-### Phase 3: Admin ERP Development
-
-- Built complete admin panel with modules:
-  - Bookings management
-  - Customer management
-  - Payment tracking
-  - Moallem/Agent management
-  - Supplier agent management
-  - Accounting & transactions
-  - Chart of accounts
-  - Daily cashbook
-  - Reports & exports
-  - CMS content management
-  - Notification system
-  - Hotel management
-
-### Phase 4: Financial System
-
-- Implemented complete accounting system
+- Built customer portal (dashboard, booking, payments)
+- Built admin ERP panel (bookings, customers, payments, moallems, suppliers)
+- Added CMS content management system
+- Added notification system (SMS + Email)
+- Added hotel management module
 - Added invoice generation with QR codes
-- Digital signature for invoices
+
+### Phase 3: VPS Migration (March 2026, Week 1)
+
+**Major Change:** Migrated from Supabase cloud to self-hosted PostgreSQL + Express
+
+- **Server:** Node.js/Express API on VPS with PM2
+- **Database:** PostgreSQL (initially native, later Dockerized on port 5433)
+- **Web Server:** Nginx reverse proxy
+- **SSL:** Certbot (Let's Encrypt)
+- **Process Manager:** PM2 with auto-restart
+
+**Files Created:**
+- `server/index.js` — Main API server with CRUD generator
+- `server/config/database.js` — PostgreSQL connection pool
+- `server/middleware/auth.js` — JWT authentication
+- `server/routes/auth.js` — Auth endpoints
+- `server/schema.sql` — Complete database schema (1268 lines)
+- `server/migrate-from-supabase.js` — Data migration script
+- `server/migrate-payments.js` — Payment data migration
+- `server/migrate.sh` — VPS migration automation
+- `server/.env.example` — Environment variable template
+- `server/DEPLOY.md` — Deployment guide
+
+**Database Migration:**
+- Exported all data from Supabase
+- Created comprehensive schema with triggers, views, functions
+- Imported data to local PostgreSQL
+- Verified data integrity
+
+### Phase 4: Admin ERP Expansion (March 2026, Week 2)
+
+- English migration for admin panel
+- Financial system: cashbook, accounting, chart of accounts
+- Customer financial reports
+- Supplier contract management
+- Receivables tracking
+- Invoice system with Bengali font support, QR codes, digital signatures
 - Excel/PDF report exports
-- Profit analysis views (booking, customer, package)
 
-### Phase 5: Notification System
+### Phase 5: Notification & Settings (March 2026, Week 3)
 
-- SMS API integration
-- SMTP email integration
-- Admin configurable settings
+- SMS API integration (BulkSMS BD)
+- SMTP email integration (Resend)
+- Admin configurable notification settings
 - Notification logging
+- Admin password change
+- Manual backup/restore system
+- Notification settings manager with per-event toggle
 
-### Phase 6: Frontend Redesign (March 2026)
+### Phase 6: Frontend Redesign (March 2026, Week 4)
 
 - **Theme:** Dark navy → Light cream/gold luxury theme
 - **Hero:** Single image → 3-image auto-sliding carousel
-- **Language:** Default changed from English to Bangla
-- **New Sections:** Facilities section added
-- **Package Cards:** Redesigned with image overlay pricing, rating badges
-- **WhatsApp:** Moved to left side with Bengali label
-- **Back to Top:** Added animated scroll-to-top button
-- **Calligraphic:** Added Islamic ornamental patterns
+- **Language:** Default English → Bangla
+- **New:** Facilities section (9 cards)
+- **Package Cards:** Image overlay, gradient, rating badges
+- **WhatsApp:** Left side with Bengali label
+- **Back to Top:** Animated scroll button
+- **Islamic Design:** Geometric patterns, ornamental decorators
 
-### Phase 7: Settings & Configuration (March 2026)
+### Phase 7: CMS & SEO (March 2026, Week 4)
 
-- Admin password change functionality
-- SMS/Email configuration panel
-- Manual backup/restore system
-- Notification settings manager
+- Full CMS system for ALL 13 website sections
+- Section visibility management
+- Version history with rollback
+- SEO system: react-helmet-async, meta tags, JSON-LD
+- Admin SEO settings page
+- Sitemap.xml and robots.txt
+- Google Analytics, Search Console, Facebook Pixel support
+
+### Phase 8: Reports & Analytics (March 2026, Week 4)
+
+- Comprehensive report system for all modules
+- Analytics dashboard with visual charts
+- Refund management with cancellation policies
+- Due alert system
+- Calculator tool
+
+---
+
+## Port Configuration (VPS)
+
+| Service | Port | Notes |
+|---------|------|-------|
+| Nginx | 80/443 | HTTP/HTTPS |
+| rahekaba-api (PM2) | 3001 | Express API |
+| PostgreSQL (Docker) | 5433 | Database |
+| PostgreSQL (Host) | 5440 | Host native (unused) |
+| sm-trade-backend | 3011 | Other project (migrated from 3001) |
+
+---
+
+## PM2 Process List (Current)
+
+| ID | Name | Status |
+|----|------|--------|
+| 11 | masud-backend | online |
+| 24 | rahekaba-api | online |
+| 1 | saz-backend | online |
+| 7 | sm-elite-api | online |
+| 17 | sm-trade-backend | online |
+| 16 | smtrade-api | online |
 
 ---
 
@@ -100,13 +155,36 @@ git update-index --skip-worktree .env
 # server/.env is .gitignored
 ```
 
-This ensures deployment credentials and secrets are never overwritten.
+This ensures deployment credentials and secrets are never overwritten during git operations.
 
 ---
 
 ## Infrastructure Notes
 
-- **Nginx** serves the built frontend and reverse-proxies `/api/*` to Express (port 3001)
-- **PM2** manages the Node.js process with auto-restart
-- **PostgreSQL** runs locally on the VPS
-- **SSL** via Nginx/Certbot (Let's Encrypt)
+- **Nginx** serves the built frontend (`dist/`) and reverse-proxies `/api/*` to Express (port 3001)
+- **Nginx** also serves `/uploads/*` directly from `server/uploads/`
+- **PM2** manages the Node.js process with auto-restart on crash
+- **PM2** is configured for auto-start on VPS reboot (`pm2 startup` + `pm2 save`)
+- **PostgreSQL** runs in Docker container on port 5433
+- **SSL** via Certbot (Let's Encrypt) with auto-renewal
+- **GitHub** auto-sync with Lovable workspace
+
+---
+
+## Deployment Log (Recent)
+
+### March 26, 2026
+- Deployed SEO system (react-helmet-async, sitemap, robots.txt)
+- Added AdminSeoPage to admin panel
+- Installed `react-helmet-async` package on VPS
+- Build successful: 4333 modules, 13.03s
+
+### March 25, 2026
+- Deployed full CMS system updates
+- Deployed report system enhancements
+- Deployed analytics dashboard
+
+### March 24, 2026
+- Deployed frontend redesign (light theme)
+- Deployed facilities section
+- Deployed WhatsApp + Back to Top components
