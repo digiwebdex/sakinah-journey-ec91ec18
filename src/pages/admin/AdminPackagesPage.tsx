@@ -23,7 +23,7 @@ export default function AdminPackagesPage() {
     const params = new URLSearchParams(window.location.search);
     return params.get("action") === "add";
   });
-  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [form, setForm] = useState({ ...EMPTY_FORM, type: urlType && TYPES.includes(urlType) ? urlType : "umrah" });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
