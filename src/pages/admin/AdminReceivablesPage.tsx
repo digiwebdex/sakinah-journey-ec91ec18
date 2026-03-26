@@ -48,11 +48,16 @@ export default function AdminReceivablesPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [bkRes, payRes, profRes] = await Promise.all([
+      const [bkRes, payRes, profRes, completedRes] = await Promise.all([
         supabase.from("bookings").select("id, tracking_id, guest_name, total_amount, paid_amount, due_amount, status, created_at, user_id, num_travelers, packages(name, type)").order("created_at", { ascending: false }),
         supabase.from("payments").select("id, booking_id, amount, due_date, installment_number, status").eq("status", "pending"),
         supabase.from("profiles").select("user_id, full_name"),
+        supabase.from("payments").select("amount").eq("status", "completed"),
       ]);
+
+      // Calculate actual collected from completed payments
+      const collectedTotal = (completedRes.data || []).reduce((s: number, p: any) => s + Number(p.amount), 0);
+      setCompletedPaymentsTotal(collectedTotal);
 
       const profMap: Record<string, string> = {};
       (profRes.data || []).forEach((p: any) => { profMap[p.user_id] = p.full_name || ""; });
