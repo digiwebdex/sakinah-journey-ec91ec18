@@ -43,17 +43,28 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="space-y-8">
-      {/* User Management (Admin only) */}
       {currentRole === "admin" && (
-        <section>
-          <AdminUserManager />
+        <section className="bg-card border border-border rounded-lg p-4">
+          <h2 className="font-heading text-lg font-bold mb-3">Quick Settings</h2>
+          <div className="flex flex-wrap gap-2">
+            <a href="#password-settings" className="bg-secondary text-secondary-foreground hover:bg-secondary/80 px-3 py-2 rounded-md text-sm font-medium">Change Password</a>
+            <a href="#notification-settings" className="bg-secondary text-secondary-foreground hover:bg-secondary/80 px-3 py-2 rounded-md text-sm font-medium">SMS/Email Config</a>
+            <a href="#backup-restore" className="bg-secondary text-secondary-foreground hover:bg-secondary/80 px-3 py-2 rounded-md text-sm font-medium">Backup & Restore</a>
+          </div>
         </section>
       )}
 
       {/* Password Change (Admin only) */}
       {currentRole === "admin" && (
-        <section>
+        <section id="password-settings">
           <AdminPasswordChange />
+        </section>
+      )}
+
+      {/* User Management (Admin only) */}
+      {currentRole === "admin" && (
+        <section id="user-management">
+          <AdminUserManager />
         </section>
       )}
 
