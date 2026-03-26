@@ -74,7 +74,11 @@ export default function AdminAccountingPage() {
   const [packages, setPackages] = useState<any[]>([]);
   const [walletAccounts, setWalletAccounts] = useState<any[]>([]);
   const [dailyCashbookEntries, setDailyCashbookEntries] = useState<any[]>([]);
-  const [revenue, setRevenue] = useState(0);
+  const [customerRevenue, setCustomerRevenue] = useState(0);
+  const [moallemRevenue, setMoallemRevenue] = useState(0);
+  const [supplierExpenseTotal, setSupplierExpenseTotal] = useState(0);
+  const [supplierContractExpenseTotal, setSupplierContractExpenseTotal] = useState(0);
+  const [commissionExpenseTotal, setCommissionExpenseTotal] = useState(0);
   const [filterType, setFilterType] = useState("all");
   const [filterAssign, setFilterAssign] = useState("all");
 
@@ -84,7 +88,7 @@ export default function AdminAccountingPage() {
   const [customerProfit, setCustomerProfit] = useState<any[]>([]);
 
   const fetchData = async () => {
-    const [expRes, payRes, bkRes, custRes, pkgRes, walletRes, cashbookRes] = await Promise.all([
+    const [expRes, payRes, bkRes, custRes, pkgRes, walletRes, cashbookRes, moallemPayRes, supplierPayRes, supplierContractPayRes, commissionPayRes] = await Promise.all([
       supabase.from("expenses").select("*").order("date", { ascending: false }),
       supabase.from("payments").select("amount").eq("status", "completed"),
       supabase.from("bookings").select("id, tracking_id, guest_name, user_id").order("created_at", { ascending: false }),
@@ -92,9 +96,17 @@ export default function AdminAccountingPage() {
       supabase.from("packages").select("id, name, type").eq("is_active", true).order("name"),
       supabase.from("accounts" as any).select("*").eq("type", "asset"),
       supabase.from("daily_cashbook" as any).select("date, type, amount, category, payment_method").order("date", { ascending: false }),
+      supabase.from("moallem_payments").select("amount"),
+      supabase.from("supplier_agent_payments").select("amount"),
+      supabase.from("supplier_contract_payments").select("amount"),
+      supabase.from("moallem_commission_payments").select("amount"),
     ]);
     setExpenses(expRes.data || []);
-    setRevenue((payRes.data || []).reduce((s: number, p: any) => s + Number(p.amount), 0));
+    setCustomerRevenue((payRes.data || []).reduce((s: number, p: any) => s + Number(p.amount), 0));
+    setMoallemRevenue((moallemPayRes.data || []).reduce((s: number, p: any) => s + Number(p.amount), 0));
+    setSupplierExpenseTotal((supplierPayRes.data || []).reduce((s: number, p: any) => s + Number(p.amount), 0));
+    setSupplierContractExpenseTotal((supplierContractPayRes.data || []).reduce((s: number, p: any) => s + Number(p.amount), 0));
+    setCommissionExpenseTotal((commissionPayRes.data || []).reduce((s: number, p: any) => s + Number(p.amount), 0));
     setBookings(bkRes.data || []);
     setCustomers(custRes.data || []);
     setPackages(pkgRes.data || []);
@@ -167,8 +179,12 @@ export default function AdminAccountingPage() {
     fetchData(); fetchProfitViews();
   };
 
-  const totalExpenses = expenses.reduce((s: number, e: any) => s + Number(e.amount), 0);
-  const netProfit = revenue - totalExpenses;
+  const totalExpenseAmount = expenses.reduce((s: number, e: any) => s + Number(e.amount), 0);
+  const cashbookTotalIncome = dailyCashbookEntries.filter((e: any) => e.type === "income").reduce((s: number, e: any) => s + Number(e.amount), 0);
+  const cashbookTotalExpense = dailyCashbookEntries.filter((e: any) => e.type === "expense").reduce((s: number, e: any) => s + Number(e.amount), 0);
+  const totalIncome = customerRevenue + moallemRevenue + cashbookTotalIncome;
+  const totalExpenses = totalExpenseAmount + supplierExpenseTotal + supplierContractExpenseTotal + commissionExpenseTotal + cashbookTotalExpense;
+  const netProfit = totalIncome - totalExpenses;
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -356,11 +372,13 @@ export default function AdminAccountingPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-card border border-border rounded-lg p-4">
           <p className="text-sm text-muted-foreground">Total Income</p>
-          <p className="text-2xl font-heading font-bold text-primary">{fmt(revenue)}</p>
+          <p className="text-2xl font-heading font-bold text-primary">{fmt(totalIncome)}</p>
+          <p className="text-[10px] text-muted-foreground mt-1">Customer: {fmt(customerRevenue)} · Moallem: {fmt(moallemRevenue)} · Cashbook: {fmt(cashbookTotalIncome)}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
           <p className="text-sm text-muted-foreground">Total Expense</p>
           <p className="text-2xl font-heading font-bold text-destructive">{fmt(totalExpenses)}</p>
+          <p className="text-[10px] text-muted-foreground mt-1">General: {fmt(totalExpenseAmount)} · Supplier: {fmt(supplierExpenseTotal + supplierContractExpenseTotal)} · Commission: {fmt(commissionExpenseTotal)}</p>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
           <p className="text-sm text-muted-foreground">Net Profit</p>
