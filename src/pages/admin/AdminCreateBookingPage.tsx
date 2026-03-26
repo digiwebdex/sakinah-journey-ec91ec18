@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/api";
 import { toast } from "sonner";
-import { ArrowLeft, Save, User, Phone, Mail, MapPin, FileText, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, User, Phone, Mail, MapPin, FileText, Plus, Trash2, Upload, X, CheckCircle, File } from "lucide-react";
 import CustomerSearchSelect from "@/components/admin/CustomerSearchSelect";
 
 const inputClass =
