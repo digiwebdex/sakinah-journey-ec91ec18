@@ -11,8 +11,19 @@ import { useLanguage } from "@/i18n/LanguageContext";
 
 const fallbackImages = [heroImage, medinaImage];
 
+const TYPE_ORDER = ["hajj", "umrah", "tour", "visa", "hotel", "transport", "ziyara"];
+const TYPE_LABELS: Record<string, { en: string; bn: string }> = {
+  hajj: { en: "Hajj Packages", bn: "হজ্জ প্যাকেজ" },
+  umrah: { en: "Umrah Packages", bn: "উমরাহ প্যাকেজ" },
+  tour: { en: "Tour Packages", bn: "ট্যুর প্যাকেজ" },
+  visa: { en: "Visa Packages", bn: "ভিসা প্যাকেজ" },
+  hotel: { en: "Hotel Packages", bn: "হোটেল প্যাকেজ" },
+  transport: { en: "Transport Packages", bn: "পরিবহন প্যাকেজ" },
+  ziyara: { en: "Ziyara Packages", bn: "জিয়ারত প্যাকেজ" },
+};
+
 const Packages = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [packages, setPackages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState("all");
@@ -26,8 +37,27 @@ const Packages = () => {
     fetchPackages();
   }, []);
 
-  const types = [...new Set(packages.map((p) => p.type))];
+  const types = [...new Set(packages.map((p) => p.type))].sort((a, b) => {
+    const ai = TYPE_ORDER.indexOf(a);
+    const bi = TYPE_ORDER.indexOf(b);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
+
   const filtered = typeFilter === "all" ? packages : packages.filter((p) => p.type === typeFilter);
+
+  // Group filtered packages by type
+  const grouped = filtered.reduce((acc: Record<string, any[]>, pkg) => {
+    const type = pkg.type || "other";
+    if (!acc[type]) acc[type] = [];
+    acc[type].push(pkg);
+    return acc;
+  }, {});
+
+  const sortedTypes = Object.keys(grouped).sort((a, b) => {
+    const ai = TYPE_ORDER.indexOf(a);
+    const bi = TYPE_ORDER.indexOf(b);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -67,7 +97,7 @@ const Packages = () => {
                 className={`px-5 py-2 rounded-full text-sm font-medium capitalize transition-colors ${
                   typeFilter === tp ? "bg-gradient-gold text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
                 }`}>
-                {tp}
+                {TYPE_LABELS[tp]?.[language]?.replace(" Packages", "").replace(" প্যাকেজ", "") || tp}
               </button>
             ))}
           </div>
@@ -78,46 +108,70 @@ const Packages = () => {
         ) : filtered.length === 0 ? (
           <div className="text-center py-20 text-muted-foreground">{t("packagesPage.empty")}</div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {filtered.map((pkg, i) => (
-              <motion.div key={pkg.id} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-                className="relative rounded-xl overflow-hidden border border-border bg-card flex flex-col hover:border-primary/40 hover:shadow-gold transition-all group">
-                <div className="h-48 overflow-hidden">
-                  <img src={pkg.image_url || fallbackImages[i % fallbackImages.length]} alt={pkg.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  <div className="absolute top-0 left-0 right-0 h-48 bg-gradient-to-b from-transparent to-card/80" />
+          <div className="space-y-16">
+            {sortedTypes.map((type) => {
+              const typePkgs = grouped[type];
+              const label = TYPE_LABELS[type]?.[language] || `${type.charAt(0).toUpperCase() + type.slice(1)} Packages`;
+
+              return (
+                <div key={type}>
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    className="flex items-center gap-3 mb-8"
+                  >
+                    <div className="h-8 w-1.5 rounded-full bg-gradient-gold" />
+                    <h2 className="font-heading text-2xl md:text-3xl font-bold capitalize">{label}</h2>
+                    <span className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">
+                      {typePkgs.length}
+                    </span>
+                  </motion.div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                    {typePkgs.map((pkg: any, i: number) => (
+                      <motion.div key={pkg.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                        className="relative rounded-xl overflow-hidden border border-border bg-card flex flex-col hover:border-primary/40 hover:shadow-gold transition-all group">
+                        <div className="h-48 overflow-hidden">
+                          <img src={pkg.image_url || fallbackImages[i % fallbackImages.length]} alt={pkg.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          <div className="absolute top-0 left-0 right-0 h-48 bg-gradient-to-b from-transparent to-card/80" />
+                        </div>
+                        <div className="absolute top-4 left-4 z-10">
+                          <span className="bg-primary/90 text-primary-foreground text-xs font-bold px-3 py-1 rounded-full capitalize">{pkg.type}</span>
+                        </div>
+                        <div className="p-6 flex-1 flex flex-col">
+                          <h3 className="font-heading text-xl font-bold">{pkg.name}</h3>
+                          {pkg.duration_days && (
+                            <p className="text-sm text-muted-foreground mb-2">{pkg.duration_days} {t("packagesPage.days")}</p>
+                          )}
+                          {pkg.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{pkg.description}</p>
+                          )}
+                          <p className="text-2xl font-heading font-bold text-primary mb-4 mt-auto">
+                            ৳{Number(pkg.price).toLocaleString()}
+                            <span className="text-sm font-body text-muted-foreground font-normal"> {t("common.perPerson")}</span>
+                          </p>
+                          {pkg.features && Array.isArray(pkg.features) && pkg.features.length > 0 && (
+                            <ul className="space-y-1.5 mb-5">
+                              {(pkg.features as string[]).slice(0, 5).map((f: string) => (
+                                <li key={f} className="flex items-center gap-2 text-sm text-foreground/80">
+                                  <Check className="h-3.5 w-3.5 text-primary flex-shrink-0" /> {f}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          <Link to={`/packages/${pkg.id}`}
+                            className="w-full py-3 rounded-md text-sm font-semibold text-center inline-flex items-center justify-center gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 transition-opacity">
+                            {t("packagesPage.viewDetails")} <ArrowRight className="h-4 w-4" />
+                          </Link>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
-                <div className="absolute top-4 left-4 z-10">
-                  <span className="bg-primary/90 text-primary-foreground text-xs font-bold px-3 py-1 rounded-full capitalize">{pkg.type}</span>
-                </div>
-                <div className="p-6 flex-1 flex flex-col">
-                  <h3 className="font-heading text-xl font-bold">{pkg.name}</h3>
-                  {pkg.duration_days && (
-                    <p className="text-sm text-muted-foreground mb-2">{pkg.duration_days} {t("packagesPage.days")}</p>
-                  )}
-                  {pkg.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{pkg.description}</p>
-                  )}
-                  <p className="text-2xl font-heading font-bold text-primary mb-4 mt-auto">
-                    ৳{Number(pkg.price).toLocaleString()}
-                    <span className="text-sm font-body text-muted-foreground font-normal"> {t("common.perPerson")}</span>
-                  </p>
-                  {pkg.features && Array.isArray(pkg.features) && pkg.features.length > 0 && (
-                    <ul className="space-y-1.5 mb-5">
-                      {(pkg.features as string[]).slice(0, 5).map((f: string) => (
-                        <li key={f} className="flex items-center gap-2 text-sm text-foreground/80">
-                          <Check className="h-3.5 w-3.5 text-primary flex-shrink-0" /> {f}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <Link to={`/packages/${pkg.id}`}
-                    className="w-full py-3 rounded-md text-sm font-semibold text-center inline-flex items-center justify-center gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 transition-opacity">
-                    {t("packagesPage.viewDetails")} <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
-              </motion.div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

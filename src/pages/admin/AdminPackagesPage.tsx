@@ -28,8 +28,13 @@ export default function AdminPackagesPage() {
   const [uploading, setUploading] = useState(false);
   const [viewPkg, setViewPkg] = useState<any>(null);
 
+  const [typeFilter, setTypeFilter] = useState("all");
+
   const fetchPkgs = () => supabase.from("packages").select("*").order("created_at", { ascending: false }).then(({ data }) => setPackages(data || []));
   useEffect(() => { fetchPkgs(); }, []);
+
+  const filteredPackages = typeFilter === "all" ? packages : packages.filter(p => p.type === typeFilter);
+  const availableTypes = [...new Set(packages.map(p => p.type))].sort();
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -231,8 +236,25 @@ export default function AdminPackagesPage() {
         )}
       </div>
 
+      {/* Type Filter Tabs */}
+      <div className="flex gap-2 mb-4 flex-wrap">
+        <button onClick={() => setTypeFilter("all")}
+          className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${typeFilter === "all" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
+          All ({packages.length})
+        </button>
+        {availableTypes.map(tp => {
+          const count = packages.filter(p => p.type === tp).length;
+          return (
+            <button key={tp} onClick={() => setTypeFilter(tp)}
+              className={`px-4 py-1.5 rounded-full text-xs font-medium capitalize transition-colors ${typeFilter === tp ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
+              {tp} ({count})
+            </button>
+          );
+        })}
+      </div>
+
       <div className="space-y-3">
-        {packages.map((p: any) => (
+        {filteredPackages.map((p: any) => (
           <div key={p.id} className="bg-card border border-border rounded-lg p-4 cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setViewPkg(p)}>
             <div className="flex items-start gap-4">
               {p.image_url && (
@@ -277,7 +299,7 @@ export default function AdminPackagesPage() {
             </div>
           </div>
         ))}
-        {packages.length === 0 && <p className="text-center text-muted-foreground py-12">No packages found.</p>}
+        {filteredPackages.length === 0 && <p className="text-center text-muted-foreground py-12">No packages found.</p>}
       </div>
 
       {/* Create/Edit Modal */}
