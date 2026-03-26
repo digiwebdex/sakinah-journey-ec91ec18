@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/api";
 import { toast } from "sonner";
 import { Plus, X, Edit2, Trash2, Save, ToggleLeft, ToggleRight, Upload, Loader2, Eye, Copy } from "lucide-react";
@@ -17,18 +18,31 @@ const EMPTY_FORM = {
 
 export default function AdminPackagesPage() {
   const isViewer = useIsViewer();
+  const [searchParams] = useSearchParams();
+  const urlType = searchParams.get("type");
+
   const [packages, setPackages] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("action") === "add";
   });
-  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [form, setForm] = useState({ ...EMPTY_FORM, type: urlType && TYPES.includes(urlType) ? urlType : "umrah" });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [viewPkg, setViewPkg] = useState<any>(null);
 
-  const [typeFilter, setTypeFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState(urlType || "all");
+
+  // Sync with URL param changes (sidebar navigation)
+  useEffect(() => {
+    if (urlType) {
+      setTypeFilter(urlType);
+      setForm(f => ({ ...f, type: TYPES.includes(urlType) ? urlType : f.type }));
+    } else {
+      setTypeFilter("all");
+    }
+  }, [urlType]);
 
   const fetchPkgs = () => supabase.from("packages").select("*").order("created_at", { ascending: false }).then(({ data }) => setPackages(data || []));
   useEffect(() => { fetchPkgs(); }, []);
@@ -126,7 +140,13 @@ export default function AdminPackagesPage() {
     setDeleteId(null); fetchPkgs();
   };
 
-  const closeModal = () => { setShowForm(false); setEditingId(null); setForm({ ...EMPTY_FORM }); };
+  const closeModal = () => { setShowForm(false); setEditingId(null); setForm({ ...EMPTY_FORM, type: urlType && TYPES.includes(urlType) ? urlType : "umrah" }); };
+
+  const TYPE_DISPLAY: Record<string, string> = {
+    air_ticket: "Air Ticket", visa: "Visa", tour: "Tour", hajj: "Hajj",
+    umrah: "Umrah", hotel: "Hotel", transport: "Transport", ziyara: "Ziyara",
+  };
+  const pageTitle = urlType && TYPE_DISPLAY[urlType] ? `${TYPE_DISPLAY[urlType]} Management` : "Package Management";
 
   const renderForm = () => (
     <form onSubmit={editingId ? handleSave : handleCreate} className="space-y-4">
@@ -227,11 +247,11 @@ export default function AdminPackagesPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="font-heading text-xl font-bold">Package Management</h2>
+        <h2 className="font-heading text-xl font-bold">{pageTitle}</h2>
         {!isViewer && (
-          <button onClick={() => { setEditingId(null); setForm({ ...EMPTY_FORM }); setShowForm(true); }}
+          <button onClick={() => { setEditingId(null); setForm({ ...EMPTY_FORM, type: urlType && TYPES.includes(urlType) ? urlType : "umrah" }); setShowForm(true); }}
             className="bg-gradient-gold text-primary-foreground text-sm font-semibold px-4 py-2 rounded-md flex items-center gap-2 hover:opacity-90 transition-opacity shadow-gold">
-            <Plus className="h-4 w-4" /> New Package
+            <Plus className="h-4 w-4" /> {urlType ? `New ${TYPE_DISPLAY[urlType] || "Package"}` : "New Package"}
           </button>
         )}
       </div>
