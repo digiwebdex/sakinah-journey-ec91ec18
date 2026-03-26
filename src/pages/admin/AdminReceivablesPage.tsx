@@ -40,6 +40,7 @@ interface PendingPayment {
 export default function AdminReceivablesPage() {
   const [bookings, setBookings] = useState<BookingReceivable[]>([]);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
+  const [completedPaymentsTotal, setCompletedPaymentsTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "overdue" | "upcoming" | "paid">("all");
@@ -47,11 +48,16 @@ export default function AdminReceivablesPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [bkRes, payRes, profRes] = await Promise.all([
+      const [bkRes, payRes, profRes, completedRes] = await Promise.all([
         supabase.from("bookings").select("id, tracking_id, guest_name, total_amount, paid_amount, due_amount, status, created_at, user_id, num_travelers, packages(name, type)").order("created_at", { ascending: false }),
         supabase.from("payments").select("id, booking_id, amount, due_date, installment_number, status").eq("status", "pending"),
         supabase.from("profiles").select("user_id, full_name"),
+        supabase.from("payments").select("amount").eq("status", "completed"),
       ]);
+
+      // Calculate actual collected from completed payments
+      const collectedTotal = (completedRes.data || []).reduce((s: number, p: any) => s + Number(p.amount), 0);
+      setCompletedPaymentsTotal(collectedTotal);
 
       const profMap: Record<string, string> = {};
       (profRes.data || []).forEach((p: any) => { profMap[p.user_id] = p.full_name || ""; });
@@ -73,21 +79,31 @@ export default function AdminReceivablesPage() {
         });
       });
 
-      const mapped: BookingReceivable[] = (bkRes.data || []).map((b: any) => ({
-        id: b.id,
-        tracking_id: b.tracking_id,
-        guest_name: b.guest_name,
-        total_amount: Number(b.total_amount),
-        paid_amount: Number(b.paid_amount),
-        due_amount: Number(b.due_amount ?? b.total_amount - b.paid_amount),
-        status: b.status,
-        created_at: b.created_at,
-        user_id: b.user_id,
-        package_name: b.packages?.name || "—",
-        package_type: b.packages?.type || "—",
-        num_travelers: b.num_travelers || 1,
-        pendingPayments: pendingByBooking[b.id] || [],
-      }));
+      const mapped: BookingReceivable[] = (bkRes.data || [])
+        .filter((b: any) => b.status !== "cancelled")
+        .map((b: any) => {
+          const dueAmt = Math.max(0, Number(b.due_amount ?? b.total_amount - b.paid_amount));
+          const hasPending = (pendingByBooking[b.id] || []).length > 0;
+          // If booking has due but no scheduled installments, treat as overdue (no due_date = overdue)
+          const syntheticOverdue = dueAmt > 0 && !hasPending;
+          return {
+            id: b.id,
+            tracking_id: b.tracking_id,
+            guest_name: b.guest_name,
+            total_amount: Number(b.total_amount),
+            paid_amount: Number(b.paid_amount),
+            due_amount: dueAmt,
+            status: b.status,
+            created_at: b.created_at,
+            user_id: b.user_id,
+            package_name: b.packages?.name || "—",
+            package_type: b.packages?.type || "—",
+            num_travelers: b.num_travelers || 1,
+            pendingPayments: syntheticOverdue
+              ? [{ id: "synthetic-" + b.id, amount: dueAmt, due_date: null, installment_number: null, daysOverdue: differenceInDays(today, new Date(b.created_at)) }]
+              : pendingByBooking[b.id] || [],
+          };
+        });
 
       setBookings(mapped);
       setLoading(false);
@@ -121,7 +137,7 @@ export default function AdminReceivablesPage() {
     const overdueAmt = b.pendingPayments.filter((p) => p.daysOverdue > 0).reduce((ss, p) => ss + p.amount, 0);
     return s + overdueAmt;
   }, 0);
-  const totalCollected = bookings.reduce((s, b) => s + b.paid_amount, 0);
+  const totalCollected = completedPaymentsTotal;
   const overdueCount = bookings.filter((b) => b.pendingPayments.some((p) => p.daysOverdue > 0)).length;
 
   const handleExportPDF = () => {
