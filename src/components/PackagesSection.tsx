@@ -10,12 +10,13 @@ import medinaImage from "@/assets/hero-medina.jpg";
 const fallbackImages = [heroImage, medinaImage];
 
 // Display order for types
-const TYPE_ORDER = ["hajj", "umrah", "tour", "visa", "hotel", "transport", "ziyara"];
+const TYPE_ORDER = ["hajj", "umrah", "tour", "visa", "air_ticket", "hotel", "transport", "ziyara"];
 const TYPE_LABELS: Record<string, { en: string; bn: string }> = {
   hajj: { en: "Hajj Packages", bn: "হজ্জ প্যাকেজ" },
   umrah: { en: "Umrah Packages", bn: "উমরাহ প্যাকেজ" },
   tour: { en: "Tour Packages", bn: "ট্যুর প্যাকেজ" },
-  visa: { en: "Visa Packages", bn: "ভিসা প্যাকেজ" },
+  visa: { en: "Visa Services", bn: "ভিসা সার্ভিস" },
+  air_ticket: { en: "Air Tickets", bn: "এয়ার টিকেট" },
   hotel: { en: "Hotel Packages", bn: "হোটেল প্যাকেজ" },
   transport: { en: "Transport Packages", bn: "পরিবহন প্যাকেজ" },
   ziyara: { en: "Ziyara Packages", bn: "জিয়ারত প্যাকেজ" },

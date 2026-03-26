@@ -27,7 +27,9 @@ const Packages = () => {
   const { t, language } = useLanguage();
   const [packages, setPackages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [typeFilter, setTypeFilter] = useState("all");
+  // Support URL query param ?type=air_ticket
+  const urlType = new URLSearchParams(window.location.search).get("type");
+  const [typeFilter, setTypeFilter] = useState(urlType || "all");
 
   useEffect(() => {
     const fetchPackages = async () => {
