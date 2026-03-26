@@ -44,6 +44,8 @@ const AdminNotificationsPage = lazy(() => import("./pages/admin/AdminNotificatio
 const AdminDueAlertsPage = lazy(() => import("./pages/admin/AdminDueAlertsPage"));
 const AdminChartOfAccountsPage = lazy(() => import("./pages/admin/AdminChartOfAccountsPage"));
 const AdminReceivablesPage = lazy(() => import("./pages/admin/AdminReceivablesPage"));
+const AdminRefundsPage = lazy(() => import("./pages/admin/AdminRefundsPage"));
+const AdminAnalyticsPage = lazy(() => import("./pages/admin/AdminAnalyticsPage"));
 
 const queryClient = new QueryClient();
 
