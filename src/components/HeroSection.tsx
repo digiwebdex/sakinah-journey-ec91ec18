@@ -37,8 +37,8 @@ const HeroSection = () => {
       </motion.div>
 
       {/* Overlays */}
-      <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/35 to-transparent" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,hsl(var(--background)/0.3)_100%)]" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a2e]/85 via-[#1a1a2e]/40 to-transparent" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(26,26,46,0.3)_100%)]" />
 
       {/* Top gold accent */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-gold" />
