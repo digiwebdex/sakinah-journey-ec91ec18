@@ -77,9 +77,18 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-white/10 text-center text-sm text-white/50">
-          <p>© {new Date().getFullYear()} {companyName} {tagline}. {t("footer.allRights")}</p>
-          <p className="mt-2 text-xs text-white/30">{t("footer.designBy")} <a href={devUrl} target="_blank" rel="noopener noreferrer" className="hover:text-gold-light transition-colors">{devName}</a></p>
+        <div className="mt-12 pt-8 border-t border-white/10">
+          <div className="flex flex-wrap justify-center gap-4 mb-6 text-sm text-white/60">
+            <a href="/privacy-policy" className="hover:text-gold-light transition-colors">{language === "bn" ? "গোপনীয়তা নীতি" : "Privacy Policy"}</a>
+            <span className="text-white/20">|</span>
+            <a href="/terms-conditions" className="hover:text-gold-light transition-colors">{language === "bn" ? "শর্তাবলী" : "Terms & Conditions"}</a>
+            <span className="text-white/20">|</span>
+            <a href="/refund-policy" className="hover:text-gold-light transition-colors">{language === "bn" ? "রিফান্ড নীতি" : "Refund Policy"}</a>
+          </div>
+          <div className="text-center text-sm text-white/50">
+            <p>© {new Date().getFullYear()} {companyName} {tagline}. {t("footer.allRights")}</p>
+            <p className="mt-2 text-xs text-white/30">{t("footer.designBy")} <a href={devUrl} target="_blank" rel="noopener noreferrer" className="hover:text-gold-light transition-colors">{devName}</a></p>
+          </div>
         </div>
       </div>
     </footer>

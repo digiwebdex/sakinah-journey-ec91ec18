@@ -84,6 +84,9 @@ const App = () => (
             <Route path="/invoice" element={<InvoicePage />} />
             <Route path="/verify/:invoiceNumber" element={<VerifyInvoice />} />
             <Route path="/verify" element={<VerifyInvoice />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms-conditions" element={<TermsConditions />} />
+            <Route path="/refund-policy" element={<RefundPolicy />} />
 
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboardPage />} />
