@@ -425,8 +425,10 @@ app.use('/api/user-roles', (req, res, next) => {
 
 app.use('/api/financial-summary', createCrudRoutes('financial_summary', { adminOnly: true }));
 app.use('/api/daily-cashbook', createCrudRoutes('daily_cashbook', { adminOnly: true }));
+app.use('/api/refunds', createCrudRoutes('refunds', { adminOnly: true }));
+app.use('/api/cancellation-policies', createCrudRoutes('cancellation_policies', { readAuth: false, writeAuth: true, adminOnly: true }));
 
-// =============================================
+// ==============================================
 // BACKUP / RESTORE ROUTES
 // =============================================
 const BACKUP_TABLES = [
