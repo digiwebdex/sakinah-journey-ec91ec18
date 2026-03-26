@@ -1,0 +1,349 @@
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Search, Globe, FileText, Code, RefreshCw, ExternalLink, CheckCircle, AlertTriangle } from "lucide-react";
+
+interface SeoSettings {
+  site_title: string;
+  site_description: string;
+  site_keywords: string;
+  og_image: string;
+  base_url: string;
+  google_analytics_id: string;
+  google_search_console: string;
+  facebook_pixel_id: string;
+  default_lang: string;
+  auto_sitemap: boolean;
+  robots_index: boolean;
+  pages: Record<string, PageSeo>;
+}
+
+interface PageSeo {
+  title: string;
+  description: string;
+  keywords: string;
+  og_image: string;
+  no_index: boolean;
+}
+
+const DEFAULT_PAGES: Record<string, { label: string; path: string }> = {
+  home: { label: "হোম পেজ", path: "/" },
+  packages: { label: "প্যাকেজ পেজ", path: "/packages" },
+  hotels: { label: "হোটেল পেজ", path: "/hotels" },
+  about: { label: "আমাদের সম্পর্কে", path: "/about" },
+  contact: { label: "যোগাযোগ", path: "/contact" },
+  booking: { label: "বুকিং পেজ", path: "/booking" },
+  track: { label: "ট্র্যাকিং পেজ", path: "/track" },
+};
+
+const DEFAULT_SEO: SeoSettings = {
+  site_title: "Rahe Kaba Tours and Travels",
+  site_description: "রাহে কাবা ট্যুরস অ্যান্ড ট্রাভেলস - হজ্জ, উমরাহ ও ভিসা সেবায় বাংলাদেশের বিশ্বস্ত প্রতিষ্ঠান।",
+  site_keywords: "হজ্জ, উমরাহ, ভিসা, ট্যুর, বাংলাদেশ, রাহে কাবা, hajj, umrah, visa, tour",
+  og_image: "/assets/logo.jpg",
+  base_url: "https://rahekaba.com",
+  google_analytics_id: "",
+  google_search_console: "",
+  facebook_pixel_id: "",
+  default_lang: "bn",
+  auto_sitemap: true,
+  robots_index: true,
+  pages: {},
+};
+
+export default function AdminSeoPage() {
+  const [settings, setSettings] = useState<SeoSettings>(DEFAULT_SEO);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const { data } = await supabase
+        .from("site_content")
+        .select("content")
+        .eq("section_key", "seo_settings")
+        .maybeSingle();
+
+      if (data?.content) {
+        setSettings({ ...DEFAULT_SEO, ...(data.content as unknown as SeoSettings) });
+      }
+    } catch (err) {
+      console.error("Failed to load SEO settings:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveSettings = async () => {
+    setSaving(true);
+    try {
+      const { data: existing } = await supabase
+        .from("site_content")
+        .select("id")
+        .eq("section_key", "seo_settings")
+        .maybeSingle();
+
+      if (existing) {
+        await supabase
+          .from("site_content")
+          .update({ content: settings as unknown as Record<string, unknown>, updated_at: new Date().toISOString() })
+          .eq("section_key", "seo_settings");
+      } else {
+        await supabase
+          .from("site_content")
+          .insert({ section_key: "seo_settings", content: settings as unknown as Record<string, unknown> });
+      }
+      toast.success("SEO সেটিংস সেভ হয়েছে");
+    } catch (err) {
+      toast.error("সেভ করতে ব্যর্থ");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateField = (field: keyof SeoSettings, value: string | boolean) => {
+    setSettings((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const updatePageSeo = (pageKey: string, field: keyof PageSeo, value: string | boolean) => {
+    setSettings((prev) => ({
+      ...prev,
+      pages: {
+        ...prev.pages,
+        [pageKey]: {
+          title: "",
+          description: "",
+          keywords: "",
+          og_image: "",
+          no_index: false,
+          ...prev.pages[pageKey],
+          [field]: value,
+        },
+      },
+    }));
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Search className="h-6 w-6" /> SEO সেটিংস
+          </h1>
+          <p className="text-muted-foreground">সার্চ ইঞ্জিন অপটিমাইজেশন ও মেটা ট্যাগ ম্যানেজমেন্ট</p>
+        </div>
+        <Button onClick={saveSettings} disabled={saving}>
+          {saving ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : null}
+          {saving ? "সেভ হচ্ছে..." : "সেভ করুন"}
+        </Button>
+      </div>
+
+      <Tabs defaultValue="global" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="global"><Globe className="h-4 w-4 mr-1" /> গ্লোবাল</TabsTrigger>
+          <TabsTrigger value="pages"><FileText className="h-4 w-4 mr-1" /> পেজ SEO</TabsTrigger>
+          <TabsTrigger value="tracking"><Code className="h-4 w-4 mr-1" /> ট্র্যাকিং</TabsTrigger>
+          <TabsTrigger value="status"><CheckCircle className="h-4 w-4 mr-1" /> স্ট্যাটাস</TabsTrigger>
+        </TabsList>
+
+        {/* Global SEO */}
+        <TabsContent value="global" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>সাইট মেটা তথ্য</CardTitle>
+              <CardDescription>সার্চ ইঞ্জিনে সাইটের ডিফল্ট তথ্য</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>সাইট টাইটেল</Label>
+                  <Input value={settings.site_title} onChange={(e) => updateField("site_title", e.target.value)} />
+                  <p className="text-xs text-muted-foreground">{settings.site_title.length}/60 অক্ষর</p>
+                </div>
+                <div className="space-y-2">
+                  <Label>বেস URL</Label>
+                  <Input value={settings.base_url} onChange={(e) => updateField("base_url", e.target.value)} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>সাইট বিবরণ (Meta Description)</Label>
+                <Textarea value={settings.site_description} onChange={(e) => updateField("site_description", e.target.value)} rows={3} />
+                <p className="text-xs text-muted-foreground">{settings.site_description.length}/160 অক্ষর</p>
+              </div>
+              <div className="space-y-2">
+                <Label>কীওয়ার্ড (কমা দিয়ে আলাদা)</Label>
+                <Textarea value={settings.site_keywords} onChange={(e) => updateField("site_keywords", e.target.value)} rows={2} />
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>OG ইমেজ URL</Label>
+                  <Input value={settings.og_image} onChange={(e) => updateField("og_image", e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>ডিফল্ট ভাষা</Label>
+                  <Input value={settings.default_lang} onChange={(e) => updateField("default_lang", e.target.value)} />
+                </div>
+              </div>
+              <div className="flex items-center gap-6 pt-2">
+                <div className="flex items-center gap-2">
+                  <Switch checked={settings.robots_index} onCheckedChange={(v) => updateField("robots_index", v)} />
+                  <Label>সার্চ ইঞ্জিন ইনডেক্সিং</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={settings.auto_sitemap} onCheckedChange={(v) => updateField("auto_sitemap", v)} />
+                  <Label>অটো সাইটম্যাপ</Label>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Preview */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Google সার্চ প্রিভিউ</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="border rounded-lg p-4 bg-card max-w-xl">
+                <p className="text-primary text-lg font-medium truncate">{settings.site_title}</p>
+                <p className="text-emerald-600 dark:text-emerald-400 text-sm">{settings.base_url}</p>
+                <p className="text-muted-foreground text-sm line-clamp-2">{settings.site_description}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Per-page SEO */}
+        <TabsContent value="pages" className="space-y-4 mt-4">
+          {Object.entries(DEFAULT_PAGES).map(([key, { label, path }]) => {
+            const pageSeo = settings.pages[key] || { title: "", description: "", keywords: "", og_image: "", no_index: false };
+            return (
+              <Card key={key}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base">{label} <Badge variant="outline" className="ml-2">{path}</Badge></CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Switch checked={!pageSeo.no_index} onCheckedChange={(v) => updatePageSeo(key, "no_index", !v)} />
+                      <Label className="text-xs">ইনডেক্স</Label>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">টাইটেল (খালি = ডিফল্ট)</Label>
+                      <Input value={pageSeo.title} onChange={(e) => updatePageSeo(key, "title", e.target.value)} placeholder="কাস্টম টাইটেল..." />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">কীওয়ার্ড</Label>
+                      <Input value={pageSeo.keywords} onChange={(e) => updatePageSeo(key, "keywords", e.target.value)} placeholder="কীওয়ার্ড..." />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">বিবরণ</Label>
+                    <Textarea value={pageSeo.description} onChange={(e) => updatePageSeo(key, "description", e.target.value)} rows={2} placeholder="কাস্টম বিবরণ..." />
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </TabsContent>
+
+        {/* Tracking */}
+        <TabsContent value="tracking" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>অ্যানালিটিক্স ও ট্র্যাকিং</CardTitle>
+              <CardDescription>Google Analytics, Search Console ও Facebook Pixel</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Google Analytics ID (GA4)</Label>
+                <Input value={settings.google_analytics_id} onChange={(e) => updateField("google_analytics_id", e.target.value)} placeholder="G-XXXXXXXXXX" />
+              </div>
+              <div className="space-y-2">
+                <Label>Google Search Console Verification</Label>
+                <Input value={settings.google_search_console} onChange={(e) => updateField("google_search_console", e.target.value)} placeholder="meta tag content value" />
+              </div>
+              <div className="space-y-2">
+                <Label>Facebook Pixel ID</Label>
+                <Input value={settings.facebook_pixel_id} onChange={(e) => updateField("facebook_pixel_id", e.target.value)} placeholder="XXXXXXXXXXXXXXX" />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Status */}
+        <TabsContent value="status" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>SEO স্ট্যাটাস চেকলিস্ট</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {[
+                  { label: "সাইট টাইটেল সেট করা আছে", ok: !!settings.site_title },
+                  { label: "Meta Description সেট করা আছে", ok: settings.site_description.length > 0 && settings.site_description.length <= 160 },
+                  { label: "কীওয়ার্ড সেট করা আছে", ok: !!settings.site_keywords },
+                  { label: "OG ইমেজ সেট করা আছে", ok: !!settings.og_image },
+                  { label: "বেস URL সেট করা আছে", ok: !!settings.base_url },
+                  { label: "সার্চ ইঞ্জিন ইনডেক্সিং চালু", ok: settings.robots_index },
+                  { label: "Google Analytics কনফিগার করা আছে", ok: !!settings.google_analytics_id },
+                  { label: "Search Console ভেরিফিকেশন", ok: !!settings.google_search_console },
+                  { label: "সাইটম্যাপ চালু আছে", ok: settings.auto_sitemap },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    {item.ok ? (
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                    ) : (
+                      <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                    )}
+                    <span className={item.ok ? "text-foreground" : "text-muted-foreground"}>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>দরকারী লিংক</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {[
+                { label: "সাইটম্যাপ দেখুন", url: `${settings.base_url}/sitemap.xml` },
+                { label: "Robots.txt দেখুন", url: `${settings.base_url}/robots.txt` },
+                { label: "Google PageSpeed Insights", url: `https://pagespeed.web.dev/analysis?url=${encodeURIComponent(settings.base_url)}` },
+                { label: "Google Rich Results Test", url: `https://search.google.com/test/rich-results?url=${encodeURIComponent(settings.base_url)}` },
+              ].map((link, i) => (
+                <a key={i} href={link.url} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-primary hover:underline">
+                  <ExternalLink className="h-4 w-4" /> {link.label}
+                </a>
+              ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

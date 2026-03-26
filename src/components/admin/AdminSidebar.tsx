@@ -2,7 +2,7 @@ import {
   LayoutDashboard, FileText, Users, Package, CreditCard,
   Calculator, BarChart3, Pencil, Settings, LogOut, UserCheck, Truck,
   Hotel, Bell, AlertTriangle, BookOpen, DollarSign, RotateCcw, PieChart,
-  Plane, FileCheck, Map,
+  Plane, FileCheck, Map, Search,
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import { NavLink } from "@/components/NavLink";
@@ -44,6 +44,7 @@ const toolsMenuItems = [
   
   { title: "Notifications",   url: "/admin/notifications",  icon: Bell,            roles: ["admin"] },
   { title: "CMS",             url: "/admin/cms",            icon: Pencil,          roles: ["admin", "cms"] },
+  { title: "SEO",             url: "/admin/seo",            icon: Search,          roles: ["admin"] },
   { title: "Settings",        url: "/admin/settings",       icon: Settings,        roles: ["admin"] },
 ];
 
