@@ -157,7 +157,7 @@ const PackagesSection = () => {
                         </ul>
                       )}
                       <button
-                        onClick={() => navigate(`/booking?package=${pkg.id}`)}
+                        onClick={() => { setBookingPackageId(pkg.id); setBookingOpen(true); }}
                         className="w-full py-3.5 rounded-xl text-sm font-semibold text-center inline-flex items-center justify-center gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 hover:shadow-gold transition-all duration-300 cursor-pointer mt-auto"
                       >
                         {t("packages.bookNow")} <ArrowRight className="h-4 w-4" />
