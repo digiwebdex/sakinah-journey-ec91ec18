@@ -42,24 +42,29 @@ const FacilitiesSection = () => {
   const items = lc?.items || (bn ? defaultFacilitiesBn : defaultFacilitiesEn);
 
   return (
-    <section id="facilities" className="py-24 bg-background islamic-border-top">
-      <div className="container mx-auto px-4">
+    <section id="facilities" className="py-24 bg-secondary/30 relative overflow-hidden">
+      <div className="absolute inset-0 islamic-pattern opacity-30" />
+      
+      <div className="container mx-auto px-4 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="text-primary text-sm font-medium tracking-[0.3em] uppercase">
-            {sectionLabel}
-          </span>
+          <span className="text-primary text-xs font-semibold tracking-[0.3em] uppercase">{sectionLabel}</span>
           <h2 className="font-heading text-3xl md:text-5xl font-bold mt-3 mb-4">
             {heading} <span className="text-gradient-gold">{headingHighlight}</span>
           </h2>
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="h-px w-12 bg-primary/30" />
+            <div className="w-2 h-2 rounded-full bg-primary/50" />
+            <div className="h-px w-12 bg-primary/30" />
+          </div>
           <p className="text-muted-foreground max-w-2xl mx-auto">{description}</p>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
           {items.map((item: any, i: number) => {
             const IconComp = iconMap[item.icon] || Shield;
             return (
@@ -68,10 +73,10 @@ const FacilitiesSection = () => {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.06 }}
-                className="flex items-start gap-4 p-5 rounded-xl bg-card border border-border hover:border-primary/30 hover:shadow-soft transition-all group"
+                transition={{ delay: i * 0.05 }}
+                className="flex items-start gap-4 p-5 rounded-2xl bg-card border border-border hover:border-primary/30 hover:shadow-soft transition-all group"
               >
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 group-hover:scale-105 transition-all">
                   <IconComp className="h-5 w-5 text-primary" />
                 </div>
                 <div>

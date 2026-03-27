@@ -1,4 +1,4 @@
-import { Phone, Mail, MapPin, Facebook, Youtube, Instagram } from "lucide-react";
+import { Phone, Mail, MapPin, Facebook, Youtube, Instagram, Star } from "lucide-react";
 import sslcommerzPayWith from "@/assets/payment/sslcommerz-pay-with.png";
 import logo from "@/assets/logo.png";
 import { useSiteContent } from "@/hooks/useSiteContent";
@@ -29,45 +29,51 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="bg-charcoal text-white py-16">
-      <div className="container mx-auto px-4">
+    <footer className="bg-[hsl(220,25%,10%)] text-white py-16 relative overflow-hidden">
+      {/* Decorative top border */}
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-gold" />
+      
+      {/* Subtle pattern */}
+      <div className="absolute inset-0 islamic-pattern opacity-5" />
+      
+      <div className="container mx-auto px-4 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           <div className="md:col-span-1">
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-5">
               <img src={logo} alt={`${companyName} Logo`} className="h-12 w-auto object-contain" />
               <div>
                 <span className="font-heading text-lg font-bold text-primary">{companyName}</span>
-                <span className="block text-xs tracking-[0.2em] text-muted-foreground uppercase">{tagline}</span>
+                <span className="block text-xs tracking-[0.2em] text-white/40 uppercase">{tagline}</span>
               </div>
             </div>
-            <p className="text-sm text-white/60 leading-relaxed mb-4">{description}</p>
+            <p className="text-sm text-white/50 leading-relaxed mb-5">{description}</p>
             <div className="flex items-center gap-3">
-              <a href={content?.facebook_url || "https://www.facebook.com/profile.php?id=61585173125908"} target="_blank" rel="noopener noreferrer" className="bg-white/10 hover:bg-primary/80 transition-colors p-2 rounded-full">
+              <a href={content?.facebook_url || "https://www.facebook.com/profile.php?id=61585173125908"} target="_blank" rel="noopener noreferrer" className="bg-white/8 hover:bg-primary/80 transition-all p-2.5 rounded-xl border border-white/10 hover:border-primary">
                 <Facebook className="h-4 w-4 text-white" />
               </a>
-              <a href={content?.youtube_url || "#"} target="_blank" rel="noopener noreferrer" className="bg-white/10 hover:bg-red-600/80 transition-colors p-2 rounded-full">
+              <a href={content?.youtube_url || "#"} target="_blank" rel="noopener noreferrer" className="bg-white/8 hover:bg-red-600/80 transition-all p-2.5 rounded-xl border border-white/10 hover:border-red-600">
                 <Youtube className="h-4 w-4 text-white" />
               </a>
-              <a href={content?.instagram_url || "#"} target="_blank" rel="noopener noreferrer" className="bg-white/10 hover:bg-pink-600/80 transition-colors p-2 rounded-full">
+              <a href={content?.instagram_url || "#"} target="_blank" rel="noopener noreferrer" className="bg-white/8 hover:bg-pink-600/80 transition-all p-2.5 rounded-xl border border-white/10 hover:border-pink-600">
                 <Instagram className="h-4 w-4 text-white" />
               </a>
             </div>
           </div>
 
           <div>
-            <h4 className="font-heading font-semibold mb-4 text-gold-light">{t("footer.quickLinks")}</h4>
-            <ul className="space-y-2.5 text-sm text-white/60">
+            <h4 className="font-heading font-semibold mb-5 text-primary text-sm uppercase tracking-wider">{t("footer.quickLinks")}</h4>
+            <ul className="space-y-3 text-sm text-white/50">
               {quickLinks.map((l) => (
                 <li key={l.href}>
-                  <a href={l.href} className="hover:text-gold-light transition-colors">{l.label}</a>
+                  <a href={l.href} className="hover:text-primary transition-colors">{l.label}</a>
                 </li>
               ))}
             </ul>
           </div>
 
           <div>
-            <h4 className="font-heading font-semibold mb-4 text-gold-light">{t("footer.services")}</h4>
-            <ul className="space-y-2.5 text-sm text-white/60">
+            <h4 className="font-heading font-semibold mb-5 text-primary text-sm uppercase tracking-wider">{t("footer.services")}</h4>
+            <ul className="space-y-3 text-sm text-white/50">
               {servicesList.map((s: string) => (
                 <li key={s}><span>{s}</span></li>
               ))}
@@ -75,29 +81,29 @@ const Footer = () => {
           </div>
 
           <div>
-            <h4 className="font-heading font-semibold mb-4 text-gold-light">{t("footer.contact")}</h4>
-            <ul className="space-y-3 text-sm text-white/60">
-              <li className="flex items-center gap-2"><Phone className="h-4 w-4 text-gold-light" /> {phone}</li>
-              <li className="flex items-center gap-2"><Mail className="h-4 w-4 text-gold-light" /> {email}</li>
-              <li className="flex items-start gap-2"><MapPin className="h-4 w-4 text-gold-light mt-0.5" /> <span className="whitespace-pre-line">{address}</span></li>
+            <h4 className="font-heading font-semibold mb-5 text-primary text-sm uppercase tracking-wider">{t("footer.contact")}</h4>
+            <ul className="space-y-4 text-sm text-white/50">
+              <li className="flex items-center gap-3"><div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center flex-shrink-0"><Phone className="h-3.5 w-3.5 text-primary" /></div> {phone}</li>
+              <li className="flex items-center gap-3"><div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center flex-shrink-0"><Mail className="h-3.5 w-3.5 text-primary" /></div> {email}</li>
+              <li className="flex items-start gap-3"><div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center flex-shrink-0 mt-0.5"><MapPin className="h-3.5 w-3.5 text-primary" /></div> <span className="whitespace-pre-line">{address}</span></li>
             </ul>
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-white/10">
-          <div className="flex flex-wrap justify-center gap-4 mb-6 text-sm text-white/60">
-            <a href="/privacy-policy" className="hover:text-gold-light transition-colors">{language === "bn" ? "গোপনীয়তা নীতি" : "Privacy Policy"}</a>
-            <span className="text-white/20">|</span>
-            <a href="/terms-conditions" className="hover:text-gold-light transition-colors">{language === "bn" ? "শর্তাবলী" : "Terms & Conditions"}</a>
-            <span className="text-white/20">|</span>
-            <a href="/refund-policy" className="hover:text-gold-light transition-colors">{language === "bn" ? "রিফান্ড নীতি" : "Refund Policy"}</a>
+        <div className="mt-14 pt-8 border-t border-white/8">
+          <div className="flex flex-wrap justify-center gap-4 mb-6 text-sm text-white/40">
+            <a href="/privacy-policy" className="hover:text-primary transition-colors">{language === "bn" ? "গোপনীয়তা নীতি" : "Privacy Policy"}</a>
+            <span className="text-white/15">|</span>
+            <a href="/terms-conditions" className="hover:text-primary transition-colors">{language === "bn" ? "শর্তাবলী" : "Terms & Conditions"}</a>
+            <span className="text-white/15">|</span>
+            <a href="/refund-policy" className="hover:text-primary transition-colors">{language === "bn" ? "রিফান্ড নীতি" : "Refund Policy"}</a>
           </div>
-          <div className="flex justify-center mb-4">
-            <img src={sslcommerzPayWith} alt="Payment Methods - Pay With SSLCommerz" className="h-10 md:h-12 object-contain opacity-80" />
+          <div className="flex justify-center mb-5">
+            <img src={sslcommerzPayWith} alt="Payment Methods - Pay With SSLCommerz" className="h-10 md:h-12 object-contain opacity-60" />
           </div>
-          <div className="text-center text-sm text-white/50">
+          <div className="text-center text-sm text-white/35">
             <p>© {new Date().getFullYear()} {companyName} {tagline}. {t("footer.allRights")}</p>
-            <p className="mt-2 text-xs text-white/30">{t("footer.designBy")} <a href={devUrl} target="_blank" rel="noopener noreferrer" className="hover:text-gold-light transition-colors">{devName}</a></p>
+            <p className="mt-2 text-xs text-white/20">{t("footer.designBy")} <a href={devUrl} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">{devName}</a></p>
           </div>
         </div>
       </div>

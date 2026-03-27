@@ -9,7 +9,6 @@ import medinaImage from "@/assets/hero-medina.jpg";
 
 const fallbackImages = [heroImage, medinaImage];
 
-// Display order for types
 const TYPE_ORDER = ["hajj", "umrah", "tour", "visa", "air_ticket", "hotel", "transport", "ziyara"];
 const TYPE_LABELS: Record<string, { en: string; bn: string }> = {
   hajj: { en: "Hajj Packages", bn: "হজ্জ প্যাকেজ" },
@@ -44,7 +43,6 @@ const PackagesSection = () => {
 
   if (loading || packages.length === 0) return null;
 
-  // Group packages by type
   const grouped = packages.reduce((acc: Record<string, any[]>, pkg) => {
     const type = pkg.type || "other";
     if (!acc[type]) acc[type] = [];
@@ -52,7 +50,6 @@ const PackagesSection = () => {
     return acc;
   }, {});
 
-  // Sort types by defined order
   const sortedTypes = Object.keys(grouped).sort((a, b) => {
     const ai = TYPE_ORDER.indexOf(a);
     const bi = TYPE_ORDER.indexOf(b);
@@ -60,13 +57,20 @@ const PackagesSection = () => {
   });
 
   return (
-    <section id="packages" className="py-24 bg-secondary/50 islamic-border-top">
-      <div className="container mx-auto px-4">
+    <section id="packages" className="py-24 bg-secondary/30 relative overflow-hidden">
+      <div className="absolute inset-0 islamic-pattern opacity-30" />
+      
+      <div className="container mx-auto px-4 relative z-10">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
-          <span className="text-primary text-sm font-medium tracking-[0.3em] uppercase">{t("packages.label")}</span>
+          <span className="text-primary text-xs font-semibold tracking-[0.3em] uppercase">{t("packages.label")}</span>
           <h2 className="font-heading text-3xl md:text-5xl font-bold mt-3 mb-4">
             {t("packages.heading")} <span className="text-gradient-gold">{t("packages.headingHighlight")}</span>
           </h2>
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="h-px w-12 bg-primary/30" />
+            <div className="w-2 h-2 rounded-full bg-primary/50" />
+            <div className="h-px w-12 bg-primary/30" />
+          </div>
           <p className="text-muted-foreground max-w-xl mx-auto">{t("packages.description")}</p>
         </motion.div>
 
@@ -84,12 +88,12 @@ const PackagesSection = () => {
               >
                 <div className="h-8 w-1.5 rounded-full bg-gradient-gold" />
                 <h3 className="font-heading text-2xl md:text-3xl font-bold capitalize">{label}</h3>
-                <span className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">
+                <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">
                   {typePkgs.length} {language === "bn" ? "টি" : "packages"}
                 </span>
               </motion.div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7 max-w-6xl mx-auto">
                 {typePkgs.map((pkg: any, i: number) => (
                   <motion.div
                     key={pkg.id}
@@ -97,7 +101,7 @@ const PackagesSection = () => {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: i * 0.1 }}
-                    className="relative rounded-2xl overflow-hidden bg-card border border-border flex flex-col group hover:shadow-luxury transition-all duration-500"
+                    className="relative rounded-2xl overflow-hidden bg-card border border-border flex flex-col group hover:shadow-elevated transition-all duration-500"
                   >
                     <div className="relative h-52 overflow-hidden">
                       <img
@@ -106,15 +110,15 @@ const PackagesSection = () => {
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                         loading="lazy"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[hsl(220,25%,10%)]/70 via-transparent to-transparent" />
                       <div className="absolute top-4 left-4">
                         <span className="bg-primary text-primary-foreground text-xs font-bold px-3 py-1.5 rounded-full capitalize shadow-md">
                           {pkg.type}
                         </span>
                       </div>
-                      <div className="absolute top-4 right-4 flex items-center gap-1 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full">
+                      <div className="absolute top-4 right-4 flex items-center gap-1 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full">
                         <Star className="h-3 w-3 fill-primary text-primary" />
-                        <span className="text-xs font-bold text-charcoal">4.9</span>
+                        <span className="text-xs font-bold text-foreground">4.9</span>
                       </div>
                       <div className="absolute bottom-4 left-4">
                         <p className="text-2xl font-heading font-bold text-white drop-shadow-lg">
@@ -123,7 +127,7 @@ const PackagesSection = () => {
                         <p className="text-xs text-white/80">{t("packages.perPerson")}</p>
                       </div>
                     </div>
-                    <div className="p-5 flex-1 flex flex-col">
+                    <div className="p-6 flex-1 flex flex-col">
                       <h3 className="font-heading text-xl font-bold mb-2">{pkg.name}</h3>
                       <div className="flex items-center gap-4 mb-3 text-xs text-muted-foreground">
                         {pkg.duration_days && (
@@ -151,7 +155,7 @@ const PackagesSection = () => {
                       )}
                       <button
                         onClick={() => navigate(`/booking?package=${pkg.id}`)}
-                        className="w-full py-3 rounded-xl text-sm font-semibold text-center inline-flex items-center justify-center gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 hover:shadow-gold transition-all duration-300 cursor-pointer mt-auto"
+                        className="w-full py-3.5 rounded-xl text-sm font-semibold text-center inline-flex items-center justify-center gap-2 bg-gradient-gold text-primary-foreground hover:opacity-90 hover:shadow-gold transition-all duration-300 cursor-pointer mt-auto"
                       >
                         {t("packages.bookNow")} <ArrowRight className="h-4 w-4" />
                       </button>

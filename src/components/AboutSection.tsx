@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Shield, Heart, Award, Clock } from "lucide-react";
+import { Shield, Heart, Award, Clock, Search } from "lucide-react";
 import { useSiteContent } from "@/hooks/useSiteContent";
 import { useLanguage } from "@/i18n/LanguageContext";
 
@@ -35,26 +35,40 @@ const AboutSection = () => {
   };
 
   return (
-    <section id="about" className="py-24 islamic-pattern islamic-border-top">
-      <div className="container mx-auto px-4">
+    <section id="about" className="py-24 relative overflow-hidden">
+      <div className="absolute inset-0 islamic-pattern opacity-40" />
+      
+      <div className="container mx-auto px-4 relative z-10">
         <div className="grid md:grid-cols-2 gap-16 items-center max-w-6xl mx-auto">
           <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
-            <span className="text-primary text-sm font-medium tracking-[0.3em] uppercase">{sectionLabel}</span>
+            <span className="text-primary text-xs font-semibold tracking-[0.3em] uppercase">{sectionLabel}</span>
             <h2 className="font-heading text-3xl md:text-4xl font-bold mt-3 mb-6">
               {heading} <span className="text-gradient-gold">{headingHighlight}</span>
             </h2>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-px w-12 bg-primary/30" />
+              <div className="w-2 h-2 rounded-full bg-primary/50" />
+              <div className="h-px w-12 bg-primary/30" />
+            </div>
             <p className="text-muted-foreground leading-relaxed mb-8">{description}</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               {reasons.map((r: any, i: number) => {
                 const IconComp = reasonIcons[i % reasonIcons.length];
                 return (
-                  <motion.div key={r.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="flex gap-3">
-                    <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <motion.div
+                    key={r.title}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className="flex gap-4 p-4 rounded-xl bg-card border border-border hover:border-primary/30 transition-all group"
+                  >
+                    <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
                       <IconComp className="h-5 w-5 text-primary" />
                     </div>
                     <div>
                       <h4 className="font-semibold text-sm mb-1">{r.title}</h4>
-                      <p className="text-xs text-muted-foreground">{r.desc}</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{r.desc}</p>
                     </div>
                   </motion.div>
                 );
@@ -63,19 +77,27 @@ const AboutSection = () => {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="relative">
-            <div className="bg-card border border-border rounded-xl p-8 shadow-luxury">
-              <h3 className="font-heading text-2xl font-bold mb-6 text-gradient-gold">{t("about.trackTitle")}</h3>
+            <div className="bg-card border border-border rounded-2xl p-8 shadow-elevated relative overflow-hidden">
+              {/* Top gold accent */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-gold" />
+              
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
+                  <Search className="h-5 w-5 text-primary" />
+                </div>
+                <h3 className="font-heading text-xl font-bold">{t("about.trackTitle")}</h3>
+              </div>
               <p className="text-sm text-muted-foreground mb-6">{t("about.trackDesc")}</p>
               <div className="flex gap-3">
                 <input
                   type="text"
                   placeholder={t("about.trackPlaceholder")}
-                  className="flex-1 bg-secondary border border-border rounded-md px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 uppercase"
+                  className="flex-1 bg-secondary border border-border rounded-xl px-4 py-3.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 uppercase"
                   value={trackingId}
                   onChange={(e) => setTrackingId(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleTrack()}
                 />
-                <button onClick={handleTrack} className="bg-gradient-gold text-primary-foreground font-semibold px-6 py-3 rounded-md text-sm hover:opacity-90 transition-opacity">
+                <button onClick={handleTrack} className="bg-gradient-gold text-primary-foreground font-semibold px-6 py-3.5 rounded-xl text-sm hover:opacity-90 transition-opacity shadow-gold">
                   {t("about.trackButton")}
                 </button>
               </div>

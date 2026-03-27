@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Sans+Bengali:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,10 +6,10 @@
 
 @layer base {
   :root {
-    --background: 0 0% 99%;
+    --background: 30 8% 97%;
     --foreground: 220 20% 14%;
 
-    --card: 0 0% 100%;
+    --card: 30 15% 99%;
     --card-foreground: 220 20% 14%;
 
     --popover: 0 0% 100%;
@@ -18,10 +18,10 @@
     --primary: 30 95% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 30 15% 95%;
+    --secondary: 30 12% 94%;
     --secondary-foreground: 220 20% 14%;
 
-    --muted: 30 10% 93%;
+    --muted: 30 8% 91%;
     --muted-foreground: 220 10% 46%;
 
     --accent: 30 95% 50%;
@@ -30,8 +30,8 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 30 10% 89%;
-    --input: 30 10% 89%;
+    --border: 30 12% 88%;
+    --input: 30 12% 88%;
     --ring: 30 95% 50%;
 
     --radius: 0.75rem;
@@ -39,8 +39,8 @@
     --gold: 30 95% 50%;
     --gold-light: 35 95% 58%;
     --gold-dark: 25 90% 42%;
-    --charcoal: 220 20% 14%;
-    --charcoal-light: 220 15% 24%;
+    --charcoal: 220 25% 10%;
+    --charcoal-light: 220 15% 20%;
     --emerald: 160 50% 40%;
 
     --sidebar-background: 0 0% 100%;
@@ -54,12 +54,15 @@
 
     --font-heading: 'Noto Sans Bengali', 'Noto Sans', sans-serif;
     --font-body: 'Noto Sans Bengali', 'Noto Sans', sans-serif;
+    --font-arabic: 'Amiri', 'Noto Naskh Arabic', serif;
 
     --gradient-gold: linear-gradient(135deg, hsl(35 95% 58%), hsl(30 95% 50%), hsl(25 90% 42%));
-    --gradient-warm: linear-gradient(180deg, hsl(0 0% 99%), hsl(30 15% 96%));
+    --gradient-warm: linear-gradient(180deg, hsl(30 8% 97%), hsl(30 15% 94%));
+    --gradient-dark: linear-gradient(135deg, hsl(220 25% 10%), hsl(220 20% 16%));
     --shadow-gold: 0 4px 24px hsl(30 95% 50% / 0.18);
     --shadow-soft: 0 2px 16px hsl(220 20% 14% / 0.06);
     --shadow-luxury: 0 12px 40px hsl(220 20% 14% / 0.08);
+    --shadow-elevated: 0 20px 60px hsl(220 20% 14% / 0.12);
   }
 }
 
@@ -90,6 +93,10 @@
     background: var(--gradient-gold);
   }
 
+  .bg-gradient-dark {
+    background: var(--gradient-dark);
+  }
+
   .shadow-gold {
     box-shadow: var(--shadow-gold);
   }
@@ -102,14 +109,20 @@
     box-shadow: var(--shadow-luxury);
   }
 
+  .shadow-elevated {
+    box-shadow: var(--shadow-elevated);
+  }
+
   .border-gold {
     border-color: hsl(var(--gold));
   }
 
+  /* Islamic geometric pattern - refined */
   .islamic-pattern {
-    background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23F59E0B' stroke-opacity='0.05' stroke-width='0.8'%3E%3Cpath d='M40 0L80 40L40 80L0 40Z'/%3E%3Ccircle cx='40' cy='40' r='20'/%3E%3Cpath d='M40 20L60 40L40 60L20 40Z'/%3E%3C/g%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23F59E0B' stroke-opacity='0.04' stroke-width='0.5'%3E%3Cpath d='M30 0L60 30L30 60L0 30Z'/%3E%3Ccircle cx='30' cy='30' r='15'/%3E%3Cpath d='M30 15L45 30L30 45L15 30Z'/%3E%3C/g%3E%3C/svg%3E");
   }
 
+  /* Islamic arch top border */
   .islamic-border-top {
     position: relative;
   }
@@ -119,12 +132,13 @@
     top: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 200px;
+    width: 120px;
     height: 3px;
     background: var(--gradient-gold);
     border-radius: 2px;
   }
 
+  /* Section divider with Islamic star */
   .calligraphic-divider {
     display: flex;
     align-items: center;
@@ -137,7 +151,7 @@
     content: '';
     height: 1px;
     width: 60px;
-    background: linear-gradient(90deg, transparent, hsl(30 95% 50% / 0.4), transparent);
+    background: linear-gradient(90deg, transparent, hsl(30 95% 50% / 0.3), transparent);
   }
 
   .section-ornament {
@@ -147,12 +161,13 @@
     content: '✦';
     display: block;
     text-align: center;
-    color: hsl(30 95% 50% / 0.3);
-    font-size: 1.25rem;
+    color: hsl(30 95% 50% / 0.2);
+    font-size: 1rem;
     margin-top: 2rem;
     letter-spacing: 1rem;
   }
 
+  /* Card hover effect with gold top border */
   .card-ornament {
     position: relative;
     overflow: hidden;
@@ -170,6 +185,16 @@
   }
   .card-ornament:hover::before {
     opacity: 1;
+  }
+
+  /* Islamic arch shape */
+  .islamic-arch {
+    clip-path: polygon(0 20%, 5% 5%, 20% 0%, 80% 0%, 95% 5%, 100% 20%, 100% 100%, 0 100%);
+  }
+
+  /* Subtle glow effect */
+  .glow-orange {
+    box-shadow: 0 0 40px hsl(30 95% 50% / 0.15), 0 0 80px hsl(30 95% 50% / 0.05);
   }
 }
 

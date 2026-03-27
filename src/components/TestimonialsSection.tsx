@@ -7,8 +7,8 @@ import { useLanguage } from "@/i18n/LanguageContext";
 const defaultTestimonials = [
   {
     name: "আব্দুল করিম",
-    location: "চট্টগ্রাম",
-    text: "রাহে কাবা'র সাথে আমার উমরাহ যাত্রা ছিল অসাধারণ। হোটেল, পরিবহন সবকিছু চমৎকার ছিল। ইনশাআল্লাহ আবার যাবো।",
+    location: "টাঙ্গাইল",
+    text: "মানাসিক ট্রাভেল হাবের সাথে আমার উমরাহ যাত্রা ছিল অসাধারণ। হোটেল, পরিবহন সবকিছু চমৎকার ছিল। ইনশাআল্লাহ আবার যাবো।",
     rating: 5,
     trip: "Umrah 2025",
   },
@@ -42,23 +42,26 @@ const TestimonialsSection = forwardRef<HTMLElement>(function TestimonialsSection
   const testimonials = content?.items || defaultTestimonials;
 
   return (
-    <section ref={ref} className="py-20 bg-secondary/30 islamic-border-top">
-      <div className="container mx-auto px-4">
+    <section ref={ref} className="py-24 bg-secondary/20 relative overflow-hidden">
+      <div className="absolute inset-0 islamic-pattern opacity-30" />
+      
+      <div className="container mx-auto px-4 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-12"
+          className="text-center mb-14"
         >
-          <span className="text-primary text-sm font-medium tracking-[0.3em] uppercase">
-            {sectionLabel}
-          </span>
+          <span className="text-primary text-xs font-semibold tracking-[0.3em] uppercase">{sectionLabel}</span>
           <h2 className="font-heading text-3xl md:text-4xl font-bold mt-3 mb-3">
             {heading}<span className="text-gradient-gold">{headingHighlight}</span>
           </h2>
-          <p className="text-muted-foreground text-sm max-w-xl mx-auto">
-            {description}
-          </p>
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="h-px w-12 bg-primary/30" />
+            <div className="w-2 h-2 rounded-full bg-primary/50" />
+            <div className="h-px w-12 bg-primary/30" />
+          </div>
+          <p className="text-muted-foreground text-sm max-w-xl mx-auto">{description}</p>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
@@ -69,18 +72,21 @@ const TestimonialsSection = forwardRef<HTMLElement>(function TestimonialsSection
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.15 }}
-              className="bg-card border border-border rounded-xl p-6 relative shadow-soft"
+              className="bg-card border border-border rounded-2xl p-7 relative shadow-soft group hover:shadow-luxury hover:border-primary/20 transition-all"
             >
-              <Quote className="h-8 w-8 text-primary/20 absolute top-4 right-4" />
-              <div className="flex gap-1 mb-3">
+              {/* Top gold accent on hover */}
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-gold scale-x-0 group-hover:scale-x-100 transition-transform duration-500 rounded-t-2xl" />
+              
+              <Quote className="h-8 w-8 text-primary/15 absolute top-5 right-5" />
+              <div className="flex gap-1 mb-4">
                 {Array.from({ length: Number(t.rating) || 5 }).map((_, j) => (
                   <Star key={j} className="h-4 w-4 fill-primary text-primary" />
                 ))}
               </div>
-              <p className="text-sm text-foreground/90 leading-relaxed mb-4">
+              <p className="text-sm text-foreground/85 leading-relaxed mb-5">
                 "{t.text}"
               </p>
-              <div className="border-t border-border/50 pt-3">
+              <div className="border-t border-border/50 pt-4">
                 <p className="font-heading font-bold text-sm">{t.name}</p>
                 <p className="text-xs text-muted-foreground">
                   {t.location} • {t.trip}
