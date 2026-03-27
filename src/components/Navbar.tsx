@@ -36,6 +36,26 @@ const Navbar = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  const handleNavClick = (e: React.MouseEvent, href: string) => {
+    if (href.startsWith("#")) {
+      e.preventDefault();
+      const id = href.slice(1);
+      if (location.pathname !== "/") {
+        navigate("/");
+        setTimeout(() => {
+          document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+        }, 300);
+      } else {
+        if (id === "hero") {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        } else {
+          document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+        }
+      }
+      setOpen(false);
+    }
+  };
+
   const toggleLang = () => setLanguage(language === "en" ? "bn" : "en");
 
   return (
