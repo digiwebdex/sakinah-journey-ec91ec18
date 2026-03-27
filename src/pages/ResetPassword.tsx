@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/api";
 import { toast } from "sonner";
-import logo from "@/assets/logo.jpg";
+import logo from "@/assets/logo.png";
 import { Shield, CheckCircle2, XCircle, Eye, EyeOff } from "lucide-react";
 
 const passwordRules = [

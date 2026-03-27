@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import {
   LayoutDashboard, Package, Users, CreditCard, Settings, LogOut, Plus, X, AlertTriangle, FileText, FolderOpen, Building2, Pencil,
 } from "lucide-react";
-import logo from "@/assets/logo.jpg";
+import logo from "@/assets/logo.png";
 import AdminDashboardCharts from "@/components/AdminDashboardCharts";
 import AdminDocumentViewer from "@/components/AdminDocumentViewer";
 import AdminHotelManager from "@/components/AdminHotelManager";

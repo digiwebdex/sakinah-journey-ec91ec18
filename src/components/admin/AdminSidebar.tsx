@@ -4,7 +4,7 @@ import {
   Hotel, Bell, AlertTriangle, BookOpen, DollarSign, RotateCcw, PieChart,
   Plane, FileCheck, Map, Search,
 } from "lucide-react";
-import logo from "@/assets/logo.jpg";
+import logo from "@/assets/logo.png";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
