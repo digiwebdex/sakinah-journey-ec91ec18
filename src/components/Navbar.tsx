@@ -65,9 +65,9 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-border shadow-soft">
       <div className="container mx-auto flex items-center justify-between h-24 px-4">
-        <a href="/" className="flex items-center">
+        <button onClick={() => { navigate("/"); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="flex items-center cursor-pointer">
           <img src={logo} alt="Manasik Travel Hub Logo" className="h-28 w-auto object-contain" />
-        </a>
+        </button>
 
         <div className="hidden lg:flex items-center gap-8">
           {navLinks.map((link) => (
