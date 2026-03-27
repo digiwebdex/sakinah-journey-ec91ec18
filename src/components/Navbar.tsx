@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import logo from "@/assets/logo.png";
 import { useSiteContent } from "@/hooks/useSiteContent";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useMenuVisibility } from "@/components/admin/MenuVisibilityManager";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -14,19 +15,22 @@ const Navbar = () => {
   const [user, setUser] = useState<any>(null);
   const { data: content } = useSiteContent("navbar");
   const { language, setLanguage, t } = useLanguage();
+  const { visibility: menuVisibility } = useMenuVisibility();
 
   const phone = content?.phone || "+880 1711-993562";
 
-  const navLinks = [
-    { label: t("nav.home"), href: "#hero" },
-    { label: t("nav.services"), href: "#services" },
-    { label: t("nav.packages"), href: "#packages" },
-    { label: t("nav.hotels"), href: "/hotels" },
-    { label: t("nav.gallery"), href: "#gallery" },
-    { label: t("nav.about"), href: "#about" },
-    { label: t("nav.contact"), href: "#contact" },
-    { label: t("nav.track"), href: "/track" },
+  const allNavLinks = [
+    { key: "home", label: t("nav.home"), href: "#hero" },
+    { key: "services", label: t("nav.services"), href: "#services" },
+    { key: "packages", label: t("nav.packages"), href: "#packages" },
+    { key: "hotels", label: t("nav.hotels"), href: "/hotels" },
+    { key: "gallery", label: t("nav.gallery"), href: "#gallery" },
+    { key: "about", label: t("nav.about"), href: "#about" },
+    { key: "contact", label: t("nav.contact"), href: "#contact" },
+    { key: "track", label: t("nav.track"), href: "/track" },
   ];
+
+  const navLinks = allNavLinks.filter((link) => menuVisibility[link.key] !== false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
