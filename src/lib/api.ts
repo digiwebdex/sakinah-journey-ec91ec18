@@ -92,34 +92,73 @@ async function apiFetch(path: string, options: RequestInit = {}): Promise<any> {
 // =============================================
 export const auth = {
   async signInWithPassword({ email, password }: { email: string; password: string }) {
+    // Try Supabase auth first (Lovable Cloud)
+    if (supabaseClient) {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) return { data: null, error: { message: error.message } };
+      
+      // Fetch roles from user_roles table
+      const { data: rolesData } = await supabaseClient
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', data.user.id);
+      
+      const roles = rolesData?.map((r: any) => r.role) || [];
+      const user = { id: data.user.id, email: data.user.email, roles, ...data.user.user_metadata };
+      TokenManager.setTokens(data.session.access_token, data.session.refresh_token);
+      TokenManager.setUser(user);
+      return { data: { user, session: data.session }, error: null };
+    }
+
+    // Fallback to VPS API
     const res = await apiFetch('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
-    const data = await res.json();
-    if (!res.ok) return { data: null, error: { message: data.error } };
-    TokenManager.setTokens(data.access_token, data.refresh_token);
-    TokenManager.setUser({ ...data.user, roles: data.roles || [] });
-    return { data: { user: { id: data.user.id, email: data.user.email, ...data.user, roles: data.roles || [] }, session: { access_token: data.access_token } }, error: null };
+    const resData = await res.json();
+    if (!res.ok) return { data: null, error: { message: resData.error } };
+    TokenManager.setTokens(resData.access_token, resData.refresh_token);
+    TokenManager.setUser({ ...resData.user, roles: resData.roles || [] });
+    return { data: { user: { id: resData.user.id, email: resData.user.email, ...resData.user, roles: resData.roles || [] }, session: { access_token: resData.access_token } }, error: null };
   },
 
   async signUp({ email, password, options }: { email: string; password: string; options?: { data?: any } }) {
+    if (supabaseClient) {
+      const { data, error } = await supabaseClient.auth.signUp({
+        email, password,
+        options: { data: options?.data },
+      });
+      if (error) return { data: null, error: { message: error.message } };
+      return { data: {}, error: null };
+    }
+
     const res = await apiFetch('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ email, password, full_name: options?.data?.full_name, phone: options?.data?.phone }),
     });
-    const data = await res.json();
-    if (!res.ok) return { data: null, error: { message: data.error } };
+    const resData = await res.json();
+    if (!res.ok) return { data: null, error: { message: resData.error } };
     return { data: {}, error: null };
   },
 
   async signOut() {
-    try { await apiFetch('/auth/logout', { method: 'POST' }); } catch {}
+    if (supabaseClient) {
+      await supabaseClient.auth.signOut();
+    } else {
+      try { await apiFetch('/auth/logout', { method: 'POST' }); } catch {}
+    }
     TokenManager.clear();
     return { error: null };
   },
 
   async getSession() {
+    if (supabaseClient) {
+      const { data } = await supabaseClient.auth.getSession();
+      if (data.session) {
+        return { data: { session: { user: { id: data.session.user.id, email: data.session.user.email }, access_token: data.session.access_token } } };
+      }
+      return { data: { session: null } };
+    }
     const token = TokenManager.getAccessToken();
     const user = TokenManager.getUser();
     if (!token || !user) return { data: { session: null } };
@@ -127,6 +166,16 @@ export const auth = {
   },
 
   async getUser() {
+    if (supabaseClient) {
+      const { data } = await supabaseClient.auth.getUser();
+      if (data.user) {
+        const localUser = TokenManager.getUser();
+        const roles = localUser?.roles || [];
+        return { data: { user: { id: data.user.id, email: data.user.email, ...data.user.user_metadata, roles } } };
+      }
+      return { data: { user: null } };
+    }
+
     const localUser = TokenManager.getUser();
     const token = TokenManager.getAccessToken();
     if (!token && !localUser) return { data: { user: null } };
@@ -134,47 +183,69 @@ export const auth = {
     try {
       const res = await apiFetch('/auth/me');
       if (res.ok) {
-        const data = await res.json();
-        const freshUser = { ...(data?.user || {}), roles: data?.roles || [] };
+        const resData = await res.json();
+        const freshUser = { ...(resData?.user || {}), roles: resData?.roles || [] };
         TokenManager.setUser(freshUser);
         return { data: { user: freshUser } };
       }
-    } catch {
-      // Fallback to local session cache
-    }
+    } catch {}
 
     if (!localUser) return { data: { user: null } };
     return { data: { user: { id: localUser.id, email: localUser.email, ...localUser } } };
   },
 
   async resetPasswordForEmail(email: string, _options?: any) {
+    if (supabaseClient) {
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) return { error: { message: error.message } };
+      return { error: null };
+    }
+
     const res = await apiFetch('/auth/forgot-password', {
       method: 'POST',
       body: JSON.stringify({ email }),
     });
-    const data = await res.json();
-    if (!res.ok) return { error: { message: data.error } };
+    const resData = await res.json();
+    if (!res.ok) return { error: { message: resData.error } };
     return { error: null };
   },
 
   async updateUser({ password }: { password: string }) {
+    if (supabaseClient) {
+      const { error } = await supabaseClient.auth.updateUser({ password });
+      if (error) return { error: { message: error.message } };
+      return { data: {}, error: null };
+    }
+
     const res = await apiFetch('/auth/reset-password', {
       method: 'POST',
       body: JSON.stringify({ token: new URLSearchParams(window.location.search).get('token'), password }),
     });
-    const data = await res.json();
-    if (!res.ok) return { error: { message: data.error } };
+    const resData = await res.json();
+    if (!res.ok) return { error: { message: resData.error } };
     return { data: {}, error: null };
   },
 
   onAuthStateChange(callback: (event: string, session: any) => void) {
-    // Check initial state
+    if (supabaseClient) {
+      const { data } = supabaseClient.auth.onAuthStateChange((event, session) => {
+        if (session) {
+          callback(event, { user: { id: session.user.id, email: session.user.email }, access_token: session.access_token });
+        } else {
+          callback(event, null);
+        }
+      });
+      return { data: { subscription: { unsubscribe: () => data.subscription.unsubscribe() } } };
+    }
+
+    // Fallback: localStorage-based
     const token = TokenManager.getAccessToken();
     const user = TokenManager.getUser();
     if (token && user) {
       callback('SIGNED_IN', { user: { id: user.id, email: user.email }, access_token: token });
     }
-    // Listen for storage events (cross-tab)
     const handler = (e: StorageEvent) => {
       if (e.key === 'rk_access_token') {
         if (e.newValue) callback('SIGNED_IN', { user: TokenManager.getUser(), access_token: e.newValue });
@@ -186,7 +257,6 @@ export const auth = {
   },
 
   async setSession(_session: any) {
-    // Not needed for custom auth
     return { error: null };
   },
 };
