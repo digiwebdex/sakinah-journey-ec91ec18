@@ -1,7 +1,7 @@
-import { Phone, Mail, MapPin, Facebook, Youtube, Instagram, Star } from "lucide-react";
+import { Phone, Mail, MapPin, Facebook, Youtube, Instagram, Star, Plane } from "lucide-react";
 import sslcommerzPayWith from "@/assets/payment/sslcommerz-pay-with.png";
 import logo from "@/assets/logo.png";
-import footerBg from "@/assets/footer-kaaba.jpg";
+import footerJourney from "@/assets/footer-journey.jpg";
 import { useSiteContent } from "@/hooks/useSiteContent";
 import { useLanguage } from "@/i18n/LanguageContext";
 
@@ -31,27 +31,64 @@ const Footer = () => {
 
   return (
     <>
-      {/* Animated Footer Banner */}
-      <div className="relative h-64 md:h-80 overflow-hidden">
-        <div 
-          className="absolute inset-0 w-[200%] h-full animate-[footerPan_30s_linear_infinite]"
-          style={{
-            backgroundImage: `url(${footerBg})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
+      {/* Animated Journey Banner - Bangladesh to Makkah */}
+      <div className="relative h-72 md:h-96 overflow-hidden">
+        {/* Background journey image */}
+        <img
+          src={footerJourney}
+          alt="Journey from Bangladesh to Makkah"
+          className="absolute inset-0 w-full h-full object-cover"
+          loading="lazy"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-transparent to-[hsl(220,25%,10%)]" />
-        <div className="absolute inset-0 bg-black/20" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/20 via-transparent to-[hsl(220,25%,10%)]" />
+        <div className="absolute inset-0 bg-black/15" />
+
+        {/* Animated plane flying from Bangladesh (left) to Makkah (right) */}
+        <div className="absolute inset-0 pointer-events-none">
+          {/* Dotted flight path */}
+          <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+            <path
+              d="M 5,60 Q 25,30 50,45 T 95,35"
+              fill="none"
+              stroke="hsl(var(--primary))"
+              strokeWidth="2"
+              strokeDasharray="8 6"
+              opacity="0.5"
+              vectorEffect="non-scaling-stroke"
+              style={{ filter: 'drop-shadow(0 0 4px hsl(var(--primary) / 0.4))' }}
+            />
+          </svg>
+
+          {/* Animated plane */}
+          <div className="animate-[planeJourney_8s_ease-in-out_infinite]">
+            <div className="bg-primary/90 backdrop-blur-sm rounded-full p-2.5 shadow-lg shadow-primary/30">
+              <Plane className="h-5 w-5 md:h-6 md:w-6 text-primary-foreground -rotate-12" />
+            </div>
+          </div>
+        </div>
+
+        {/* Location labels */}
+        <div className="absolute bottom-16 left-6 md:left-12">
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg">
+            <p className="text-xs font-bold text-foreground">{language === "bn" ? "🇧🇩 বাংলাদেশ" : "🇧🇩 Bangladesh"}</p>
+          </div>
+        </div>
+        <div className="absolute bottom-16 right-6 md:right-12">
+          <div className="bg-primary/90 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg">
+            <p className="text-xs font-bold text-primary-foreground">{language === "bn" ? "🕋 মক্কা শরীফ" : "🕋 Makkah Sharif"}</p>
+          </div>
+        </div>
+
+        {/* Center text */}
         <div className="absolute inset-0 flex items-center justify-center text-center px-4">
           <div className="animate-fade-in">
-            <p className="text-primary font-heading text-sm md:text-base uppercase tracking-[0.3em] mb-2">
+            <p className="text-primary font-heading text-sm md:text-base uppercase tracking-[0.3em] mb-2 drop-shadow-lg">
               {language === "bn" ? "পবিত্র যাত্রার সঙ্গী" : "Your Sacred Journey Partner"}
             </p>
-            <h3 className="text-white text-2xl md:text-4xl font-heading font-bold mb-3">
-              {language === "bn" ? "হজ্জ ও উমরাহ সেবা" : "Hajj & Umrah Services"}
+            <h3 className="text-white text-2xl md:text-4xl font-heading font-bold mb-3 drop-shadow-lg">
+              {language === "bn" ? "বাংলাদেশ থেকে মক্কা শরীফ" : "Bangladesh to Makkah Sharif"}
             </h3>
-            <p className="text-white/60 text-sm md:text-base max-w-xl mx-auto">
+            <p className="text-white/80 text-sm md:text-base max-w-xl mx-auto drop-shadow-md">
               {language === "bn" ? "বিশ্বস্ততা ও নিষ্ঠার সাথে আপনার পবিত্র যাত্রা সম্পন্ন করি" : "Completing your sacred journey with trust and dedication"}
             </p>
           </div>
