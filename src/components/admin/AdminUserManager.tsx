@@ -120,7 +120,7 @@ export default function AdminUserManager() {
 
   const handleAction = async (userId: string, action: string, updates?: any) => {
     setActionLoading(userId);
-    const { data, error } = await supabase.functions.invoke("admin-manage-user", {
+    const { data, error } = await supabase.functions.invoke("auth/admin/manage-user", {
       body: { action, target_user_id: userId, updates },
     });
 
