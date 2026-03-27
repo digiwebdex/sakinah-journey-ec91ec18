@@ -1,7 +1,14 @@
 // API Client - Replaces Supabase client
 // Drop-in replacement for all supabase.from() and supabase.auth calls
 
+import { createClient } from '@supabase/supabase-js';
+
 const API_URL = import.meta.env.VITE_API_URL || '/api';
+
+// Supabase client for auth (used when VPS backend is unavailable)
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+const supabaseClient = SUPABASE_URL && SUPABASE_KEY ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 // Token management
 class TokenManager {
