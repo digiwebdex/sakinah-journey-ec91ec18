@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     if (manualData?.phone) {
       // Manual single reminder (existing behavior)
       const { phone, customer_name, tracking_id, amount, due_date, installment_number } = manualData;
-      const message = `Dear ${customer_name}, installment #${installment_number} of ৳${Number(amount).toLocaleString()} for booking ${tracking_id} is due on ${due_date}. Please pay at the earliest. Rahe Kaba: 01601-505050`;
+      const message = `Dear ${customer_name}, installment #${installment_number} of ৳${Number(amount).toLocaleString()} for booking ${tracking_id} is due on ${due_date}. Please pay at the earliest. Manasik Travel Hub: 01711-993562`;
 
       const apiKey = Deno.env.get("BULKSMSBD_API_KEY");
       const senderId = Deno.env.get("BULKSMSBD_SENDER_ID");
@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
       // Send SMS
       if (smsApiKey && phone) {
         try {
-          const message = `Dear ${name}, installment #${payment.installment_number || 1} of ৳${Number(payment.amount).toLocaleString()} for booking ${booking.tracking_id} is overdue (${dueDate}). Please pay immediately. Rahe Kaba: 01601-505050`;
+          const message = `Dear ${name}, installment #${payment.installment_number || 1} of ৳${Number(payment.amount).toLocaleString()} for booking ${booking.tracking_id} is overdue (${dueDate}). Please pay immediately. Manasik Travel Hub: 01711-993562`;
           const smsUrl = `https://bulksmsbd.net/api/smsapi?api_key=${encodeURIComponent(smsApiKey)}&type=text&number=${encodeURIComponent(phone)}&senderid=${encodeURIComponent(smsSenderId || "")}&message=${encodeURIComponent(message)}`;
           const smsRes = await fetch(smsUrl);
           result.sms = smsRes.ok ? "sent" : "failed";

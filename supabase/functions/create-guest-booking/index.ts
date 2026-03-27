@@ -231,10 +231,10 @@ Deno.serve(async (req) => {
           </table>
           <div style="background:#e3f2fd;padding:16px;border-radius:8px;margin:16px 0">
             <p style="margin:0;font-size:14px"><strong>📍 Track Without Login:</strong> Visit our tracking page and enter your Tracking ID <strong>${booking.tracking_id}</strong> or your phone number.</p>
-            ${autoCreated ? `<p style="margin:8px 0 0;font-size:14px"><strong>🔐 Full Dashboard Access:</strong> <a href="https://rahe-kaba-journeys.lovable.app/auth" style="color:#b8860b">Login here</a> with your email and temporary password to view full booking details, payment history, and manage documents.</p>` : ""}
+            ${autoCreated ? `<p style="margin:8px 0 0;font-size:14px"><strong>🔐 Full Dashboard Access:</strong> <a href="https://manasiktravelhub.com/auth" style="color:#b8860b">Login here</a> with your email and temporary password to view full booking details, payment history, and manage documents.</p>` : ""}
           </div>
           <hr style="border:none;border-top:1px solid #e0e0e0;margin:20px 0"/>
-          <p style="font-size:12px;color:#888">Rahe Kaba — Your trusted Hajj & Umrah partner</p>
+          <p style="font-size:12px;color:#888">Manasik Travel Hub — Your trusted Hajj & Umrah partner</p>
         </div>`;
 
         try {
@@ -274,7 +274,7 @@ Deno.serve(async (req) => {
       const smsSenderId = Deno.env.get("BULKSMSBD_SENDER_ID") || "8809617618686";
 
       if (smsApiKey) {
-        const smsMessage = `Rahe Kaba: Your booking is confirmed!\nTracking ID: ${booking.tracking_id}\nPackage: ${pkg.name}\nTravelers: ${numTravelers}\nTotal: BDT ${totalAmount.toLocaleString()}\nTrack: rahe-kaba-journeys.lovable.app/track?id=${booking.tracking_id}`;
+        const smsMessage = `Manasik Travel Hub: Your booking is confirmed!\nTracking ID: ${booking.tracking_id}\nPackage: ${pkg.name}\nTravelers: ${numTravelers}\nTotal: BDT ${totalAmount.toLocaleString()}\nTrack: manasiktravelhub.com/track?id=${booking.tracking_id}`;
 
         try {
           const smsUrl = `https://bulksmsbd.net/api/smsapi?api_key=${smsApiKey}&type=text&number=${phone.trim()}&senderid=${smsSenderId}&message=${encodeURIComponent(smsMessage)}`;
