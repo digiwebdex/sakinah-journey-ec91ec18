@@ -271,6 +271,57 @@ app.get('/api/public/payment-methods', async (_req, res) => {
   }
 });
 
+// Public: Track booking by tracking_id or phone
+app.post('/api/track-booking', async (req, res) => {
+  try {
+    const { tracking_id, phone } = req.body;
+    if (!tracking_id && !phone) return res.status(400).json({ error: 'tracking_id or phone is required' });
+
+    let booking = null;
+
+    if (phone) {
+      const cleanPhone = phone.trim();
+      if (!/^[\+]?[0-9\s\-]{7,15}$/.test(cleanPhone)) return res.status(400).json({ error: 'Invalid phone format' });
+      const result = await query(
+        `SELECT b.tracking_id, b.status, b.guest_name, b.num_travelers, b.due_amount, b.notes, b.created_at,
+                p.name as package_name, p.type as package_type
+         FROM bookings b LEFT JOIN packages p ON b.package_id = p.id
+         WHERE b.guest_phone = $1 ORDER BY b.created_at DESC LIMIT 1`, [cleanPhone]
+      );
+      if (result.rows[0]) booking = result.rows[0];
+    } else {
+      const id = tracking_id.toUpperCase();
+      if (!/^[A-Z0-9\-]+$/i.test(id) || id.length > 20) return res.status(400).json({ error: 'Invalid tracking ID format' });
+      const result = await query(
+        `SELECT b.tracking_id, b.status, b.guest_name, b.num_travelers, b.due_amount, b.notes, b.created_at,
+                p.name as package_name, p.type as package_type
+         FROM bookings b LEFT JOIN packages p ON b.package_id = p.id
+         WHERE b.tracking_id = $1 LIMIT 1`, [id]
+      );
+      if (result.rows[0]) booking = result.rows[0];
+    }
+
+    if (!booking) return res.json({ booking: null });
+
+    // Return safe fields only
+    res.json({
+      booking: {
+        tracking_id: booking.tracking_id,
+        status: booking.status,
+        guest_name: booking.guest_name,
+        num_travelers: booking.num_travelers,
+        due_amount: booking.due_amount,
+        notes: booking.notes,
+        created_at: booking.created_at,
+        packages: { name: booking.package_name, type: booking.package_type },
+      }
+    });
+  } catch (err) {
+    console.error('POST /api/track-booking error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.use('/api/packages', createCrudRoutes('packages', { readAuth: false, writeAuth: true, adminOnly: true }));
 app.use('/api/hotels', createCrudRoutes('hotels', { readAuth: false, writeAuth: true, adminOnly: true }));
 app.use('/api/hotel-rooms', createCrudRoutes('hotel_rooms', { readAuth: false, writeAuth: true, adminOnly: true }));
