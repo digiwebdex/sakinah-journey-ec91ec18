@@ -3,7 +3,7 @@ import { Shield, Heart, Award, Clock, MapPin, Phone, Users, Star } from "lucide-
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useSiteContent } from "@/hooks/useSiteContent";
-import heroImage from "@/assets/hero-kaaba.jpg";
+import heroImage from "@/assets/hero-kaaba-golden.jpg";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";

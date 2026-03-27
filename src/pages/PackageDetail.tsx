@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Check, ArrowLeft, ArrowRight, Calendar, Clock } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import heroImage from "@/assets/hero-kaaba.jpg";
+import heroImage from "@/assets/hero-kaaba-golden.jpg";
 import { useLanguage } from "@/i18n/LanguageContext";
 import SEOHead, { productJsonLd, breadcrumbJsonLd } from "@/components/SEOHead";
 

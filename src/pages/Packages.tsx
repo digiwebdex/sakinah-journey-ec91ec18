@@ -5,8 +5,8 @@ import { motion } from "framer-motion";
 import { Check, ArrowRight, Filter } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import heroImage from "@/assets/hero-kaaba.jpg";
-import medinaImage from "@/assets/medina-mosque.jpg";
+import heroImage from "@/assets/hero-kaaba-golden.jpg";
+import medinaImage from "@/assets/hero-medina.jpg";
 import { useLanguage } from "@/i18n/LanguageContext";
 import SEOHead, { breadcrumbJsonLd } from "@/components/SEOHead";
 
