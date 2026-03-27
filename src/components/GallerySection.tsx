@@ -20,6 +20,13 @@ const defaultItems: GalleryItem[] = [
   { type: "image", src: "/gallery/image-6.jpeg" },
   { type: "image", src: "/gallery/image-7.jpeg" },
   { type: "image", src: "/gallery/image-8.webp" },
+  { type: "image", src: "/gallery/image-9.jpeg" },
+  { type: "image", src: "/gallery/image-10.jpeg" },
+  { type: "image", src: "/gallery/image-11.jpeg" },
+  { type: "image", src: "/gallery/image-12.jpeg" },
+  { type: "image", src: "/gallery/image-13.jpeg" },
+  { type: "image", src: "/gallery/image-14.jpeg" },
+  { type: "image", src: "/gallery/image-15.jpeg" },
 ];
 
 const tabs: { key: TabType; labelBn: string; labelEn: string; icon: typeof ImageIcon }[] = [
