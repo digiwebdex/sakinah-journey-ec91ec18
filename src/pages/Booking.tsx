@@ -6,6 +6,19 @@ import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Package, Users, CreditCard, Check, User, FileText, Upload } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import bkashLogo from "@/assets/payment/bkash.png";
+import nagadLogo from "@/assets/payment/nagad.png";
+import bankTransferLogo from "@/assets/payment/bank-transfer.png";
+import sslcommerzLogo from "@/assets/payment/sslcommerz.png";
+
+const PAYMENT_LOGOS: Record<string, string> = {
+  bkash: bkashLogo,
+  nagad: nagadLogo,
+  bank_transfer: bankTransferLogo,
+  bank: bankTransferLogo,
+  sslcommerz: sslcommerzLogo,
+  aamarpay: sslcommerzLogo,
+};
 import BookingStepIndicator from "@/components/booking/BookingStepIndicator";
 import PersonalDetailsStep, { type PersonalInfo } from "@/components/booking/PersonalDetailsStep";
 import DocumentUploadStep, { type UploadedDoc } from "@/components/booking/DocumentUploadStep";
