@@ -80,7 +80,6 @@ const TrackBooking = () => {
     let bookingData: any = null;
 
     if (isPhoneNumber(rawInput)) {
-      // Use secure edge function for public tracking
       const { data, error } = await supabase.functions.invoke("track-booking", {
         body: { phone: rawInput },
       });
@@ -90,7 +89,6 @@ const TrackBooking = () => {
     } else {
       const id = rawInput.toUpperCase();
       setTrackingId(id);
-      // Use secure edge function for public tracking
       const { data, error } = await supabase.functions.invoke("track-booking", {
         body: { tracking_id: id },
       });
