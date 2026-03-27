@@ -496,9 +496,15 @@ const Booking = () => {
                                   : "border-border hover:border-primary/40 hover:shadow-sm"
                               }`}
                             >
-                              <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center text-2xl shrink-0">
-                                {method.icon || "💳"}
-                              </div>
+                              {PAYMENT_LOGOS[method.id] ? (
+                                <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shrink-0 p-1.5">
+                                  <img src={PAYMENT_LOGOS[method.id]} alt={method.name} className="w-full h-full object-contain" />
+                                </div>
+                              ) : (
+                                <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center text-2xl shrink-0">
+                                  {method.icon || "💳"}
+                                </div>
+                              )}
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
                                   <span className="font-semibold text-foreground">{method.name}</span>
