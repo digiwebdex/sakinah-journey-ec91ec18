@@ -40,10 +40,12 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           <div className="md:col-span-1">
             <div className="flex items-center gap-3 mb-5">
-              <img src={logo} alt={`${companyName} Logo`} className="h-12 w-auto object-contain" />
+              <div className="bg-white rounded-xl p-2">
+                <img src={logo} alt={`${companyName} Logo`} className="h-14 w-auto object-contain" />
+              </div>
               <div>
-                <span className="font-heading text-lg font-bold text-primary">{companyName}</span>
-                <span className="block text-xs tracking-[0.2em] text-white/40 uppercase">{tagline}</span>
+                <span className="font-heading text-lg font-bold text-white">{companyName}</span>
+                <span className="block text-xs tracking-[0.2em] text-white/60 uppercase">{tagline}</span>
               </div>
             </div>
             <p className="text-sm text-white/50 leading-relaxed mb-5">{description}</p>

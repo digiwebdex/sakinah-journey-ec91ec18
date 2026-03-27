@@ -66,7 +66,7 @@ const Navbar = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-border shadow-soft">
       <div className="container mx-auto flex items-center justify-between h-20 px-4">
         <a href="/" className="flex items-center">
-          <img src={logo} alt="Manasik Travel Hub Logo" className="h-20 w-auto object-contain" />
+          <img src={logo} alt="Manasik Travel Hub Logo" className="h-28 w-auto object-contain" />
         </a>
 
         <div className="hidden lg:flex items-center gap-8">
