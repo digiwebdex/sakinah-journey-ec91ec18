@@ -18,6 +18,8 @@ const defaultItems: GalleryItem[] = [
   { type: "image", src: "/gallery/image-4.jpeg" },
   { type: "image", src: "/gallery/image-5.jpeg" },
   { type: "image", src: "/gallery/image-6.jpeg" },
+  { type: "image", src: "/gallery/image-7.jpeg" },
+  { type: "image", src: "/gallery/image-8.webp" },
 ];
 
 const tabs: { key: TabType; labelBn: string; labelEn: string; icon: typeof ImageIcon }[] = [
