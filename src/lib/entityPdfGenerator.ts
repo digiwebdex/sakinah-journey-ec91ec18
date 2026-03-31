@@ -434,12 +434,13 @@ export interface CustomerPdfData {
 export async function generateCustomerPdf(data: CustomerPdfData, company: CompanyInfo) {
   const doc = new jsPDF();
   await registerBengaliFont(doc);
-  const [logoBase64, sig, companyQr] = await Promise.all([
+  const [logoBase64, sig, companyQr, cfg] = await Promise.all([
     loadLogoBase64(),
     getSignatureData(),
     generateCompanyQr(),
+    getPdfCompanyConfig(),
   ]);
-  let y = addHeader(doc, company, logoBase64, companyQr);
+  let y = addHeader(doc, company, logoBase64, companyQr, cfg);
   const pw = doc.internal.pageSize.getWidth();
 
   // Watermark based on customer summary
