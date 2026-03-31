@@ -932,7 +932,7 @@ app.post('/api/create-guest-booking', async (req, res) => {
             from: process.env.NOTIFICATION_FROM_EMAIL || 'Manasik Travel Hub <noreply@manasiktravelhub.com>',
             to: [guest_email],
             subject: `Booking Confirmed - ${booking.tracking_id}`,
-            html: `<h2>Your Booking is Confirmed!</h2><p>Tracking ID: <strong>${booking.tracking_id}</strong></p><p>Package: ${pkg.name}</p><p>Total: ৳${totalAmount.toLocaleString()}</p><p>Thank you for choosing RAHE KABA Tours & Travels.</p>`,
+            html: `<h2>Your Booking is Confirmed!</h2><p>Tracking ID: <strong>${booking.tracking_id}</strong></p><p>Package: ${pkg.name}</p><p>Total: ৳${totalAmount.toLocaleString()}</p><p>Thank you for choosing Manasik Travel Hub.</p>`,
           }),
         });
       } catch (emailErr) {
