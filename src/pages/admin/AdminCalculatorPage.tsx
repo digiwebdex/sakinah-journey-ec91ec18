@@ -82,7 +82,7 @@ export default function AdminCalculatorPage() {
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(100);
-      doc.text("Rahe Kaba Travels & Tours", margin + 22, y + 13);
+      doc.text("Manasik Travel Hub", margin + 22, y + 13);
       doc.text(`Generated: ${new Date().toLocaleDateString("en-GB")}`, pageWidth - margin, y + 7, { align: "right" });
       doc.setTextColor(0);
 
