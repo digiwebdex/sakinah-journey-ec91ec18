@@ -806,7 +806,7 @@ async function generateIndividualInvoice(
   // Signature
   y = addSignatureSection(doc, y, sig);
 
-  addFooter(doc);
+  addFooter(doc, cfg);
 }
 
 // ═══════════════════════════════════════════════════════════════
