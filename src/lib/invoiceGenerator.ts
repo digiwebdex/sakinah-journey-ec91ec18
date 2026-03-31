@@ -1251,7 +1251,7 @@ export async function generateCommissionReceipt(
   y += 22;
 
   y = addSignatureSection(doc, y, sig);
-  addFooter(doc);
+  addFooter(doc, cfg);
 
   doc.save(`Commission_Receipt_${data.bookingTrackingId}.pdf`);
 }
