@@ -900,7 +900,7 @@ async function generateFamilyInvoice(
   // Signature
   y = addSignatureSection(doc, y, sig);
 
-  addFooter(doc);
+  addFooter(doc, cfg);
 }
 
 // ═══════════════════════════════════════════════════════════════
