@@ -130,6 +130,18 @@ export default function AdminSettingsPage() {
         </section>
       )}
 
+      {/* PDF Company Settings (Admin only) */}
+      {currentRole === "admin" && (
+        <section id="pdf-settings">
+          <h2 className="font-heading text-xl font-bold flex items-center gap-2 mb-4">
+            <FileText className="h-5 w-5 text-primary" /> PDF Company Settings
+          </h2>
+          <div className="bg-card border border-border rounded-lg p-5">
+            <PdfSettingsManager />
+          </div>
+        </section>
+      )}
+
       {/* Signature & Stamp Settings (Admin only) */}
       {currentRole === "admin" && (
         <section>
