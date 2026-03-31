@@ -736,10 +736,10 @@ function addFooter(doc: jsPDF, cfg: PdfCompanyConfig) {
 async function generateIndividualInvoice(
   doc: jsPDF, booking: InvoiceBooking, customer: InvoiceCustomer,
   payments: InvoicePayment[], logoBase64: string, sig: SignatureData,
-  qrDataUrl: string, moallemName: string | null
+  qrDataUrl: string, moallemName: string | null, cfg: PdfCompanyConfig
 ) {
   const pageWidth = doc.internal.pageSize.getWidth();
-  let y = addHeader(doc, { name: "MANASIK Travel Hub", phone: "+880 1711-993562", email: "manasiktravelhub@gmail.com", address: "595/1, Milk Vita Road, Dewla, Tangail Sadar, Tangail" } as CompanyInfo, logoBase64);
+  let y = addHeader(doc, { name: cfg.company_name, phone: cfg.phone, email: cfg.email, address: cfg.address } as CompanyInfo, logoBase64);
 
 
   // QR verification stamp (small, right side)
