@@ -1,4 +1,4 @@
-# Deployment Commands — RAHE KABA Tours & Travels
+# Deployment Commands — Manasik Travel Hub
 
 > All working deployment and server management commands
 > **Last Updated:** March 26, 2026
