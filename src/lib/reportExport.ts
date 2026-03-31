@@ -136,7 +136,7 @@ function addCompanyHeader(doc: jsPDF, logoBase64: string | null, qrDataUrl: stri
 }
 
 // ── Company Pad Footer (matches invoice format) ──
-function addCompanyFooter(doc: jsPDF, sig: SignatureData) {
+function addCompanyFooter(doc: jsPDF, sig: SignatureData, cfg: PdfCompanyConfig) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
@@ -181,11 +181,11 @@ function addCompanyFooter(doc: jsPDF, sig: SignatureData) {
   doc.setFontSize(7);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(255);
-  doc.text("Manasik Travel Hub — Hajj & Umrah Services", pageWidth / 2, pageHeight - 10, { align: "center" });
+  doc.text(`${cfg.company_name} — ${cfg.tagline}`, pageWidth / 2, pageHeight - 10, { align: "center" });
 
   doc.setFontSize(5.5);
   doc.setFont("helvetica", "normal");
-  doc.text(`Tel: ${COMPANY.phone}  |  Email: ${COMPANY.email}  |  ${COMPANY.address}`, pageWidth / 2, pageHeight - 5, { align: "center" });
+  doc.text(`Tel: ${cfg.phone}  |  Email: ${cfg.email}  |  ${cfg.address}`, pageWidth / 2, pageHeight - 5, { align: "center" });
   doc.setTextColor(0);
 }
 
