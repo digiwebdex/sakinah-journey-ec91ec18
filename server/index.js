@@ -929,10 +929,10 @@ app.post('/api/create-guest-booking', async (req, res) => {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            from: process.env.NOTIFICATION_FROM_EMAIL || 'RAHE KABA <noreply@rahekabatravels.com>',
+            from: process.env.NOTIFICATION_FROM_EMAIL || 'Manasik Travel Hub <noreply@manasiktravelhub.com>',
             to: [guest_email],
             subject: `Booking Confirmed - ${booking.tracking_id}`,
-            html: `<h2>Your Booking is Confirmed!</h2><p>Tracking ID: <strong>${booking.tracking_id}</strong></p><p>Package: ${pkg.name}</p><p>Total: ৳${totalAmount.toLocaleString()}</p><p>Thank you for choosing RAHE KABA Tours & Travels.</p>`,
+            html: `<h2>Your Booking is Confirmed!</h2><p>Tracking ID: <strong>${booking.tracking_id}</strong></p><p>Package: ${pkg.name}</p><p>Total: ৳${totalAmount.toLocaleString()}</p><p>Thank you for choosing Manasik Travel Hub.</p>`,
           }),
         });
       } catch (emailErr) {
@@ -1024,7 +1024,7 @@ app.post('/api/functions/send-notification', authenticate, requireRole('admin'),
           method: 'POST',
           headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            from: process.env.NOTIFICATION_FROM_EMAIL || 'RAHE KABA <noreply@rahekabatravels.com>',
+            from: process.env.NOTIFICATION_FROM_EMAIL || 'Manasik Travel Hub <noreply@manasiktravelhub.com>',
             to: [profile.email],
             subject,
             html,
@@ -1048,8 +1048,8 @@ app.post('/api/functions/send-notification', authenticate, requireRole('admin'),
       const BULKSMS_API_KEY = process.env.BULKSMS_API_KEY;
       if (BULKSMS_API_KEY) {
         try {
-          const smsMessage = custom_message || `RAHE KABA: Booking ${booking?.tracking_id || ''} - ${type}`;
-          const smsRes = await fetch(`https://bulksmsbd.net/api/smsapi?api_key=${BULKSMS_API_KEY}&type=text&number=${profile.phone}&senderid=${process.env.BULKSMS_SENDER_ID || 'RAHEKABA'}&message=${encodeURIComponent(smsMessage)}`);
+          const smsMessage = custom_message || `Manasik Travel Hub: Booking ${booking?.tracking_id || ''} - ${type}`;
+          const smsRes = await fetch(`https://bulksmsbd.net/api/smsapi?api_key=${BULKSMS_API_KEY}&type=text&number=${profile.phone}&senderid=${process.env.BULKSMS_SENDER_ID || 'MANASIK'}&message=${encodeURIComponent(smsMessage)}`);
           const status = smsRes.ok ? 'sent' : 'failed';
           results.push({ channel: 'sms', status });
 
@@ -1087,7 +1087,7 @@ app.post('/api/contact', async (req, res) => {
     }
 
     const RESEND_API_KEY = process.env.RESEND_API_KEY;
-    const CONTACT_EMAIL = 'rahekaba@gmail.com';
+    const CONTACT_EMAIL = 'manasiktravelhub@gmail.com';
 
     if (!RESEND_API_KEY) {
       console.error('RESEND_API_KEY not configured');
@@ -1110,7 +1110,7 @@ app.post('/api/contact', async (req, res) => {
           <tr style="background:#f9f9f9;"><td style="padding:8px;font-weight:bold;color:#555;">Service:</td><td style="padding:8px;">${safeService || 'Not selected'}</td></tr>
           <tr><td style="padding:8px;font-weight:bold;color:#555;vertical-align:top;">Message:</td><td style="padding:8px;">${safeMessage || 'No message'}</td></tr>
         </table>
-        <p style="color:#999;font-size:12px;margin-top:20px;">Sent from RAHE KABA website contact form</p>
+        <p style="color:#999;font-size:12px;margin-top:20px;">Sent from Manasik Travel Hub website contact form</p>
       </div>
     `;
 
@@ -1121,7 +1121,7 @@ app.post('/api/contact', async (req, res) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: process.env.NOTIFICATION_FROM_EMAIL || 'RAHE KABA <noreply@rahekabatravels.com>',
+        from: process.env.NOTIFICATION_FROM_EMAIL || 'Manasik Travel Hub <noreply@manasiktravelhub.com>',
         to: [CONTACT_EMAIL],
         subject: `New Contact: ${name} - ${service || 'General Inquiry'}`,
         html: htmlBody,
@@ -1157,6 +1157,6 @@ app.get('*', (req, res) => {
 // START
 // =============================================
 app.listen(PORT, () => {
-  console.log(`🚀 Rahe Kaba API running on port ${PORT}`);
+  console.log(`🚀 Manasik Travel Hub API running on port ${PORT}`);
   console.log(`📁 Serving frontend from ${frontendPath}`);
 });

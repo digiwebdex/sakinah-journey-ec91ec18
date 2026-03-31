@@ -67,7 +67,7 @@ const Packages = () => {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="Packages - হজ্জ, উমরাহ ও ট্যুর প্যাকেজ"
-        description="রাহে কাবা ট্যুরস - সাশ্রয়ী মূল্যে হজ্জ, উমরাহ, ভিসা ও ট্যুর প্যাকেজ। Affordable Hajj, Umrah & Tour packages."
+        description="মানাসিক ট্রাভেল হাব - সাশ্রয়ী মূল্যে হজ্জ, উমরাহ, ভিসা ও ট্যুর প্যাকেজ। Affordable Hajj, Umrah & Tour packages."
         canonicalUrl="/packages"
         keywords="Hajj package, Umrah package, হজ্জ প্যাকেজ, উমরাহ প্যাকেজ, ভিসা, ট্যুর"
         jsonLd={breadcrumbJsonLd([

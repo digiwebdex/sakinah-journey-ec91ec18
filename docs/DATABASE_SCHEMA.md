@@ -1,4 +1,4 @@
-# Database Schema Reference — RAHE KABA Tours & Travels
+# Database Schema Reference — Manasik Travel Hub
 
 > Complete database table reference, relationships, views, functions, and triggers
 > **Last Updated:** March 26, 2026

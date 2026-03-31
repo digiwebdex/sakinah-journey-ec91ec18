@@ -1,4 +1,4 @@
-# Troubleshooting Guide — RAHE KABA Tours & Travels
+# Troubleshooting Guide — Manasik Travel Hub
 
 > Common issues, solutions, and diagnostic commands
 > **Last Updated:** March 26, 2026

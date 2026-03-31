@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * RAHE KABA - Supabase to VPS Data Migration Script
+ * Manasik Travel Hub - Supabase to VPS Data Migration Script
  * Run: cd server && node migrate-from-supabase.js
  * 
  * IMPORTANT: Run this AFTER schema.sql has been applied

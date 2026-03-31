@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * RAHE KABA - Payments & Transactions Migration
+ * Manasik Travel Hub - Payments & Transactions Migration
  * Run: cd server && node migrate-payments.js
  * 
  * This migrates payments and transactions from Supabase.
