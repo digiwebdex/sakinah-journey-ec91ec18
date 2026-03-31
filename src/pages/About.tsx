@@ -35,9 +35,9 @@ const About = () => {
     <div className="min-h-screen bg-background">
       <SEOHead
         title="About Us - আমাদের সম্পর্কে"
-        description="রাহে কাবা ট্যুরস অ্যান্ড ট্রাভেলস - বাংলাদেশের বিশ্বস্ত হজ্জ ও উমরাহ সেবা প্রদানকারী প্রতিষ্ঠান।"
+        description="মানাসিক ট্রাভেল হাব - বাংলাদেশের বিশ্বস্ত হজ্জ ও উমরাহ সেবা প্রদানকারী প্রতিষ্ঠান।"
         canonicalUrl="/about"
-        keywords="রাহে কাবা, Rahe Kaba, about, আমাদের সম্পর্কে, হজ্জ সেবা"
+        keywords="মানাসিক ট্রাভেল হাব, Manasik Travel Hub, about, আমাদের সম্পর্কে, হজ্জ সেবা"
         jsonLd={breadcrumbJsonLd([
           { name: "Home", url: "/" },
           { name: "About", url: "/about" },

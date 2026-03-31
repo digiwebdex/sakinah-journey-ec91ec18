@@ -101,7 +101,7 @@ function getEmailTemplate(type: NotificationType, d: any) {
 
 // --- SMS templates ---
 function getSmsMessage(type: NotificationType, d: any): string {
-  const contact = "Rahe Kaba: 01601-505050";
+  const contact = "Manasik Travel Hub: 01711-993562";
   switch (type) {
     case "booking_created":
       return `Dear ${d.name}, booking ${d.trackingId} for ${d.packageName} created. Total: ৳${d.totalAmount.toLocaleString()}. ${contact}`;
