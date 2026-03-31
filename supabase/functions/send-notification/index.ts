@@ -67,7 +67,7 @@ function getEmailTemplate(type: NotificationType, d: any) {
     case "booking_status_updated":
       return {
         subject: `🔄 Booking Status Updated — ${d.trackingId}`,
-        html: `${header}<h2 style="color:#2563eb">Booking Status Updated</h2><p>Dear <strong>${d.name}</strong>,</p><p>Your booking <strong>${d.trackingId}</strong> status has been updated to <strong>${d.newStatus || "Updated"}</strong>.</p>${table([["Tracking ID", d.trackingId], ["New Status", d.newStatus || "Updated"], ["Total", `৳${d.totalAmount.toLocaleString()}`], ["Due", `৳${d.dueAmount.toLocaleString()}`]])}<p>Contact us for any queries: +880 1601-505050</p>${footer}`,
+        html: `${header}<h2 style="color:#2563eb">Booking Status Updated</h2><p>Dear <strong>${d.name}</strong>,</p><p>Your booking <strong>${d.trackingId}</strong> status has been updated to <strong>${d.newStatus || "Updated"}</strong>.</p>${table([["Tracking ID", d.trackingId], ["New Status", d.newStatus || "Updated"], ["Total", `৳${d.totalAmount.toLocaleString()}`], ["Due", `৳${d.dueAmount.toLocaleString()}`]])}<p>Contact us for any queries: +880 1711-993562</p>${footer}`,
       };
     case "payment_received":
       return {
