@@ -179,7 +179,7 @@ function addCompanyFooter(doc: jsPDF, sig: SignatureData) {
   doc.setFontSize(7);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(255);
-  doc.text("RAHE KABA Tours & Travels — Hajj & Umrah Services", pageWidth / 2, pageHeight - 10, { align: "center" });
+  doc.text("Manasik Travel Hub — Hajj & Umrah Services", pageWidth / 2, pageHeight - 10, { align: "center" });
 
   doc.setFontSize(5.5);
   doc.setFont("helvetica", "normal");
