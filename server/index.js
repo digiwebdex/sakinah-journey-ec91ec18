@@ -1110,7 +1110,7 @@ app.post('/api/contact', async (req, res) => {
           <tr style="background:#f9f9f9;"><td style="padding:8px;font-weight:bold;color:#555;">Service:</td><td style="padding:8px;">${safeService || 'Not selected'}</td></tr>
           <tr><td style="padding:8px;font-weight:bold;color:#555;vertical-align:top;">Message:</td><td style="padding:8px;">${safeMessage || 'No message'}</td></tr>
         </table>
-        <p style="color:#999;font-size:12px;margin-top:20px;">Sent from RAHE KABA website contact form</p>
+        <p style="color:#999;font-size:12px;margin-top:20px;">Sent from Manasik Travel Hub website contact form</p>
       </div>
     `;
 
