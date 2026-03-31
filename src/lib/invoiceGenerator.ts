@@ -1143,7 +1143,7 @@ export async function generateReceipt(
   y += 22;
 
   y = addSignatureSection(doc, y, sig);
-  addFooter(doc);
+  addFooter(doc, cfg);
 
   doc.save(`Receipt-${receiptNum}.pdf`);
 }
