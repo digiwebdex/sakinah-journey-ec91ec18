@@ -218,13 +218,13 @@ function addReportTitle(doc: jsPDF, y: number, title: string): number {
 // ═══════════════════════════════════════════════════════════════
 
 export async function exportPDF({ title, columns, rows, summary }: ReportData) {
-  const [logoBase64, qrDataUrl, sig] = await Promise.all([
-    loadLogoBase64(), generateCompanyQr(), getSignatureData(),
+  const [logoBase64, qrDataUrl, sig, cfg] = await Promise.all([
+    loadLogoBase64(), generateCompanyQr(), getSignatureData(), ensureConfig(),
   ]);
   const doc = new jsPDF();
   await registerBengaliFont(doc);
 
-  let y = addCompanyHeader(doc, logoBase64, qrDataUrl);
+  let y = addCompanyHeader(doc, logoBase64, qrDataUrl, cfg);
   y = addReportTitle(doc, y, title);
 
   const fmtCell = (val: string | number) =>
