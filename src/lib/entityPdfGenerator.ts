@@ -63,7 +63,7 @@ function addHeader(doc: jsPDF, company: CompanyInfo, logoBase64: string, qrDataU
   doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(DARK.r, DARK.g, DARK.b);
-  doc.text(company.name || "RAHE KABA Tours & Travels", textX, 18);
+  doc.text(company.name || "Manasik Travel Hub", textX, 18);
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100);
