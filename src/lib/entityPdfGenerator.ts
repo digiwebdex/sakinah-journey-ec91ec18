@@ -124,7 +124,7 @@ function addSignatureAndFooter(doc: jsPDF, sig: SignatureData) {
   }
 
   doc.setTextColor(150);
-  doc.text("This is a computer-generated document. For queries: +880 1601-505050 | rahekaba.info@gmail.com", pageWidth / 2, pageHeight - 10, { align: "center" });
+  doc.text("This is a computer-generated document. For queries: +880 1711-993562 | manasiktravelhub@gmail.com", pageWidth / 2, pageHeight - 10, { align: "center" });
   doc.setTextColor(0);
 }
 
