@@ -507,7 +507,7 @@ export async function generateCustomerPdf(data: CustomerPdfData, company: Compan
     });
   }
 
-  addSignatureAndFooter(doc, sig);
+  addSignatureAndFooter(doc, sig, cfg);
   doc.save(`Customer-${(data.full_name || "Unknown").replace(/\s+/g, "_")}.pdf`);
 }
 
