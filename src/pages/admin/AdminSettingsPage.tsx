@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/api";
 import { toast } from "sonner";
-import { Plus, X, Bell, PenTool, Database, Lock, LayoutGrid, FileText } from "lucide-react";
+import { Plus, X, Bell, PenTool, Database, LayoutGrid, FileText } from "lucide-react";
 import AdminDocumentViewer from "@/components/AdminDocumentViewer";
 import { useAdminRole } from "@/components/admin/AdminLayout";
 import NotificationSettingsManager from "@/components/admin/NotificationSettingsManager";
