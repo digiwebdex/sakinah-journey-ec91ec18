@@ -143,7 +143,7 @@ const Dashboard = () => {
   const getCompanyInfo = async (): Promise<CompanyInfo> => {
     const { data: cms } = await supabase.from("site_content" as any).select("content").eq("section_key", "contact").maybeSingle();
     const c = (cms as any)?.content || {};
-    return { name: "RAHE KABA", phone: c.phone || "", email: c.email || "", address: c.location || "" };
+    return { name: "Manasik Travel Hub", phone: c.phone || "", email: c.email || "", address: c.location || "" };
   };
 
   const handleDownloadInvoice = async (b: any) => {
